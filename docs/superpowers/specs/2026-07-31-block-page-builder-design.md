@@ -117,35 +117,55 @@ every other path resolves by slug. There is no homepage controller and no homepa
 
 ### Block JSON shape
 
+**This shape is dictated by Filament, not chosen by us.** `Builder::mutateDehydratedStateUsing`
+does `array_values($state)` on save, and `hydrateItems()` regenerates UUID keys on every load
+(`vendor/filament/forms/src/Components/Builder.php:141-158`). So the persisted column is a
+plain indexed array, and only `type` and `data` survive a round trip:
+
 ```json
-{
-  "uid": "01J...",
-  "type": "hero",
-  "ref": null,
-  "data": {
-    "heading": { "en": "A district", "id": "Kawasan", "cn": "商务区" },
-    "image": "uploads/pages/hero.jpg",
-    "cta_url": "#contact"
-  }
-}
+[
+  {
+    "type": "hero",
+    "data": {
+      "heading": { "en": "A district", "id": "Kawasan", "cn": "商务区" },
+      "image": "uploads/pages/hero.jpg",
+      "cta_url": "#contact"
+    }
+  },
+  { "type": "reusable", "data": { "ref": 3 } }
+]
 ```
 
-- `uid` — stable per instance, used as the DOM `data-block-id` and as a repeater key.
-- `ref` — null for an inline block; a `reusable_blocks` id for a referenced one.
-- `data` — ignored when `ref` is set; the library entry supplies the data instead.
+Two consequences follow, and both were design errors in an earlier draft of this spec:
 
-**Detaching** copies the library entry's `data` into the page and nulls `ref`, so the page
-keeps a private copy that no longer tracks the library.
+**There is no stable per-block identifier.** Filament's UUIDs are ephemeral — generated at
+hydration, stripped at dehydration. Anything keyed by them would silently reassign itself on
+every save. Blocks are therefore addressed by their **render-time array index**. That is safe
+because the DOM and the i18n payload are generated in the same pass from the same array, so
+the two always agree; reordering changes both together.
+
+**A referenced block is its own block type, not a flag.** Since only `type` and `data`
+persist, `ref` cannot sit alongside them. A library reference is a `reusable` block whose
+schema is a single Select over `reusable_blocks`, storing `{"ref": 3}`. The renderer resolves
+it to the referenced entry's own `type` and `data` before rendering.
+
+**Detaching** replaces the `reusable` entry in the page's array with a plain block carrying a
+copy of the library entry's `type` and `data`, so the page keeps a private copy that no
+longer tracks the library.
 
 ### `HasBlocks` concern
 
 - casts `blocks` to `array`
-- `renderableBlocks(): array` — resolves `ref` entries against `reusable_blocks`, filters
+- `renderableBlocks(): array` — resolves `reusable` entries against `reusable_blocks`, filters
   out types absent from the registry (logging each), and returns render-ready entries
 - `blockTypes(): array` — the distinct types on this record, used by tests and tooling
 
 Reference resolution eager-loads every referenced `ReusableBlock` in one query, so a page
 with twenty referenced blocks costs one extra query, not twenty.
+
+Note Filament's Builder already discards items whose `type` is not a registered block
+(`Builder.php:949`), so the admin form self-heals. `renderableBlocks()` must repeat that
+filter independently, because it reads the column directly and never passes through the form.
 
 ## Block registry
 
@@ -216,7 +236,7 @@ resources/views/components/block-renderer.blade.php
 block's view with its resolved `data`. Every block partial emits the same envelope:
 
 ```blade
-<section data-block="hero" data-block-id="{{ $uid }}" style="...">
+<section data-block="hero" data-block-index="{{ $index }}" style="...">
 ```
 
 Markup and inline styles are transcribed from the existing partials, which were themselves
@@ -278,19 +298,21 @@ regress. Each carries a test or a comment at the site:
 
 Unchanged in mechanism. Leaves inside block data carry `{en,id,cn}`; the payload builder
 walks the block tree instead of a fixed column map, emitting one entry per translatable
-leaf keyed by `{uid}.{field}`. Because structure is identical across locales, the existing
-no-reload switcher continues to work.
+leaf keyed by `{index}.{field}`, where `index` is the block's position in the render-time
+array. Because structure is identical across locales, the existing no-reload switcher
+continues to work.
 
 **The key contract:** a block partial rendering a translatable leaf must emit
-`data-i18n="{uid}.{field}"` matching the payload key exactly. The switcher looks each
+`data-i18n="{index}.{field}"` matching the payload key exactly. The switcher looks each
 element's key up in the payload and silently skips anything it cannot find, so a mismatched
 or missing attribute produces text that never translates and never errors. A feature test
 asserts that the set of `data-i18n` attributes in the rendered page is exactly the set of
 keys in the embedded payload — neither side may carry an entry the other lacks.
 
-This is why the payload is keyed by `uid` rather than by block type or index: two `hero`
-blocks on one page would otherwise collide, and reordering blocks would silently reassign
-translations to the wrong sections.
+The payload is keyed by index rather than block type because two `hero` blocks on one page
+would otherwise collide. Index is safe — and a Filament UUID is not — because the DOM and
+the payload are produced in the same render pass from the same array, whereas Filament's
+UUIDs are regenerated on every form load and stripped on every save.
 
 `HomepageData` is replaced by `PageData`, which assembles content, settings, menu, resolved
 blocks and the i18n payload for any page.
@@ -300,7 +322,7 @@ blocks and the i18n payload for any page.
 | Condition | Behaviour |
 |---|---|
 | Block type absent from the registry | Filtered from render, logged once with the type and page id |
-| `ref` points at a deleted reusable block | Filtered from render, logged; the admin form shows the entry as broken |
+| A `reusable` block's `ref` points at a deleted library entry | Filtered from render, logged; the admin form shows the Select as empty |
 | No page flagged `is_homepage` | `/` returns 404 with a clear log line; a seeder creates one |
 | Two rows flagged `is_homepage` | Prevented by a partial unique index |
 | Draft page requested by a guest | 404 |
