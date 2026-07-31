@@ -17,6 +17,7 @@ use CybertronianKelvin\Graper\Resources\GraperPageResource;
 use Filament\Facades\Filament;
 use Filament\Pages\Dashboard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Slimani\MediaManager\Pages\MediaManager;
 use Tests\TestCase;
 use Vaslv\FilamentTopbarMenu\Filament\Resources\TopbarMenuItemResource;
 
@@ -92,7 +93,7 @@ class AdminNavigationTest extends TestCase
         $labels = $this->itemLabels();
 
         foreach ([
-            'Dashboard', 'Homepage', 'Pages', 'Blog Posts', 'Blog Categories',
+            'Dashboard', 'Homepage', 'Pages', 'Blog Posts', 'Blog Categories', 'Media Library',
             'District Places', 'Facilities', 'Stats',
             'Public Menu', 'Admin Topbar Menu',
             'Site Settings', 'Users',
@@ -135,6 +136,7 @@ class AdminNavigationTest extends TestCase
                 'Pages' => GraperPageResource::getUrl('index'),
                 'Blog Posts' => BlogPostResource::getUrl('index'),
                 'Blog Categories' => BlogCategoryResource::getUrl('index'),
+                'Media Library' => MediaManager::getUrl(),
                 'District Places' => DistrictPlaceResource::getUrl('index'),
                 'Facilities' => FacilityResource::getUrl('index'),
                 'Stats' => StatResource::getUrl('index'),

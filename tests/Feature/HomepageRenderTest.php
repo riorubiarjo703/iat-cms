@@ -7,6 +7,7 @@ use App\Models\DistrictPlace;
 use App\Models\Facility;
 use App\Models\HomepageContent;
 use App\Models\PublicMenuItem;
+use App\Models\SiteSetting;
 use App\Models\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -210,5 +211,68 @@ class HomepageRenderTest extends TestCase
         $this->seedMinimum();
 
         $this->get('/')->assertDontSee('src=""', false);
+    }
+
+    /**
+     * App::setLocale() is never called, so any ->t() read without an
+     * explicit locale (facility/district/stat copy, nav labels) falls back
+     * to app()->getLocale() == APP_LOCALE (en) regardless of what's
+     * configured here — producing Indonesian headings above English body
+     * copy. Facility/district/stat text is a clean probe because, unlike
+     * the six headings and nav labels, it never also appears in the
+     * #scbd-i18n JSON payload (HomepageData::I18N_MAP has no entries for
+     * it), so a passing assertDontSee can't be a false negative caused by
+     * the embedded switcher data.
+     */
+    public function test_body_copy_resolves_in_the_configured_default_locale(): void
+    {
+        $this->seedMinimum();
+        SiteSetting::singleton()->update(['default_locale' => 'id']);
+
+        // Add Indonesian translations onto the records seedMinimum() already
+        // created, keeping their English text so a leaked app()->getLocale()
+        // == 'en' fallback would still render something recognisable and
+        // wrong, rather than silently falling back to the same value.
+        DistrictPlace::query()->first()->update([
+            'title' => ['en' => 'The towers', 'id' => 'Menara'],
+            'caption' => ['en' => 'Grade A office', 'id' => 'Kantor Kelas A'],
+        ]);
+        Facility::query()->first()->update([
+            'title' => ['en' => 'District clinic', 'id' => 'Klinik distrik'],
+            'body' => ['en' => 'On-site care.', 'id' => 'Perawatan di tempat.'],
+        ]);
+        Stat::query()->first()->update([
+            'label' => ['en' => 'Hectares', 'id' => 'Hektar'],
+        ]);
+
+        $html = $this->get('/')->assertSee('lang="id"', false)->getContent();
+
+        $this->assertStringContainsString('Klinik distrik', $html);
+        $this->assertStringContainsString('Kantor Kelas A', $html);
+        $this->assertStringContainsString('Hektar', $html);
+        $this->assertStringNotContainsString('District clinic', $html);
+        $this->assertStringNotContainsString('Grade A office', $html);
+        $this->assertStringNotContainsString('Hectares', $html);
+    }
+
+    /**
+     * default_locale is stored free-form (Fix 2's SiteSettingsPage ->in()
+     * rule blocks new writes through the admin form, but existing rows —
+     * or ones written before that guard existed — can still hold an
+     * invalid value). HomeController must fall back to English rather than
+     * crash. This previously 500'd: the fallback branch read
+     * `HasTranslatableFields::FALLBACK_LOCALE`, and PHP 8.4 forbids
+     * accessing a trait constant directly, so the one path meant to
+     * *handle* an invalid locale threw instead.
+     */
+    public function test_an_invalid_default_locale_falls_back_to_english_instead_of_crashing(): void
+    {
+        $this->seedMinimum();
+        SiteSetting::singleton()->update(['default_locale' => 'zz']);
+
+        $response = $this->get('/');
+
+        $response->assertSuccessful();
+        $response->assertSee('A district<br>that never<br>clocks out', false);
     }
 }

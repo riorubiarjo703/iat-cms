@@ -48,7 +48,13 @@ class SiteSettingsPage extends Page
                             ->label('Default language')
                             ->options(SiteSetting::LOCALES)
                             ->default('en')
-                            ->required(),
+                            ->required()
+                            // Options alone only constrain the UI. Without a
+                            // server-side rule, fillForm()/an API call can
+                            // still persist an arbitrary string, which would
+                            // blank all six `{!! !!}` headings on the public
+                            // homepage via the `?? ''` fallback.
+                            ->in(array_keys(SiteSetting::LOCALES)),
                         FileUpload::make('logo')
                             ->image()->disk('public')->directory('uploads/branding')
                             ->visibility('public')->maxSize(2048),

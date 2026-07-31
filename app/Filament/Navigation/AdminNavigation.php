@@ -17,6 +17,7 @@ use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
+use Slimani\MediaManager\Pages\MediaManager;
 use Vaslv\FilamentTopbarMenu\Filament\Resources\TopbarMenuItemResource;
 
 /**
@@ -59,6 +60,11 @@ final class AdminNavigation
                         ...self::resourceItems(GraperPageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
                         ...self::resourceItems(BlogPostResource::class, 'Blog Posts', 'heroicon-o-newspaper', 3, self::pendingPostCount()),
                         ...self::resourceItems(BlogCategoryResource::class, 'Blog Categories', 'heroicon-o-tag', 4),
+                        NavigationItem::make('Media Library')
+                            ->icon('heroicon-o-photo')
+                            ->url(MediaManager::getUrl())
+                            ->isActiveWhen(fn () => request()->routeIs(MediaManager::getRouteName()))
+                            ->sort(5),
                     ]),
 
                 NavigationGroup::make('Homepage Data')

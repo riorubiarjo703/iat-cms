@@ -58,6 +58,27 @@ class SiteSettingsPageTest extends TestCase
             ->assertHasFormErrors(['meta_title.en' => 'required']);
     }
 
+    /**
+     * The Select's ->options() only constrains the UI dropdown; without a
+     * server-side rule an arbitrary string reaches getState()'s validate()
+     * call unchecked and would persist, later blanking all six `{!! !!}`
+     * homepage headings via HomepageData's `?? ''` fallback.
+     */
+    public function test_an_invalid_default_locale_is_rejected(): void
+    {
+        Livewire::test(SiteSettingsPage::class)
+            ->fillForm([
+                'site_name' => 'SCBD',
+                'default_locale' => 'fr',
+                'meta_title' => ['en' => 'SCBD'],
+                'meta_description' => ['en' => 'Desc'],
+            ])
+            ->call('save')
+            ->assertHasFormErrors(['default_locale']);
+
+        $this->assertNotSame('fr', SiteSetting::singleton()->fresh()->default_locale);
+    }
+
     public function test_it_saves_social_links(): void
     {
         Livewire::test(SiteSettingsPage::class)

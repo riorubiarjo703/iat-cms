@@ -82,7 +82,10 @@ return [
             'id' => 'Perkantoran — Hotel — Ritel — Residensial — Ruang Publik',
             'cn' => '写字楼 — 酒店 — 零售 — 住宅 — 公共空间',
         ],
-        'about_cta_url' => '/pages/company-profile',
+        // Graper's /pages/{slug} route exists but no company-profile page is
+        // seeded, so that URL 404s on a fresh install. #contact matches the
+        // reference design's own anchor for this button.
+        'about_cta_url' => '#contact',
         // The reference publishes no email address. Left null rather than inventing one.
         'contact_email' => null,
         'contact_phone' => '+62 (21) 515-2390',

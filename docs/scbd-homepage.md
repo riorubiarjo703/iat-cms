@@ -243,7 +243,7 @@ navigation object directly, no login required:**
 
 - The five groups exist in the exact order Content, Homepage Data,
   Appearance, Settings, System.
-- All twelve expected items are present, with none duplicated.
+- All thirteen expected items are present, with none duplicated.
 - Every item's label maps to its expected destination in one pass (including
   Pages → the Graper resource).
 - "Admin Topbar Menu" is labelled as such, and "Topbar Menu" does not appear.
@@ -274,6 +274,35 @@ the new order survives a page reload of both the admin table and `/`.
 These are deliberate, documented limitations — not bugs to silently work
 around, and out of scope for this task. They belong to a future spec.
 
+> **⚠️ Editor-facing data loss: Indonesian/Chinese District Place, Facility,
+> and Stat copy is unreachable on the public site.**
+>
+> `DistrictPlace.title`/`caption`, `Facility.title`/`body`, and `Stat.label`
+> are translatable (`HasTranslatableFields`), and the Filament admin gives
+> each of them the same `id`/`cn` locale tabs as every other translatable
+> field. **Those tabs currently have no effect.** `HomepageData::I18N_MAP`
+> (`app/Support/HomepageData.php`) — the map that decides which columns get
+> a key in the `#scbd-i18n` payload the client-side language switcher reads
+> — only covers `HomepageContent` columns plus the dynamic `navN`/`cta` keys.
+> There is no `#scbd-i18n` key for district places, facilities, or stats at
+> all, so the switcher has nothing to swap for them, and the Blade partials
+> render them with a bare `->t('title')` / `->t('caption')` / `->t('body')`
+> / `->t('label')` call (no explicit locale), which resolves through
+> `app()->getLocale()` — i.e. **only English, always**, no matter what
+> `default_locale` is set to or which language a visitor selects.
+>
+> Concretely: an editor can open **District Places**, **Facilities**, or
+> **Stats** in the admin, fill in the Indonesian or Chinese tab, save
+> successfully with no error — and that copy will never be visible to any
+> visitor, in any language, until this is fixed. It silently vanishes.
+>
+> **Do not extend `I18N_MAP` (or add three more Blade branches) to patch
+> this.** The homepage is scheduled to be rebuilt as a block builder, and
+> wiring these three models into today's fixed key scheme is throwaway work
+> that the rebuild would immediately discard. This gap must be solved as
+> part of that block-builder redesign, with a payload scheme that isn't
+> hand-enumerated per column.
+
 - **The Site Settings "logo" upload does nothing.** The field exists
   (`FileUpload::make('logo')` in `SiteSettingsPage`) and uploads save
   correctly to the `public` disk, but nothing on the public site reads it —
@@ -291,10 +320,13 @@ around, and out of scope for this task. They belong to a future spec.
   per locale for the whole site. Neither `graper_pages` (GrapesJS pages) nor
   `blog_posts` has per-page meta columns, so every page shares the same
   `<title>`/description regardless of its own content.
-- **No media library, no roles.** File uploads go straight to disk paths per
-  field (no reusable media browser), and there is a single `Users` resource
-  with no role/permission distinctions — anyone with a Filament account has
-  full access to everything in the sidebar.
+- **No roles.** `slimani/filament-media-manager` is installed and reachable
+  from the sidebar (**Content** → Media Library), but homepage/content field
+  uploads (hero image, facility/district images, branding) still go straight
+  to disk paths per field rather than through the media browser — the two
+  systems don't share storage yet. Separately, there is a single `Users`
+  resource with no role/permission distinctions — anyone with a Filament
+  account has full access to everything in the sidebar.
 - **"Pages" and "Homepage" are two different editing models.** The
   GrapesJS-based Graper "Pages" resource (freeform drag-and-drop page
   building) and the fixed-schema Filament "Homepage" singleton form

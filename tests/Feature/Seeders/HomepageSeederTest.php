@@ -98,6 +98,19 @@ class HomepageSeederTest extends TestCase
         $this->assertTrue($established->isPlain());
     }
 
+    /**
+     * The reference design's About CTA is an in-page anchor. It previously
+     * pointed at /pages/company-profile, a Graper page route that exists but
+     * was never seeded — a 404 on a fresh install.
+     */
+    public function test_the_about_cta_points_at_an_anchor_that_exists_on_a_fresh_install(): void
+    {
+        $this->seed(HomepageSeeder::class);
+
+        $this->assertSame('#contact', HomepageContent::singleton()->about_cta_url);
+        $this->get('/')->assertSee('href="#contact"', false);
+    }
+
     public function test_it_attaches_downloaded_images(): void
     {
         $this->seed(HomepageSeeder::class);
