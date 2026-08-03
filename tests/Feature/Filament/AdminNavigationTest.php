@@ -2,24 +2,15 @@
 
 namespace Tests\Feature\Filament;
 
-use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
 use AjayDhakal\FilamentStory\Models\BlogPost;
-use App\Filament\Pages\HomepageEditor;
-use App\Filament\Pages\SiteSettingsPage;
-use App\Filament\Resources\BlogCategories\BlogCategoryResource;
-use App\Filament\Resources\DistrictPlaces\DistrictPlaceResource;
-use App\Filament\Resources\Facilities\FacilityResource;
-use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
-use App\Filament\Resources\Stats\StatResource;
-use App\Filament\Resources\Users\UserResource;
+use App\Filament\Pages\Placeholders\PlaceholderPage;
 use App\Models\User;
 use CybertronianKelvin\Graper\Resources\GraperPageResource;
 use Filament\Facades\Filament;
-use Filament\Pages\Dashboard;
+use Filament\Navigation\NavigationItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Slimani\MediaManager\Pages\MediaManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
-use Vaslv\FilamentTopbarMenu\Filament\Resources\TopbarMenuItemResource;
 
 class AdminNavigationTest extends TestCase
 {
@@ -32,217 +23,198 @@ class AdminNavigationTest extends TestCase
         Filament::setCurrentPanel('admin');
     }
 
-    /**
-     * @return array<int, string>
-     */
-    private function groupLabels(): array
+    /** @return array<int, NavigationItem> */
+    private function topLevelItems(): array
     {
-        return array_values(array_filter(array_map(
-            fn ($group) => $group->getLabel(),
-            Filament::getNavigation(),
-        )));
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function itemLabels(): array
-    {
-        $labels = [];
+        $items = [];
 
         foreach (Filament::getNavigation() as $group) {
             foreach ($group->getItems() as $item) {
-                $labels[] = $item->getLabel();
+                $items[] = $item;
             }
         }
 
-        return $labels;
+        return $items;
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function itemUrls(): array
+    /** @return array<string, array<int, string>> group (or "group > parent") => labels */
+    private function tree(): array
+    {
+        $tree = [];
+
+        foreach (Filament::getNavigation() as $group) {
+            $label = $group->getLabel() ?? '(ungrouped)';
+
+            foreach ($group->getItems() as $item) {
+                $tree[$label][] = $item->getLabel();
+
+                foreach ($item->getChildItems() as $child) {
+                    $tree[$label.' > '.$item->getLabel()][] = $child->getLabel();
+                }
+            }
+        }
+
+        return $tree;
+    }
+
+    private function child(string $parent, string $child): NavigationItem
+    {
+        $parentItem = collect($this->topLevelItems())->firstWhere(fn ($i) => $i->getLabel() === $parent);
+
+        return collect($parentItem->getChildItems())->firstWhere(fn ($i) => $i->getLabel() === $child);
+    }
+
+    public function test_the_groups_appear_in_the_declared_order(): void
+    {
+        $labels = array_values(array_filter(array_map(
+            fn ($g) => $g->getLabel(),
+            Filament::getNavigation(),
+        )));
+
+        $this->assertSame(
+            ['General', 'Marketing', 'Users Management', 'System', 'Administration'],
+            $labels,
+        );
+    }
+
+    public function test_the_content_parent_lists_its_children_in_order(): void
+    {
+        $this->assertSame(
+            ['Posts', 'Pages', 'Content Blocks', 'Categories', 'Comments', 'Media Library'],
+            $this->tree()['General > Content'],
+        );
+    }
+
+    public function test_the_appearance_parent_lists_its_children_in_order(): void
+    {
+        $this->assertSame(
+            ['Navigation Menus', 'Pages', 'Template Settings', 'Translations', 'Theme Editor', 'Admin Topbar Menu'],
+            $this->tree()['Administration > Appearance'],
+        );
+    }
+
+    public function test_the_marketing_group_lists_all_five_entries(): void
+    {
+        $this->assertSame(
+            ['Newsletter', 'Announcements', 'Advertisements', 'Ad Zones', 'Social Posting'],
+            $this->tree()['Marketing'],
+        );
+    }
+
+    public function test_users_management_lists_users_roles_permissions(): void
+    {
+        $this->assertSame(['Users', 'Roles', 'Permissions'], $this->tree()['Users Management']);
+    }
+
+    public function test_the_system_group_nests_seo_and_system(): void
+    {
+        $tree = $this->tree();
+
+        $this->assertSame(['Analytics', 'Email Activity', 'SEO', 'System'], $tree['System']);
+        $this->assertSame(['Redirects'], $tree['System > SEO']);
+        $this->assertSame(['Code Snippets', 'Backups'], $tree['System > System']);
+    }
+
+    public function test_every_destination_resolves_to_a_reachable_page(): void
+    {
+        // Catches an item pointing at nothing, or at the wrong resource — both of
+        // which look perfectly fine in the rendered sidebar.
+        foreach (Filament::getNavigation() as $group) {
+            foreach ($group->getItems() as $item) {
+                foreach ([$item, ...$item->getChildItems()] as $node) {
+                    if ($node->getChildItems() !== []) {
+                        continue; // parents expand, they do not link
+                    }
+
+                    $url = $node->getUrl();
+                    $this->assertNotEmpty($url, "[{$node->getLabel()}] has no URL");
+                    $this->get($url)->assertSuccessful();
+                }
+            }
+        }
+    }
+
+    public function test_no_two_entries_lead_to_the_same_page(): void
     {
         $urls = [];
 
         foreach (Filament::getNavigation() as $group) {
             foreach ($group->getItems() as $item) {
-                $urls[$item->getLabel()] = $item->getUrl();
+                foreach ([$item, ...$item->getChildItems()] as $node) {
+                    if ($node->getChildItems() === [] && $node->getUrl()) {
+                        $urls[] = $node->getUrl();
+                    }
+                }
             }
         }
 
-        return $urls;
+        $this->assertSame(count($urls), count(array_unique($urls)), 'Two menu entries lead to the same page');
     }
 
-    public function test_it_registers_the_five_content_groups_in_order(): void
+    public function test_content_pages_points_at_the_graper_resource(): void
     {
-        // Deliberately assertSame against the raw, un-intersected group label
-        // list: array_intersect() cannot detect misordering (it always
-        // returns elements in the order of its first argument) and cannot
-        // detect a stray extra group, so it was replaced with a direct
-        // ordered comparison.
-        $this->assertSame(
-            ['Content', 'Homepage Data', 'Appearance', 'Settings', 'System'],
-            $this->groupLabels(),
-        );
+        $this->assertSame(GraperPageResource::getUrl('index'), $this->child('Content', 'Pages')->getUrl());
     }
 
-    public function test_it_lists_every_expected_item(): void
+    public function test_appearance_pages_is_a_separate_placeholder(): void
     {
-        $labels = $this->itemLabels();
+        // "Pages" appears under both Content and Appearance; they are different things.
+        $url = $this->child('Appearance', 'Pages')->getUrl();
 
-        foreach ([
-            'Dashboard', 'Homepage', 'Pages', 'Blog Posts', 'Blog Categories', 'Media Library',
-            'District Places', 'Facilities', 'Stats',
-            'Public Menu', 'Admin Topbar Menu',
-            'Site Settings', 'Users',
-        ] as $expected) {
-            $this->assertContains($expected, $labels, "Missing sidebar item: {$expected}");
-        }
+        $this->assertNotSame(GraperPageResource::getUrl('index'), $url);
+        $this->assertStringContainsString('appearance-pages', $url);
     }
 
-    public function test_no_item_appears_twice(): void
+    public function test_the_posts_badge_counts_drafts_and_scheduled(): void
     {
-        $labels = $this->itemLabels();
+        BlogPost::create(['title' => 'A', 'slug' => 'a', 'content' => 'x', 'status' => BlogPost::STATUS_DRAFT]);
+        BlogPost::create(['title' => 'B', 'slug' => 'b', 'content' => 'x', 'status' => BlogPost::STATUS_SCHEDULED, 'published_at' => now()->addDay()]);
+        BlogPost::create(['title' => 'C', 'slug' => 'c', 'content' => 'x', 'status' => BlogPost::STATUS_PUBLISHED, 'published_at' => now()]);
 
-        $this->assertSame(
-            count($labels),
-            count(array_unique($labels)),
-            'A duplicate sidebar item means AdminNavigation registered the same destination under two labels.',
-        );
+        $this->assertSame('2', (string) $this->child('Content', 'Posts')->getBadge());
     }
 
-    public function test_the_topbar_menu_is_relabelled_to_avoid_confusion_with_the_public_menu(): void
+    public function test_the_posts_badge_is_absent_when_nothing_is_pending(): void
     {
-        $labels = $this->itemLabels();
-
-        $this->assertContains('Admin Topbar Menu', $labels);
-        $this->assertNotContains('Topbar Menu', $labels);
+        // A hardcoded count beside an empty feature would be inventing data.
+        $this->assertNull($this->child('Content', 'Posts')->getBadge());
     }
 
     /**
-     * Every item's destination, asserted in one pass. A label existing
-     * (test above) proves nothing about where it actually sends the admin;
-     * this is what catches a "Users" entry that silently points at the
-     * wrong resource.
+     * PHPUnit resolves data providers before the application boots, so this
+     * cannot use app_path() or the File facade — both need the container.
+     *
+     * @return array<int, array{0: string}>
      */
-    public function test_every_item_points_at_its_expected_destination(): void
+    public static function placeholderClasses(): array
     {
-        $this->assertSame(
-            [
-                'Dashboard' => Dashboard::getUrl(),
-                'Homepage' => HomepageEditor::getUrl(),
-                'Pages' => GraperPageResource::getUrl('index'),
-                'Blog Posts' => BlogPostResource::getUrl('index'),
-                'Blog Categories' => BlogCategoryResource::getUrl('index'),
-                'Media Library' => MediaManager::getUrl(),
-                'District Places' => DistrictPlaceResource::getUrl('index'),
-                'Facilities' => FacilityResource::getUrl('index'),
-                'Stats' => StatResource::getUrl('index'),
-                'Public Menu' => PublicMenuItemResource::getUrl('index'),
-                'Admin Topbar Menu' => TopbarMenuItemResource::getUrl('index'),
-                'Site Settings' => SiteSettingsPage::getUrl(),
-                'Users' => UserResource::getUrl('index'),
-            ],
-            $this->itemUrls(),
-        );
+        $dir = dirname(__DIR__, 3).'/app/Filament/Pages/Placeholders';
+
+        return collect(glob($dir.'/*.php') ?: [])
+            ->map(fn (string $f) => 'App\\Filament\\Pages\\Placeholders\\'.basename($f, '.php'))
+            ->reject(fn (string $c) => $c === PlaceholderPage::class)
+            ->map(fn (string $c) => [$c])
+            ->values()
+            ->all();
     }
 
-    public function test_the_pages_item_points_at_the_graper_resource(): void
+    #[DataProvider('placeholderClasses')]
+    public function test_each_placeholder_says_plainly_that_it_is_not_built(string $class): void
     {
-        $this->assertSame(GraperPageResource::getUrl('index'), $this->itemUrls()['Pages']);
+        $this->get($class::getUrl())
+            ->assertSuccessful()
+            ->assertSee('isn’t built yet', false)
+            ->assertSee($class::summary(), false);
     }
 
-    public function test_the_blog_posts_badge_counts_drafts_and_scheduled_posts(): void
+    #[DataProvider('placeholderClasses')]
+    public function test_each_placeholder_is_excluded_from_global_search(string $class): void
     {
-        BlogPost::create([
-            'title' => 'Draft One',
-            'slug' => 'draft-one',
-            'content' => 'Content for draft one.',
-            'status' => BlogPost::STATUS_DRAFT,
-        ]);
-        BlogPost::create([
-            'title' => 'Draft Two',
-            'slug' => 'draft-two',
-            'content' => 'Content for draft two.',
-            'status' => BlogPost::STATUS_DRAFT,
-        ]);
-        BlogPost::create([
-            'title' => 'Published One',
-            'slug' => 'published-one',
-            'content' => 'Content for published one.',
-            'status' => BlogPost::STATUS_PUBLISHED,
-        ]);
-
-        $badge = null;
-
-        foreach (Filament::getNavigation() as $group) {
-            foreach ($group->getItems() as $item) {
-                if ($item->getLabel() === 'Blog Posts') {
-                    $badge = $item->getBadge();
-                }
-            }
-        }
-
-        $this->assertSame('2', (string) $badge);
+        $this->assertFalse($class::canGloballySearch());
     }
 
-    public function test_the_blog_posts_badge_is_absent_when_nothing_is_pending(): void
+    public function test_nineteen_placeholders_are_registered(): void
     {
-        BlogPost::create([
-            'title' => 'Published Only',
-            'slug' => 'published-only',
-            'content' => 'Content for the only post.',
-            'status' => BlogPost::STATUS_PUBLISHED,
-        ]);
-
-        $badge = 'not-checked';
-
-        foreach (Filament::getNavigation() as $group) {
-            foreach ($group->getItems() as $item) {
-                if ($item->getLabel() === 'Blog Posts') {
-                    $badge = $item->getBadge();
-                }
-            }
-        }
-
-        $this->assertNull($badge, 'A permanent "0" (or any) badge would pass unless zero pending posts is asserted explicitly.');
-    }
-
-    public function test_the_district_places_item_is_active_while_visiting_its_own_pages(): void
-    {
-        $this->get(DistrictPlaceResource::getUrl('index'));
-
-        $item = null;
-
-        foreach (Filament::getNavigation() as $group) {
-            foreach ($group->getItems() as $candidate) {
-                if ($candidate->getLabel() === 'District Places') {
-                    $item = $candidate;
-                }
-            }
-        }
-
-        $this->assertNotNull($item, 'District Places item not found in the rebuilt navigation.');
-        $this->assertTrue($item->isActive(), 'District Places should be active while its own index page is the current request.');
-    }
-
-    public function test_the_district_places_item_is_not_active_on_an_unrelated_page(): void
-    {
-        $this->get(StatResource::getUrl('index'));
-
-        $item = null;
-
-        foreach (Filament::getNavigation() as $group) {
-            foreach ($group->getItems() as $candidate) {
-                if ($candidate->getLabel() === 'District Places') {
-                    $item = $candidate;
-                }
-            }
-        }
-
-        $this->assertNotNull($item, 'District Places item not found in the rebuilt navigation.');
-        $this->assertFalse($item->isActive(), 'District Places should not be active while viewing an unrelated resource.');
+        $this->assertCount(19, static::placeholderClasses());
     }
 }

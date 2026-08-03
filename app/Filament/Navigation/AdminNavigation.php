@@ -4,13 +4,10 @@ namespace App\Filament\Navigation;
 
 use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
 use AjayDhakal\FilamentStory\Models\BlogPost;
-use App\Filament\Pages\HomepageEditor;
+use App\Filament\Pages\Placeholders as P;
 use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\BlogCategories\BlogCategoryResource;
-use App\Filament\Resources\DistrictPlaces\DistrictPlaceResource;
-use App\Filament\Resources\Facilities\FacilityResource;
 use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
-use App\Filament\Resources\Stats\StatResource;
 use App\Filament\Resources\Users\UserResource;
 use CybertronianKelvin\Graper\Resources\GraperPageResource;
 use Filament\Navigation\NavigationBuilder;
@@ -23,19 +20,13 @@ use Vaslv\FilamentTopbarMenu\Filament\Resources\TopbarMenuItemResource;
 /**
  * The single owner of the admin sidebar.
  *
- * Using a NavigationBuilder makes Filament skip auto-registration entirely
+ * A NavigationBuilder makes Filament skip auto-registration entirely
  * (NavigationManager::get() early-returns at line 49), which is how the three
- * plugins' hardcoded navigation placement gets overridden without touching
- * vendor code.
+ * plugins' hardcoded placement gets overridden without touching vendor code.
  *
- * Consequence: any resource or page added later must be listed here or it will
- * not appear in the sidebar.
- *
- * Groups deliberately carry no ->icon(): Filament's sidebar group Blade
- * partial throws ("Either the group or its items can have icons, but not
- * both") when a non-dropdown group icon is combined with per-item icons.
- * Per-item icons are kept because they distinguish resources at a glance;
- * the group icon is the one dropped.
+ * Consequence: anything not listed here is reachable only by URL. Nineteen of
+ * these destinations are deliberate placeholders — the sidebar shows the
+ * product's full intended shape, and each unbuilt screen says so plainly.
  */
 final class AdminNavigation
 {
@@ -43,93 +34,107 @@ final class AdminNavigation
     {
         return $builder
             ->items([
-                NavigationItem::make('Dashboard')
-                    ->icon('heroicon-o-home')
-                    ->url(Dashboard::getUrl())
-                    ->isActiveWhen(fn () => request()->routeIs(Dashboard::getRouteName()))
-                    ->sort(0),
+                self::item('Dashboard', 'heroicon-o-home', Dashboard::getUrl(), 0, Dashboard::getRouteName()),
             ])
             ->groups([
-                NavigationGroup::make('Content')
-                    ->items([
-                        NavigationItem::make('Homepage')
-                            ->icon('heroicon-o-home-modern')
-                            ->url(HomepageEditor::getUrl())
-                            ->isActiveWhen(fn () => request()->routeIs(HomepageEditor::getRouteName()))
-                            ->sort(1),
-                        ...self::resourceItems(GraperPageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
-                        ...self::resourceItems(BlogPostResource::class, 'Blog Posts', 'heroicon-o-newspaper', 3, self::pendingPostCount()),
-                        ...self::resourceItems(BlogCategoryResource::class, 'Blog Categories', 'heroicon-o-tag', 4),
-                        NavigationItem::make('Media Library')
-                            ->icon('heroicon-o-photo')
-                            ->url(MediaManager::getUrl())
-                            ->isActiveWhen(fn () => request()->routeIs(MediaManager::getRouteName()))
-                            ->sort(5),
+                NavigationGroup::make('General')->items([
+                    self::parent('Content', 'heroicon-o-document-text', 1, [
+                        self::resource(BlogPostResource::class, 'Posts', 'heroicon-o-newspaper', 1, self::pendingPostCount()),
+                        self::resource(GraperPageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
+                        self::page(P\ContentBlocksPlaceholder::class, 'Content Blocks', 'heroicon-o-rectangle-stack', 3),
+                        self::resource(BlogCategoryResource::class, 'Categories', 'heroicon-o-tag', 4),
+                        self::page(P\CommentsPlaceholder::class, 'Comments', 'heroicon-o-chat-bubble-left-right', 5),
+                        // Added to the reference structure: it exists and is used, and an
+                        // unlisted resource would be reachable only by URL.
+                        self::pageUrl('Media Library', 'heroicon-o-photo', MediaManager::getUrl(), 6),
                     ]),
+                    self::page(P\ContactsPlaceholder::class, 'Contacts', 'heroicon-o-inbox', 2),
+                ]),
 
-                NavigationGroup::make('Homepage Data')
-                    ->items([
-                        ...self::resourceItems(DistrictPlaceResource::class, 'District Places', 'heroicon-o-building-office-2', 1),
-                        ...self::resourceItems(FacilityResource::class, 'Facilities', 'heroicon-o-wrench-screwdriver', 2),
-                        ...self::resourceItems(StatResource::class, 'Stats', 'heroicon-o-chart-bar', 3),
-                    ]),
+                NavigationGroup::make('Marketing')->items([
+                    self::page(P\NewsletterPlaceholder::class, 'Newsletter', 'heroicon-o-envelope', 1),
+                    self::page(P\AnnouncementsPlaceholder::class, 'Announcements', 'heroicon-o-megaphone', 2),
+                    self::page(P\AdvertisementsPlaceholder::class, 'Advertisements', 'heroicon-o-rectangle-group', 3),
+                    self::page(P\AdZonesPlaceholder::class, 'Ad Zones', 'heroicon-o-squares-2x2', 4),
+                    self::page(P\SocialPostingPlaceholder::class, 'Social Posting', 'heroicon-o-share', 5),
+                ]),
 
-                NavigationGroup::make('Appearance')
-                    ->items([
-                        ...self::resourceItems(PublicMenuItemResource::class, 'Public Menu', 'heroicon-o-link', 1),
-                        // Deliberately NOT "Topbar Menu": this renders inside the
-                        // admin panel's topbar, not on the public site. Sitting
-                        // next to "Public Menu" the shorter label misleads.
-                        ...self::resourceItems(TopbarMenuItemResource::class, 'Admin Topbar Menu', 'heroicon-o-bars-3-bottom-left', 2),
-                    ]),
+                NavigationGroup::make('Users Management')->items([
+                    self::resource(UserResource::class, 'Users', 'heroicon-o-users', 1),
+                    self::page(P\RolesPlaceholder::class, 'Roles', 'heroicon-o-shield-check', 2),
+                    self::page(P\PermissionsPlaceholder::class, 'Permissions', 'heroicon-o-key', 3),
+                ]),
 
-                NavigationGroup::make('Settings')
-                    ->items([
-                        NavigationItem::make('Site Settings')
-                            ->icon('heroicon-o-cog-6-tooth')
-                            ->url(SiteSettingsPage::getUrl())
-                            ->isActiveWhen(fn () => request()->routeIs(SiteSettingsPage::getRouteName()))
-                            ->sort(1),
+                NavigationGroup::make('System')->items([
+                    self::page(P\AnalyticsPlaceholder::class, 'Analytics', 'heroicon-o-chart-bar', 1),
+                    self::page(P\EmailActivityPlaceholder::class, 'Email Activity', 'heroicon-o-at-symbol', 2),
+                    self::parent('SEO', 'heroicon-o-magnifying-glass', 3, [
+                        self::page(P\RedirectsPlaceholder::class, 'Redirects', 'heroicon-o-arrow-uturn-right', 1),
                     ]),
+                    self::parent('System', 'heroicon-o-cog-8-tooth', 4, [
+                        self::page(P\CodeSnippetsPlaceholder::class, 'Code Snippets', 'heroicon-o-code-bracket', 1),
+                        self::page(P\BackupsPlaceholder::class, 'Backups', 'heroicon-o-archive-box', 2),
+                    ]),
+                ]),
 
-                NavigationGroup::make('System')
-                    ->items([
-                        ...self::resourceItems(UserResource::class, 'Users', 'heroicon-o-users', 1),
+                NavigationGroup::make('Administration')->items([
+                    self::parent('Appearance', 'heroicon-o-paint-brush', 1, [
+                        self::resource(PublicMenuItemResource::class, 'Navigation Menus', 'heroicon-o-bars-3', 1),
+                        // Distinct from Content > Pages: template assignment, not content.
+                        self::page(P\TemplatePagesPlaceholder::class, 'Pages', 'heroicon-o-document', 2),
+                        self::page(P\TemplateSettingsPlaceholder::class, 'Template Settings', 'heroicon-o-adjustments-horizontal', 3),
+                        self::page(P\TranslationsPlaceholder::class, 'Translations', 'heroicon-o-language', 4),
+                        self::page(P\ThemeEditorPlaceholder::class, 'Theme Editor', 'heroicon-o-swatch', 5),
+                        // Added to the reference structure, same reason as Media Library.
+                        self::resource(TopbarMenuItemResource::class, 'Admin Topbar Menu', 'heroicon-o-bars-3-bottom-left', 6),
                     ]),
+                    self::pageUrl('Settings', 'heroicon-o-cog-6-tooth', SiteSettingsPage::getUrl(), 2, SiteSettingsPage::getRouteName()),
+                ]),
             ]);
     }
 
-    /**
-     * Builds one navigation item for a resource, labelled and sorted by us
-     * rather than by whatever the resource class hardcodes.
-     *
-     * @param  class-string  $resource
-     * @return array<int, NavigationItem>
-     */
-    private static function resourceItems(
-        string $resource,
-        string $label,
-        string $icon,
-        int $sort,
-        ?string $badge = null,
-    ): array {
+    /** A parent item that expands to children and stays active while any child is. */
+    private static function parent(string $label, string $icon, int $sort, array $children): NavigationItem
+    {
+        return NavigationItem::make($label)
+            ->icon($icon)
+            ->childItems($children)
+            ->sort($sort);
+    }
+
+    private static function item(string $label, string $icon, string $url, int $sort, ?string $activeRoute = null): NavigationItem
+    {
+        $item = NavigationItem::make($label)->icon($icon)->url($url)->sort($sort);
+
+        return $activeRoute
+            ? $item->isActiveWhen(fn (): bool => request()->routeIs($activeRoute))
+            : $item;
+    }
+
+    /** @param class-string $resource */
+    private static function resource(string $resource, string $label, string $icon, int $sort, ?string $badge = null): NavigationItem
+    {
         $item = NavigationItem::make($label)
             ->icon($icon)
             ->url($resource::getUrl('index'))
-            ->isActiveWhen(fn () => request()->routeIs($resource::getRouteBaseName().'.*'))
+            ->isActiveWhen(fn (): bool => request()->routeIs($resource::getRouteBaseName().'.*'))
             ->sort($sort);
 
-        if ($badge !== null) {
-            $item->badge($badge, 'warning');
-        }
-
-        return [$item];
+        return $badge === null ? $item : $item->badge($badge, 'warning');
     }
 
-    /**
-     * Posts still needing attention: drafts plus anything scheduled but not yet
-     * published. Returns null when there are none, so no badge renders.
-     */
+    /** @param class-string $page */
+    private static function page(string $page, string $label, string $icon, int $sort): NavigationItem
+    {
+        return self::item($label, $icon, $page::getUrl(), $sort, $page::getRouteName());
+    }
+
+    private static function pageUrl(string $label, string $icon, string $url, int $sort, ?string $activeRoute = null): NavigationItem
+    {
+        return self::item($label, $icon, $url, $sort, $activeRoute);
+    }
+
+    /** Drafts and scheduled posts still needing attention; null when there are none. */
     private static function pendingPostCount(): ?string
     {
         $count = BlogPost::query()
