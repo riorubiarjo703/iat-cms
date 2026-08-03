@@ -1,3 +1,4 @@
+import blockList from './block-list'
 import menuTree from './menu-tree'
 
 // Filament boots Alpine itself, so components register on its init event
@@ -5,4 +6,5 @@ import menuTree from './menu-tree'
 // instances fighting over the same DOM.
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('menuTree', menuTree)
+    window.Alpine.data('blockList', blockList)
 })

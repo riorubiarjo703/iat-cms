@@ -11,6 +11,7 @@ use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -129,7 +130,17 @@ class PageResource extends Resource
                     Page::STATUS_PUBLISHED => 'Published',
                 ]),
             ])
-            ->recordActions([EditAction::make(), DeleteAction::make()])
+            ->recordActions([
+                // Only builder pages have blocks to arrange, so the action is
+                // absent rather than disabled on a standard page.
+                Action::make('build')
+                    ->label('Build')
+                    ->icon('heroicon-o-squares-2x2')
+                    ->visible(fn (Page $record): bool => $record->usesBuilder())
+                    ->url(fn (Page $record): string => \App\Filament\Pages\BuildPage::getUrl(['record' => $record])),
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])])
             ->defaultSort('updated_at', 'desc');
     }

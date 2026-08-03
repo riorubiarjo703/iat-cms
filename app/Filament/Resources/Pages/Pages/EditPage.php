@@ -13,6 +13,13 @@ class EditPage extends EditRecord
     /** @return array<int, \Filament\Actions\Action> */
     protected function getHeaderActions(): array
     {
-        return [DeleteAction::make()];
+        return [
+            \Filament\Actions\Action::make('build')
+                ->label('Open the builder')
+                ->icon('heroicon-o-squares-2x2')
+                ->visible(fn (): bool => $this->record->usesBuilder())
+                ->url(fn (): string => \App\Filament\Pages\BuildPage::getUrl(['record' => $this->record])),
+            DeleteAction::make(),
+        ];
     }
 }
