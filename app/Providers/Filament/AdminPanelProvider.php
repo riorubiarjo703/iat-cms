@@ -34,6 +34,14 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('superduper')
             ->login()
+            // Branding comes from Site Settings so a logo swap needs no deploy.
+            // Resolved lazily: the panel is constructed before the database is
+            // necessarily reachable, and singleton() would query at boot.
+            ->brandName(fn (): string => \App\Models\SiteSetting::singleton()->site_name ?: config('app.name'))
+            ->brandLogo(fn (): ?string => ($logo = \App\Models\SiteSetting::singleton()->logo)
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($logo)
+                : null)
+            ->brandLogoHeight('1.75rem')
             ->colors([
                 'primary' => Color::Amber,
             ])

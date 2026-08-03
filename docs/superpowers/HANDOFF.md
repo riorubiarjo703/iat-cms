@@ -81,9 +81,10 @@ code and each is easy to reintroduce:
 
 ## Known gaps carried forward
 
-- The `logo` field in Site Settings is uploaded but **never rendered anywhere**. The public
-  header hardcodes the text `SCBD`; the panel sets no `brandLogo()`. Only `favicon` is wired.
-  Belongs to slice C.
+- ~~The `logo` field is never rendered anywhere.~~ **Closed 2026-08-03.** The public header now
+  renders the uploaded logo with the site name as `alt`, falling back to `site_name` (not a
+  hardcoded string) when no logo is set; the panel resolves `brandName`/`brandLogo` lazily from
+  Site Settings so a swap needs no deploy. Covered by `tests/Feature/BrandingTest.php`.
 - `DistrictPlace`, `Facility` and `Stat` have locale tabs in the admin but no i18n payload
   keys, so **only English ever renders** for them. Slice A1 removes these models entirely.
 - There is **no contact form** — the contact section only displays an address. Slice D.

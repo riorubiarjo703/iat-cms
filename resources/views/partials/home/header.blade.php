@@ -6,7 +6,18 @@
 <header data-header style="position:fixed; top:0; left:0; right:0; z-index:900; background:rgba(243,242,242,0.92); backdrop-filter:blur(10px); border-bottom:2px solid rgba(32,30,29,0.4);">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:32px; padding:14px 40px;">
         <a href="#top" data-magnetic style="display:flex; align-items:baseline; gap:10px; text-decoration:none; color:#201e1d;">
-            <span style="font-weight:800; font-size:22px; letter-spacing:-0.03em;">SCBD</span>
+            @php
+                $brandName = $data->settings->site_name ?: config('app.name');
+            @endphp
+            @if ($data->settings->logo)
+                <img src="{{ Storage::disk('public')->url($data->settings->logo) }}"
+                     alt="{{ $brandName }}"
+                     style="height:26px; width:auto; display:block;">
+            @else
+                {{-- No logo uploaded: the brand must still be visible, so fall back
+                     to the configured site name rather than a hardcoded string. --}}
+                <span style="font-weight:800; font-size:22px; letter-spacing:-0.03em;">{{ $brandName }}</span>
+            @endif
             <span style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(32,30,29,0.55);" data-i18n="brandsub">{{ $data->content->t('brand_sub') }}</span>
         </a>
         <nav style="display:flex; align-items:center; gap:28px;">
