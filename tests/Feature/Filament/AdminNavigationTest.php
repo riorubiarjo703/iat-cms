@@ -71,9 +71,40 @@ class AdminNavigationTest extends TestCase
             Filament::getNavigation(),
         )));
 
+        // Marketing and Users Management became expandable items under
+        // General; only three section headers remain.
+        $this->assertSame(['General', 'System', 'Administration'], $labels);
+    }
+
+    public function test_section_headers_are_labels_not_controls(): void
+    {
+        // A collapsible header would give the tree two different kinds of
+        // disclosure at two levels. Only items expand.
+        foreach (Filament::getNavigation() as $group) {
+            $this->assertFalse(
+                $group->isCollapsible(),
+                "[{$group->getLabel()}] is collapsible, but section headers are labels",
+            );
+        }
+    }
+
+    public function test_exactly_the_six_named_items_expand(): void
+    {
+        $expandable = [];
+
+        foreach (Filament::getNavigation() as $group) {
+            foreach ($group->getItems() as $item) {
+                if ($item->getChildItems() !== []) {
+                    $expandable[] = $item->getLabel();
+                }
+            }
+        }
+
+        sort($expandable);
+
         $this->assertSame(
-            ['General', 'Marketing', 'Users Management', 'System', 'Administration'],
-            $labels,
+            ['Appearance', 'Content', 'Marketing', 'SEO', 'System', 'Users Management'],
+            $expandable,
         );
     }
 
@@ -93,17 +124,17 @@ class AdminNavigationTest extends TestCase
         );
     }
 
-    public function test_the_marketing_group_lists_all_five_entries(): void
+    public function test_the_marketing_parent_lists_all_five_entries(): void
     {
         $this->assertSame(
             ['Newsletter', 'Announcements', 'Advertisements', 'Ad Zones', 'Social Posting'],
-            $this->tree()['Marketing'],
+            $this->tree()['General > Marketing'],
         );
     }
 
     public function test_users_management_lists_users_roles_permissions(): void
     {
-        $this->assertSame(['Users', 'Roles', 'Permissions'], $this->tree()['Users Management']);
+        $this->assertSame(['Users', 'Roles', 'Permissions'], $this->tree()['General > Users Management']);
     }
 
     public function test_the_system_group_nests_seo_and_system(): void

@@ -80,18 +80,18 @@ class SidebarUserCardTest extends TestCase
         );
     }
 
-    public function test_the_four_nested_parents_are_collapsible(): void
+    public function test_the_six_nested_parents_are_collapsible(): void
     {
         $html = $this->panel()->getContent();
 
-        // Content, SEO, System, Appearance.
-        $this->assertSame(4, substr_count($html, 'fi-sidebar-sub-group-items'));
-        $this->assertSame(4, substr_count($html, 'fi-sidebar-item-chevron'));
+        // Content, Marketing, Users Management, SEO, System, Appearance.
+        $this->assertSame(6, substr_count($html, 'fi-sidebar-sub-group-items'));
+        $this->assertSame(6, substr_count($html, 'fi-sidebar-item-chevron'));
 
         // x-show="expanded" is unique to the override. Asserting on bare
         // 'x-collapse' would pass regardless, because Filament's own group
         // markup uses it too — that weaker assertion did not fail under
         // mutation, which is why it is written this way.
-        $this->assertSame(4, substr_count($html, 'x-show="expanded"'));
+        $this->assertSame(6, substr_count($html, 'x-show="expanded"'));
     }
 }

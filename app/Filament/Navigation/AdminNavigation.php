@@ -32,65 +32,74 @@ final class AdminNavigation
 {
     public static function build(NavigationBuilder $builder): NavigationBuilder
     {
-        return $builder
-            ->items([
-                self::item('Dashboard', 'heroicon-o-home', Dashboard::getUrl(), 0, Dashboard::getRouteName()),
-            ])
-            ->groups([
-                NavigationGroup::make('General')->items([
-                    self::parent('Content', 'heroicon-o-document-text', 1, [
-                        self::resource(BlogPostResource::class, 'Posts', 'heroicon-o-newspaper', 1, self::pendingPostCount()),
-                        self::resource(GraperPageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
-                        self::page(P\ContentBlocksPlaceholder::class, 'Content Blocks', 'heroicon-o-rectangle-stack', 3),
-                        self::resource(BlogCategoryResource::class, 'Categories', 'heroicon-o-tag', 4),
-                        self::page(P\CommentsPlaceholder::class, 'Comments', 'heroicon-o-chat-bubble-left-right', 5),
-                        // Added to the reference structure: it exists and is used, and an
-                        // unlisted resource would be reachable only by URL.
-                        self::pageUrl('Media Library', 'heroicon-o-photo', MediaManager::getUrl(), 6),
-                    ]),
-                    self::page(P\ContactsPlaceholder::class, 'Contacts', 'heroicon-o-inbox', 2),
+        return $builder->groups([
+            // The three group headers are labels, not controls. Only items
+            // expand; a collapsible header would give the tree two different
+            // kinds of disclosure at two levels.
+            self::group('General', [
+                self::item('Dashboard', 'heroicon-o-home', Dashboard::getUrl(), 1, Dashboard::getRouteName()),
+                self::parent('Content', 'heroicon-o-document-text', 2, [
+                    self::resource(BlogPostResource::class, 'Posts', 'heroicon-o-newspaper', 1, self::pendingPostCount()),
+                    self::resource(GraperPageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
+                    self::page(P\ContentBlocksPlaceholder::class, 'Content Blocks', 'heroicon-o-rectangle-stack', 3),
+                    self::resource(BlogCategoryResource::class, 'Categories', 'heroicon-o-tag', 4),
+                    self::page(P\CommentsPlaceholder::class, 'Comments', 'heroicon-o-chat-bubble-left-right', 5),
+                    // Added to the reference structure: it exists and is used, and an
+                    // unlisted resource would be reachable only by URL.
+                    self::pageUrl('Media Library', 'heroicon-o-photo', MediaManager::getUrl(), 6),
                 ]),
-
-                NavigationGroup::make('Marketing')->items([
+                self::page(P\ContactsPlaceholder::class, 'Contacts', 'heroicon-o-inbox', 3),
+                self::parent('Marketing', 'heroicon-o-megaphone', 4, [
                     self::page(P\NewsletterPlaceholder::class, 'Newsletter', 'heroicon-o-envelope', 1),
                     self::page(P\AnnouncementsPlaceholder::class, 'Announcements', 'heroicon-o-megaphone', 2),
                     self::page(P\AdvertisementsPlaceholder::class, 'Advertisements', 'heroicon-o-rectangle-group', 3),
                     self::page(P\AdZonesPlaceholder::class, 'Ad Zones', 'heroicon-o-squares-2x2', 4),
                     self::page(P\SocialPostingPlaceholder::class, 'Social Posting', 'heroicon-o-share', 5),
                 ]),
-
-                NavigationGroup::make('Users Management')->items([
+                self::parent('Users Management', 'heroicon-o-users', 5, [
                     self::resource(UserResource::class, 'Users', 'heroicon-o-users', 1),
                     self::page(P\RolesPlaceholder::class, 'Roles', 'heroicon-o-shield-check', 2),
                     self::page(P\PermissionsPlaceholder::class, 'Permissions', 'heroicon-o-key', 3),
                 ]),
+            ]),
 
-                NavigationGroup::make('System')->items([
-                    self::page(P\AnalyticsPlaceholder::class, 'Analytics', 'heroicon-o-chart-bar', 1),
-                    self::page(P\EmailActivityPlaceholder::class, 'Email Activity', 'heroicon-o-at-symbol', 2),
-                    self::parent('SEO', 'heroicon-o-magnifying-glass', 3, [
-                        self::page(P\RedirectsPlaceholder::class, 'Redirects', 'heroicon-o-arrow-uturn-right', 1),
-                    ]),
-                    self::parent('System', 'heroicon-o-cog-8-tooth', 4, [
-                        self::page(P\CodeSnippetsPlaceholder::class, 'Code Snippets', 'heroicon-o-code-bracket', 1),
-                        self::page(P\BackupsPlaceholder::class, 'Backups', 'heroicon-o-archive-box', 2),
-                    ]),
+            self::group('System', [
+                self::page(P\AnalyticsPlaceholder::class, 'Analytics', 'heroicon-o-chart-bar', 1),
+                self::page(P\EmailActivityPlaceholder::class, 'Email Activity', 'heroicon-o-at-symbol', 2),
+                self::parent('SEO', 'heroicon-o-magnifying-glass', 3, [
+                    self::page(P\RedirectsPlaceholder::class, 'Redirects', 'heroicon-o-arrow-uturn-right', 1),
                 ]),
+                self::parent('System', 'heroicon-o-cog-8-tooth', 4, [
+                    self::page(P\CodeSnippetsPlaceholder::class, 'Code Snippets', 'heroicon-o-code-bracket', 1),
+                    self::page(P\BackupsPlaceholder::class, 'Backups', 'heroicon-o-archive-box', 2),
+                ]),
+            ]),
 
-                NavigationGroup::make('Administration')->items([
-                    self::parent('Appearance', 'heroicon-o-paint-brush', 1, [
-                        self::resource(PublicMenuItemResource::class, 'Navigation Menus', 'heroicon-o-bars-3', 1),
-                        // Distinct from Content > Pages: template assignment, not content.
-                        self::page(P\TemplatePagesPlaceholder::class, 'Pages', 'heroicon-o-document', 2),
-                        self::page(P\TemplateSettingsPlaceholder::class, 'Template Settings', 'heroicon-o-adjustments-horizontal', 3),
-                        self::page(P\TranslationsPlaceholder::class, 'Translations', 'heroicon-o-language', 4),
-                        self::page(P\ThemeEditorPlaceholder::class, 'Theme Editor', 'heroicon-o-swatch', 5),
-                        // Added to the reference structure, same reason as Media Library.
-                        self::resource(TopbarMenuItemResource::class, 'Admin Topbar Menu', 'heroicon-o-bars-3-bottom-left', 6),
-                    ]),
-                    self::pageUrl('Settings', 'heroicon-o-cog-6-tooth', SiteSettingsPage::getUrl(), 2, SiteSettingsPage::getRouteName()),
+            self::group('Administration', [
+                self::parent('Appearance', 'heroicon-o-paint-brush', 1, [
+                    self::resource(PublicMenuItemResource::class, 'Navigation Menus', 'heroicon-o-bars-3', 1),
+                    // Distinct from Content > Pages: template assignment, not content.
+                    self::page(P\TemplatePagesPlaceholder::class, 'Pages', 'heroicon-o-document', 2),
+                    self::page(P\TemplateSettingsPlaceholder::class, 'Template Settings', 'heroicon-o-adjustments-horizontal', 3),
+                    self::page(P\TranslationsPlaceholder::class, 'Translations', 'heroicon-o-language', 4),
+                    self::page(P\ThemeEditorPlaceholder::class, 'Theme Editor', 'heroicon-o-swatch', 5),
+                    // Added to the reference structure, same reason as Media Library.
+                    self::resource(TopbarMenuItemResource::class, 'Admin Topbar Menu', 'heroicon-o-bars-3-bottom-left', 6),
                 ]),
-            ]);
+                self::pageUrl('Settings', 'heroicon-o-cog-6-tooth', SiteSettingsPage::getUrl(), 2, SiteSettingsPage::getRouteName()),
+            ]),
+        ]);
+    }
+
+    /**
+     * A section header. Not collapsible: it labels a region of the tree rather
+     * than acting as a control, and only items expand.
+     *
+     * @param  array<int, NavigationItem>  $items
+     */
+    private static function group(string $label, array $items): NavigationGroup
+    {
+        return NavigationGroup::make($label)->items($items)->collapsible(false);
     }
 
     /** A parent item that expands to children and stays active while any child is. */

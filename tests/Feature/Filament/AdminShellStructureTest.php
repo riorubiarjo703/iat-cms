@@ -74,7 +74,7 @@ class AdminShellStructureTest extends TestCase
         $html = $this->panel();
 
         $this->assertStringContainsString('fi-sidebar-flyout', $html);
-        $this->assertSame(4, substr_count($html, 'class="fi-sidebar-flyout"'), 'Expected one flyout per expandable parent');
+        $this->assertSame(6, substr_count($html, 'class="fi-sidebar-flyout"'), 'Expected one flyout per expandable parent');
     }
 
     public function test_the_flyout_is_teleported_out_of_the_sidebar(): void

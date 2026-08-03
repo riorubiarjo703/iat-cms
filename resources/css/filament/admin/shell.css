@@ -208,6 +208,25 @@
     }
 }
 
+/* ── Expanded children ──────────────────────────────────────────────────
+   Children sit indented under their parent behind a vertical guide, so the
+   nesting is legible without relying on the icon column alone. Filament's own
+   connector bullets are suppressed in the item override because children keep
+   their icons; this line replaces them. */
+.fi-sidebar-sub-group-items {
+    margin-inline-start: 1.375rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid var(--scbd-border);
+}
+
+/* Collapsed, children live in the flyout instead — the rail has no room for
+   an indent, and the guide would hang off nothing. */
+.fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-sub-group-items {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+}
+
 /* ── Collapsed-parent flyout ────────────────────────────────────────────
    Fixed to the viewport, positioned from the trigger's rect, so it is not
    clipped by the sidebar's overflow. */
