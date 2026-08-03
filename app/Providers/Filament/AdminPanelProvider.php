@@ -12,12 +12,10 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationBuilder;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -46,8 +44,11 @@ class AdminPanelProvider extends PanelProvider
                 ? \Illuminate\Support\Facades\Storage::disk('public')->url($logo)
                 : null)
             ->brandLogoHeight('1.75rem')
+            // #3B82F6 per the design spec. Color::hex generates the full shade
+            // ramp Filament needs from that one value, so the accent stays in
+            // one place rather than being restated per shade.
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#3b82f6'),
             ])
             ->navigation(fn (NavigationBuilder $builder) => AdminNavigation::build($builder))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
@@ -56,10 +57,6 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
             ->plugin(FilamentStoryPlugin::make())
             ->plugin(GraperPlugin::make())
             ->plugin(TopbarMenuPlugin::make())
@@ -75,9 +72,11 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->assets([
-                \Filament\Support\Assets\Css::make('sidebar-user', resource_path('css/filament/admin/sidebar-user.css')),
-            ])
+            // Vite-built, so the filename is content-hashed. The previous
+            // Css::make() registration was cache-busted by Filament's own
+            // version string instead, which meant every edit needed
+            // `filament:assets` plus a hard reload before it showed up.
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->renderHook(
                 \Filament\View\PanelsRenderHook::SIDEBAR_START,
                 fn (): \Illuminate\Contracts\View\View => view('filament.sidebar.brand'),

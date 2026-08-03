@@ -1,0 +1,206 @@
+/*
+ * Dashboard regions: welcome banner, stat cards, translation coverage, quick
+ * actions. Every colour and radius comes from the tokens in theme.css.
+ *
+ * Type scale is the spec's: 28–32px greeting, 16–18px card titles, 24–28px
+ * stat numbers, 13–14px body, 11–12px uppercase eyebrows.
+ */
+
+/* ── Shared card ────────────────────────────────────────────────────────
+   Flat, border-separated surfaces — no heavy drop shadows. */
+.scbd-card {
+    background: var(--scbd-surface);
+    border: 1px solid var(--scbd-border);
+    border-radius: var(--scbd-radius-card);
+    padding: 1.5rem;
+}
+
+.scbd-card-head { margin-bottom: 1.25rem; }
+.scbd-card-title { font-size: 1.0625rem; font-weight: 600; color: var(--scbd-text); }
+.scbd-card-sub { margin-top: 0.25rem; font-size: 0.8125rem; color: var(--scbd-text-muted); }
+.scbd-empty { font-size: 0.875rem; color: var(--scbd-text-muted); }
+
+.scbd-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--scbd-text-muted);
+}
+
+/* ── Welcome banner ─────────────────────────────────────────────────────── */
+.scbd-banner {
+    background: linear-gradient(120deg, rgb(59 130 246 / 0.09), rgb(59 130 246 / 0.01) 55%, transparent);
+    border: 1px solid var(--scbd-border);
+    border-radius: var(--scbd-radius-card);
+    padding: 1.75rem;
+}
+
+.scbd-banner-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.scbd-greeting {
+    margin-top: 0.375rem;
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--scbd-text);
+}
+.scbd-greeting span { color: var(--scbd-accent-strong); }
+
+.scbd-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--scbd-radius-control);
+    background: var(--scbd-accent);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background-color 150ms;
+}
+.scbd-cta:hover { background: var(--scbd-accent-strong); }
+.scbd-cta-icon { width: 1.125rem; height: 1.125rem; }
+
+.scbd-figures {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--scbd-border);
+}
+@media (min-width: 768px) {
+    .scbd-figures { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.scbd-figure-value { font-size: 1.5rem; font-weight: 700; color: var(--scbd-text); line-height: 1.1; }
+.scbd-figure-label { margin-top: 0.25rem; font-size: 0.8125rem; color: var(--scbd-text-muted); }
+
+/* ── Stat cards ─────────────────────────────────────────────────────────── */
+.scbd-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+@media (min-width: 1024px) {
+    .scbd-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.scbd-stat {
+    background: var(--scbd-surface);
+    border: 1px solid var(--scbd-border);
+    border-radius: var(--scbd-radius-card);
+    padding: 1.25rem;
+}
+
+.scbd-stat-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.625rem;
+    margin-bottom: 0.875rem;
+}
+.scbd-stat-icon svg { width: 1.25rem; height: 1.25rem; }
+
+.scbd-stat-label { font-size: 0.8125rem; color: var(--scbd-text-muted); }
+.scbd-stat-value {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-top: 0.25rem;
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--scbd-text);
+    line-height: 1.1;
+}
+
+.scbd-pending {
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    background: rgb(245 158 11 / 0.12);
+    color: #b45309;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.dark .scbd-pending { color: var(--scbd-warning); }
+
+/* Tinted icon tiles. */
+.scbd-tint-blue    { background: rgb(59 130 246 / 0.12);  color: var(--scbd-accent-strong); }
+.scbd-tint-violet  { background: rgb(139 92 246 / 0.12);  color: #7c3aed; }
+.scbd-tint-emerald { background: rgb(16 185 129 / 0.12);  color: var(--scbd-positive); }
+.scbd-tint-amber   { background: rgb(245 158 11 / 0.12);  color: #b45309; }
+.scbd-tint-rose    { background: rgb(244 63 94 / 0.12);   color: var(--scbd-negative); }
+.scbd-tint-slate   { background: rgb(100 116 139 / 0.12); color: #475569; }
+
+.dark .scbd-tint-violet  { color: #a78bfa; }
+.dark .scbd-tint-amber   { color: #fbbf24; }
+.dark .scbd-tint-slate   { color: #94a3b8; }
+
+/* ── Translation coverage ───────────────────────────────────────────────── */
+.scbd-bars { display: flex; flex-direction: column; gap: 1rem; }
+
+.scbd-bar-row {
+    display: grid;
+    grid-template-columns: 7rem 1fr 3rem 4rem;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.scbd-bar-label { font-size: 0.875rem; font-weight: 500; color: var(--scbd-text); }
+
+.scbd-bar-track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--scbd-canvas);
+    border: 1px solid var(--scbd-border);
+    overflow: hidden;
+}
+.scbd-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--scbd-accent);
+    transition: width 300ms ease;
+}
+
+.scbd-bar-value { font-size: 0.875rem; font-weight: 600; color: var(--scbd-text); text-align: right; }
+.scbd-bar-count { font-size: 0.75rem; color: var(--scbd-text-muted); text-align: right; }
+
+/* ── Quick actions ──────────────────────────────────────────────────────── */
+.scbd-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem;
+}
+@media (min-width: 768px) { .scbd-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .scbd-actions { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+.scbd-action {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--scbd-border);
+    border-radius: var(--scbd-radius-control);
+    transition: border-color 150ms, background-color 150ms;
+}
+.scbd-action:hover { border-color: var(--scbd-accent); background: rgb(59 130 246 / 0.04); }
+
+.scbd-action-icon {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+}
+.scbd-action-icon svg { width: 1.125rem; height: 1.125rem; }
+.scbd-action-label { font-size: 0.8125rem; font-weight: 600; color: var(--scbd-text); }

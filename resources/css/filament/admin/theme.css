@@ -1,0 +1,64 @@
+/*
+ * Admin panel theme — the single place colours, radii and type are defined.
+ *
+ * Built by Vite (see vite.config.js and AdminPanelProvider::viteTheme), so the
+ * filename is content-hashed and a browser cannot serve a stale copy. This
+ * replaces the Css::make() asset registration, which Filament cache-busted
+ * with its own version string rather than the file's mtime — editing that file
+ * required `php artisan filament:assets` plus a hard reload before a change
+ * showed up.
+ *
+ * Values come from docs/superpowers/specs/2026-08-03-admin-shell-redesign-design.md.
+ */
+
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament';
+@source '../../../../app/Providers/Filament';
+@source '../../../../resources/views/filament';
+@source '../../../../resources/views/vendor/filament-panels';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+:root {
+    /* Accent. Filament derives its own primary shades; these are the two the
+       design names explicitly. */
+    --scbd-accent: #3b82f6;
+    --scbd-accent-strong: #2563eb;
+
+    /* Deltas and pending state. */
+    --scbd-positive: #16a34a;
+    --scbd-negative: #dc2626;
+    --scbd-warning: #f59e0b;
+
+    /* Surfaces. */
+    --scbd-canvas: #f9fafb;
+    --scbd-surface: #ffffff;
+    --scbd-border: #e5e7eb;
+
+    /* Text. */
+    --scbd-text: #111827;
+    --scbd-text-muted: #6b7280;
+
+    /* Radii: cards 12–16px, controls 8–10px. */
+    --scbd-radius-card: 0.875rem;
+    --scbd-radius-control: 0.5rem;
+}
+
+.dark {
+    --scbd-canvas: #09090b;
+    --scbd-surface: #18181b;
+    --scbd-border: rgb(255 255 255 / 0.1);
+    --scbd-text: #f4f4f5;
+    --scbd-text-muted: #a1a1aa;
+}
+
+/* Page canvas. Filament paints the body, so the token has to reach it. */
+.fi-body {
+    background-color: var(--scbd-canvas);
+}
+
+@import './shell.css';
+@import './dashboard.css';
