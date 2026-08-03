@@ -1,5 +1,15 @@
 # Block Page Builder (Slice A1) Implementation Plan
 
+> **SUPERSEDED on 2026-08-03.** This design assumed Filament's `Builder` field and the removal
+> of Graper. The owner chose a live visual canvas instead, so the page builder is now
+> GrapesJS/Graper with SCBD-styled custom blocks and a separate translations screen. See
+> `docs/superpowers/specs/2026-08-03-graper-page-builder-design.md`.
+>
+> Retained here for its reasoning: the block-vs-bespoke trade-off, the animation-binding
+> analysis, and the Filament `Builder` storage findings (ephemeral UUIDs, `array_values` on
+> dehydrate) which remain true and are worth not rediscovering.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the bespoke SCBD homepage and the GrapesJS page editor with one block-based builder, so every page — the homepage included — is assembled from the same reorderable, reusable blocks in a single editor.

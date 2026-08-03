@@ -1,5 +1,15 @@
 # Block Page Builder (Slice A1) — Design
 
+> **SUPERSEDED on 2026-08-03.** This design assumed Filament's `Builder` field and the removal
+> of Graper. The owner chose a live visual canvas instead, so the page builder is now
+> GrapesJS/Graper with SCBD-styled custom blocks and a separate translations screen. See
+> `docs/superpowers/specs/2026-08-03-graper-page-builder-design.md`.
+>
+> Retained here for its reasoning: the block-vs-bespoke trade-off, the animation-binding
+> analysis, and the Filament `Builder` storage findings (ephemeral UUIDs, `array_values` on
+> dehydrate) which remain true and are worth not rediscovering.
+
+
 **Date:** 2026-07-31
 **Status:** Approved (design), pending implementation plan
 **Project:** `iat-cms` — Laravel 13.23, Filament 5.7.4, PHP 8.4, PostgreSQL, Vite 8
