@@ -3321,3 +3321,312 @@ git commit -m "test: assert the block homepage reaches parity with the hand-buil
 ```
 
 ---
+
+### Task 13: Removals
+
+**Do not start this task until Task 12 is verified in a browser.** Everything removed here is
+the only reference against which the rebuilt homepage can be judged. Once it is gone, "does the
+block version look right?" stops being answerable by comparison.
+
+**Files:**
+- Delete: `app/Models/{DistrictPlace,Facility,Stat,HomepageContent}.php`
+- Delete: `app/Filament/Resources/{DistrictPlaces,Facilities,Stats}/` (whole directories)
+- Delete: `app/Filament/Pages/HomepageEditor.php`, `resources/views/filament/pages/homepage-editor.blade.php`
+- Delete: `app/Support/HomepageData.php`, `app/Http/Controllers/HomeController.php`
+- Delete: `resources/views/partials/home/{hero,about,marquee,district,facilities,news,contact}.blade.php` (keep `loader` and `header` — they are page chrome)
+- Delete: `resources/views/home.blade.php`
+- Delete: `database/seeders/HomepageBlocksSeeder.php` dependencies on removed models — see below
+- Delete: tests covering removed classes
+- Create: `database/migrations/2026_07_31_200000_drop_scbd_content_tables.php`
+- Modify: `composer.json` (remove `cybertroniankelvin/graper`), `app/Providers/Filament/AdminPanelProvider.php`
+
+**Interfaces:**
+- Consumes: nothing new.
+- Produces: a codebase with one editing model.
+
+**The seeder problem, and why it is not a problem.** `HomepageBlocksSeeder` reads
+`HomepageContent`, `DistrictPlace`, `Facility` and `Stat` — all deleted here. That seeder has
+already done its one job: the `Page` row exists in the database. Delete the seeder along with
+the models rather than trying to keep it working. Its tests go too. Record in the commit message
+that the homepage block list is now data, not something regenerable from a seeder.
+
+- [ ] **Step 1: Confirm the precondition**
+
+```bash
+php artisan tinker --execute='
+$p = App\Models\Page::homepage();
+echo $p ? "homepage page exists, blocks: ".count($p->blocks).PHP_EOL : "NO HOMEPAGE PAGE — STOP".PHP_EOL;'
+curl -s -o /dev/null -w "GET / -> %{http_code}\n" http://iat-cms.test/
+```
+
+Expected: a homepage `Page` with 8 blocks, and `/` returning 200. **If either fails, stop** —
+Task 12 is not actually complete and removing anything now destroys the fallback.
+
+- [ ] **Step 2: Remove the Graper package**
+
+```bash
+composer remove cybertroniankelvin/graper
+```
+
+Then remove `use CybertronianKelvin\Graper\GraperPlugin;` and the `->plugin(GraperPlugin::make())`
+line from `app/Providers/Filament/AdminPanelProvider.php`, and the
+`GraperPageResource` import and its `resourceItems(...)` entry from
+`app/Filament/Navigation/AdminNavigation.php`.
+
+- [ ] **Step 3: Write the drop migration**
+
+Create `database/migrations/2026_07_31_200000_drop_scbd_content_tables.php`:
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Drops the SCBD-specific content types. Their content now lives inside the
+ * homepage Page's block list, transcribed by HomepageBlocksSeeder before this ran.
+ *
+ * down() recreates the table structures but cannot restore their rows — the
+ * data moved, it was not copied. Rolling back gives empty tables.
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::dropIfExists('district_places');
+        Schema::dropIfExists('facilities');
+        Schema::dropIfExists('stats');
+        Schema::dropIfExists('homepage_contents');
+        Schema::dropIfExists('graper_pages');
+    }
+
+    public function down(): void
+    {
+        Schema::create('district_places', function (Blueprint $table) {
+            $table->id();
+            $table->json('title')->nullable();
+            $table->json('caption')->nullable();
+            $table->string('image')->nullable();
+            $table->unsignedInteger('sort')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('facilities', function (Blueprint $table) {
+            $table->id();
+            $table->json('title')->nullable();
+            $table->json('body')->nullable();
+            $table->string('image')->nullable();
+            $table->unsignedInteger('sort')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('stats', function (Blueprint $table) {
+            $table->id();
+            $table->json('label')->nullable();
+            $table->decimal('value', 12, 2)->default(0);
+            $table->string('suffix')->nullable();
+            $table->string('format')->default('thousands');
+            $table->unsignedInteger('sort')->default(0);
+            $table->timestamps();
+        });
+    }
+};
+```
+
+`homepage_contents` and `graper_pages` are deliberately not recreated in `down()` — their
+owning code is gone, so an empty table would be misleading.
+
+- [ ] **Step 4: Delete the code**
+
+```bash
+git rm -r app/Filament/Resources/DistrictPlaces app/Filament/Resources/Facilities app/Filament/Resources/Stats
+git rm app/Models/DistrictPlace.php app/Models/Facility.php app/Models/Stat.php app/Models/HomepageContent.php
+git rm app/Filament/Pages/HomepageEditor.php resources/views/filament/pages/homepage-editor.blade.php
+git rm app/Support/HomepageData.php app/Http/Controllers/HomeController.php
+git rm resources/views/home.blade.php
+git rm resources/views/partials/home/hero.blade.php resources/views/partials/home/about.blade.php \
+       resources/views/partials/home/marquee.blade.php resources/views/partials/home/district.blade.php \
+       resources/views/partials/home/facilities.blade.php resources/views/partials/home/news.blade.php \
+       resources/views/partials/home/contact.blade.php
+git rm database/seeders/HomepageBlocksSeeder.php database/seeders/HomepageSeeder.php
+git rm database/seeders/data/homepage.php
+git rm tests/Unit/Models/OrderedContentTest.php tests/Unit/Models/StatTest.php \
+       tests/Unit/Models/PublicMenuItemTest.php tests/Unit/Models/HomepageContentTest.php \
+       tests/Feature/Filament/HomepageEditorTest.php tests/Feature/Filament/OrderedResourcesTest.php \
+       tests/Feature/HomepageDataTest.php tests/Feature/HomepageRenderTest.php \
+       tests/Feature/Seeders/HomepageSeederTest.php tests/Feature/Seeders/HomepageBlocksSeederTest.php
+```
+
+**Keep** `tests/Unit/Models/PublicMenuItemTest.php` if `PublicMenuItem` survives — it does. Remove
+it from the list above; it is included here only to make you check. Also keep
+`App\Enums\StatFormat` and its test: the Stats block still uses it.
+
+Remove the `HomepageSeeder`/`HomepageBlocksSeeder` calls from `DatabaseSeeder::run()`.
+
+- [ ] **Step 5: Run everything**
+
+```bash
+php artisan migrate
+php artisan test
+npm run build
+curl -s -o /dev/null -w "GET / -> %{http_code}\n" http://iat-cms.test/
+```
+
+Expected: migration runs; **the suite is fully green** with the removed tests gone; the build
+succeeds; `/` still returns 200 and still renders 8 blocks. Any orphaned reference to a deleted
+class will surface here — fix it rather than suppressing it.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add -A
+git commit -m "refactor: remove Graper and the SCBD-specific content types
+
+The homepage is now a Page row whose block list carries the content these
+models used to hold. HomepageBlocksSeeder transcribed it before this ran, so
+the block list is data now, not something a seeder can regenerate."
+```
+
+---
+
+### Task 14: Sidebar and documentation
+
+**Files:**
+- Modify: `app/Filament/Navigation/AdminNavigation.php`
+- Modify: `tests/Feature/Filament/AdminNavigationTest.php`
+- Modify: `docs/scbd-homepage.md`
+- Modify: `README.md`
+
+**Interfaces:**
+- Consumes: `PageResource::getUrl('index')`, `ReusableBlockResource::getUrl('index')`, and the
+  existing entries for Blog Posts, Blog Categories, Media Library, Public Menu, Admin Topbar
+  Menu, Site Settings, Users.
+- Produces: the sidebar the owner asked for.
+
+**Target tree.** `Homepage Data` disappears entirely; `Homepage` disappears as a separate item
+because the homepage is now a Page.
+
+```
+Dashboard
+
+Content
+├── Pages
+├── Reusable Blocks
+└── Media Library
+
+Blog
+├── Blog Posts
+└── Blog Categories
+
+Appearance
+├── Public Menu
+└── Admin Topbar Menu
+
+Settings
+└── Site Settings
+
+System
+└── Users
+```
+
+The `Blog` group is the first step of slice A2, which adds Blog Dashboard and Authors beneath it.
+
+- [ ] **Step 1: Update the navigation test first**
+
+In `tests/Feature/Filament/AdminNavigationTest.php`, change the expected group list to
+`['Content', 'Blog', 'Appearance', 'Settings', 'System']` and the expected item labels to
+`Dashboard, Pages, Reusable Blocks, Media Library, Blog Posts, Blog Categories, Public Menu,
+Admin Topbar Menu, Site Settings, Users`. Remove the `Homepage`, `District Places`, `Facilities`
+and `Stats` expectations, and update the label→destination map so `Pages` now points at
+`PageResource::getUrl('index')` rather than the deleted Graper resource.
+
+Run: `php artisan test tests/Feature/Filament/AdminNavigationTest.php`
+Expected: FAIL — the builder still produces the old tree.
+
+- [ ] **Step 2: Update `AdminNavigation`**
+
+Replace the `Content` group's items with Pages, Reusable Blocks and Media Library; delete the
+`Homepage Data` group entirely; move Blog Posts and Blog Categories into a new `Blog` group
+placed after `Content`. Remember: **icons go on items, never on the group** — Filament throws at
+render if a group and its items both carry icons.
+
+- [ ] **Step 3: Run the tests**
+
+Run: `php artisan test`
+Expected: fully green.
+
+**Prove the destination assertion still has teeth:** point `Pages` at
+`ReusableBlockResource::getUrl('index')` while keeping its label, confirm the destination test
+fails, restore.
+
+- [ ] **Step 4: Update the documentation**
+
+`docs/scbd-homepage.md` describes a hand-built homepage that no longer exists. Rewrite it as
+`docs/pages-and-blocks.md`:
+
+- how a page is assembled from blocks, and that the homepage is just a Page flagged `is_homepage`
+- the nine block types and what each is for
+- the reusable block library: save, reference, detach, and that editing a library entry changes
+  every page using it
+- the three-locale fallback, and that English is required
+- the `data-block` / `data-block-index` / `data-i18n="{index}.{field}"` contract between Blade
+  and the animation modules, including that the switcher silently skips unknown keys
+- the two guarded failure modes: the horizontal-scroll overflow guard and reduced motion
+- **Known gaps**, carried forward: the `logo` field is still not rendered anywhere; there is no
+  contact form and therefore no inbox; there is no footer; `User::canAccessPanel()` returns true
+  for any authenticated user
+
+Add a short section to `README.md` pointing at the new file and the A1 spec, and delete the
+`docs/scbd-homepage.md` reference.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A
+git commit -m "feat: restructure the sidebar around pages and blocks"
+```
+
+---
+
+## Plan self-review
+
+**Spec coverage.** Every section of `2026-07-31-block-page-builder-design.md` maps to a task:
+
+| Spec requirement | Task |
+|---|---|
+| `pages` and `reusable_blocks` tables, `HasBlocks` | 1 |
+| Block registry, base class, nine content blocks | 2, 3 |
+| `reusable` type, live references, detach semantics | 4 |
+| Block views, renderer, the `data-block` envelope | 5 |
+| JS registry mirroring PHP, scoped `gsap.context()` | 6 |
+| `PageData`, i18n payload keyed by index | 7 |
+| `/` and `/{slug}`, drafts 404, no shadowing | 8 |
+| `PageResource` with the Builder field | 9 |
+| `ReusableBlockResource` | 10 |
+| Migration ordering: build, seed, switch, verify, remove | 11, 12, 13 |
+| Sidebar restructure, documentation | 14 |
+| Error handling: unknown types, dangling refs, no homepage, overflow guard, reduced motion | 1, 4, 6, 8 |
+| Retained animation lessons (`yPercent`, `timeScale`, Lenis) | 6, 12 |
+
+**Placeholder scan.** No `TBD`, `TODO`, or "add error handling" instructions. Task 3 gives each
+block's full `schema()` rather than "similar to Task 2"; Task 5 gives the substitution rules and
+the shared `BlockText` helper rather than repeating nine near-identical views, and names the
+exact source partial for each.
+
+**Type consistency.** Checked across tasks: `renderableBlocks()` returns
+`['type', 'data', 'index']` in Task 1 and is consumed with those keys in Tasks 5, 7 and 12.
+`BlockRegistry::get()` returns a class-string throughout. `BlockText::get()/html()` defined in
+Task 5, used in Task 5's views. `PageData::forPage()` defined in Task 7, used in Task 8.
+`ReusableBlockType` is consistently named to avoid colliding with `App\Models\ReusableBlock`.
+The JS registry's two-space quoted-key format is specified in Task 6 and is what Task 6's parity
+test parses.
+
+**Known risks, each with a stated fallback in its task.** The reactive `Section` schema closure
+in Task 10 has a per-type `visible()` fallback. Task 9's generator namespaces may differ from
+those guessed. Task 5's `text-image`, `post-list`, `cta` and `contact` initialisers are described
+rather than written out — they are the four shortest and follow the same `gsap.context(fn, root)`
+shape as the five given in full.
