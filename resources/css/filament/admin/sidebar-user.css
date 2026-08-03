@@ -1,0 +1,46 @@
+/* Sidebar user card pinned beneath the nav, per the reference design. */
+.fi-sidebar-user { position: relative; padding: 0.75rem; border-top: 1px solid rgb(229 231 235); }
+.dark .fi-sidebar-user { border-color: rgb(255 255 255 / 0.1); }
+
+.fi-sidebar-user-btn {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%;
+    padding: 0.5rem 0.625rem; border-radius: 0.625rem; text-align: left;
+    background: rgb(239 246 255); color: rgb(37 99 235);
+}
+.fi-sidebar-user-btn:hover { background: rgb(219 234 254); }
+.dark .fi-sidebar-user-btn { background: rgb(59 130 246 / 0.1); color: rgb(147 197 253); }
+
+.fi-sidebar-user-avatar {
+    display: grid; place-items: center; flex-shrink: 0; width: 2rem; height: 2rem;
+    border-radius: 0.5rem; background: rgb(219 234 254); color: rgb(29 78 216);
+    font-size: 0.75rem; font-weight: 600;
+}
+.fi-sidebar-user-identity { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.fi-sidebar-user-name { font-size: 0.8125rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-sidebar-user-email { font-size: 0.6875rem; color: rgb(107 114 128); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-sidebar-user-chevron { flex-shrink: 0; width: 1rem; height: 1rem; margin-left: auto; opacity: 0.7; }
+
+.fi-sidebar-user-menu {
+    position: absolute; bottom: calc(100% - 0.25rem); left: 0.75rem; right: 0.75rem; z-index: 30;
+    background: #fff; border: 1px solid rgb(229 231 235); border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.12); overflow: hidden;
+}
+.dark .fi-sidebar-user-menu { background: rgb(24 24 27); border-color: rgb(255 255 255 / 0.1); }
+
+.fi-sidebar-user-menu-header {
+    display: flex; align-items: center; gap: 0.625rem;
+    padding: 0.75rem; border-bottom: 1px solid rgb(229 231 235);
+}
+.dark .fi-sidebar-user-menu-header { border-color: rgb(255 255 255 / 0.1); }
+
+.fi-sidebar-user-menu-item {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%;
+    padding: 0.625rem 0.75rem; font-size: 0.875rem; color: rgb(17 24 39);
+}
+.fi-sidebar-user-menu-item:hover { background: rgb(249 250 251); }
+.dark .fi-sidebar-user-menu-item { color: rgb(244 244 245); }
+.dark .fi-sidebar-user-menu-item:hover { background: rgb(255 255 255 / 0.05); }
+.fi-sidebar-user-menu-item-danger { color: rgb(220 38 38); }
+.dark .fi-sidebar-user-menu-item-danger { color: rgb(248 113 113); }
+
+[x-cloak] { display: none !important; }

@@ -34,6 +34,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('superduper')
             ->login()
+            // Gives the sidebar user menu a Change Password destination.
+            ->profile(isSimple: false)
+            ->sidebarCollapsibleOnDesktop()
             // Branding comes from Site Settings so a logo swap needs no deploy.
             // Resolved lazily: the panel is constructed before the database is
             // necessarily reachable, and singleton() would query at boot.
@@ -71,6 +74,13 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->assets([
+                \Filament\Support\Assets\Css::make('sidebar-user', resource_path('css/filament/admin/sidebar-user.css')),
+            ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+                fn (): \Illuminate\Contracts\View\View => view('filament.sidebar.user-card'),
+            )
             ->authMiddleware([
                 Authenticate::class,
             ]);
