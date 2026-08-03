@@ -1549,3 +1549,361 @@ git commit -m "feat: add block views and renderer"
 ```
 
 ---
+
+### Task 6: JS block registry and scoped animation contexts
+
+This is where block order stops mattering. It also fixes a latent defect in the current code: `reveal.js` queries `#district img` and `#facilities img` **by ID**, and those IDs stop existing the moment sections become blocks.
+
+**Files:**
+- Create: `resources/js/blocks/index.js`
+- Create: `resources/js/blocks/{hero,textImage,stats,marquee,horizontalScroll,stackedCards,postList,cta,contact}.js`
+- Modify: `resources/js/scbd/index.js`
+- Test: `tests/Unit/Blocks/RegistryParityTest.php`
+
+**Interfaces:**
+- Consumes: `gsap`, `gsap/ScrollTrigger`, `lenis` (installed, exact-pinned); the DOM envelope `[data-block]` / `[data-block-index]` from Task 5; the existing modules in `resources/js/scbd/` (`motion`, `smoothScroll`, `textSplit`, `loader`, `header`, `cursor`, `i18n`).
+- Produces: `resources/js/blocks/index.js` exporting `BLOCKS`, an object literal keyed by block type whose keys **must exactly match** `BlockRegistry::all()`. Each value is `(root: HTMLElement) => void` and must open `gsap.context(fn, root)`.
+
+**Format constraint — the parity test parses this file.** Keys must be written as two-space-indented quoted literals so the regex `/^\s{2}'([a-z-]+)':/m` matches:
+
+```js
+export const BLOCKS = {
+  'hero': initHero,
+  'text-image': initTextImage,
+  ...
+};
+```
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Unit/Blocks/RegistryParityTest.php`:
+
+```php
+<?php
+
+namespace Tests\Unit\Blocks;
+
+use App\Blocks\BlockRegistry;
+use Tests\TestCase;
+
+class RegistryParityTest extends TestCase
+{
+    public function test_php_and_js_block_registries_declare_the_same_types(): void
+    {
+        // These two registries are mirrors. If they drift, a block renders with
+        // no animation and nothing errors — the failure is silent by nature,
+        // which is exactly why it needs a test.
+        $js = file_get_contents(base_path('resources/js/blocks/index.js'));
+        preg_match_all("/^\s{2}'([a-z-]+)':/m", $js, $m);
+
+        $jsTypes = $m[1];
+        sort($jsTypes);
+
+        // 'reusable' is resolved away before rendering, so it has no initialiser.
+        $phpTypes = array_values(array_diff(array_keys(app(BlockRegistry::class)->all()), ['reusable']));
+        sort($phpTypes);
+
+        $this->assertSame($phpTypes, $jsTypes, 'PHP and JS block registries have drifted apart');
+    }
+
+    public function test_the_js_registry_parses_to_a_non_empty_set(): void
+    {
+        $js = file_get_contents(base_path('resources/js/blocks/index.js'));
+        preg_match_all("/^\s{2}'([a-z-]+)':/m", $js, $m);
+
+        $this->assertNotEmpty($m[1], 'Parsed no types from the JS registry — has its formatting changed?');
+        $this->assertCount(count(array_unique($m[1])), $m[1], 'Duplicate keys in the JS registry');
+    }
+}
+```
+
+Also update `BlockRegistryTest::test_registry_types_match_the_javascript_registry` from Task 2 to exclude `reusable` the same way, or delete it in favour of this file — say which you chose.
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Unit/Blocks/RegistryParityTest.php`
+Expected: FAIL — `file_get_contents(): Failed to open stream` for `resources/js/blocks/index.js`.
+
+- [ ] **Step 3: Write one initialiser per effect-bearing block**
+
+Each takes the block's root element and scopes everything to it. `hero`:
+
+```js
+// resources/js/blocks/hero.js
+import gsap from 'gsap';
+import { splitElement } from '../scbd/textSplit';
+
+export function initHero(root) {
+  return gsap.context(() => {
+    root.querySelectorAll('[data-split]').forEach(splitElement);
+
+    // Set the offset via gsap.set, never as literal inline CSS: baking
+    // transform:translateY(105%) into the style attribute poisons GSAP's
+    // yPercent cache and the chars stay permanently invisible.
+    gsap.set(root.querySelectorAll('[data-char]'), { y: 0, yPercent: 105 });
+    gsap.to(root.querySelectorAll('[data-char]'), {
+      yPercent: 0, duration: 0.85, stagger: 0.014, ease: 'expo.out',
+    });
+
+    const wrap = root.querySelector('[data-parallax-wrap]');
+    const img = root.querySelector('[data-parallax]');
+
+    if (wrap) {
+      gsap.fromTo(wrap,
+        { clipPath: 'inset(100% 0% 0% 0%)' },
+        { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' });
+    }
+
+    if (img && wrap) {
+      gsap.to(img, {
+        yPercent: 14, ease: 'none',
+        scrollTrigger: { trigger: wrap, start: 'top bottom', end: 'bottom top', scrub: true },
+      });
+    }
+  }, root);
+}
+```
+
+`horizontal-scroll` — the hardest, and the one with a guard that prevents freezing the whole page:
+
+```js
+// resources/js/blocks/horizontalScroll.js
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+import { splitElement } from '../scbd/textSplit';
+
+export function initHorizontalScroll(root) {
+  return gsap.context(() => {
+    root.querySelectorAll('[data-split]').forEach(splitElement);
+    gsap.set(root.querySelectorAll('[data-char]'), { y: 0, yPercent: 0 });
+
+    const track = root.querySelector('[data-horizontal-track]');
+    if (!track) return;
+
+    const overflow = () => track.scrollWidth - window.innerWidth;
+
+    // Pinning with a track that cannot overflow pins the viewport with nowhere
+    // to scroll — the whole page appears frozen. This is the only failure mode
+    // in the animation layer that breaks the entire site rather than one block.
+    if (overflow() <= 0) {
+      gsap.set(track, { x: 0 });
+      return;
+    }
+
+    ScrollTrigger.create({
+      trigger: root,
+      start: 'top top',
+      pin: true,
+      scrub: 0.8,
+      anticipatePin: 1,
+      end: () => `+=${overflow()}`,
+      onRefresh: () => gsap.set(track, { x: 0 }),
+      animation: gsap.to(track, { x: () => -overflow(), ease: 'none' }),
+      invalidateOnRefresh: true,
+    });
+  }, root);
+}
+```
+
+`marquee` — note the loop tween is captured and **its** `timeScale` is animated:
+
+```js
+// resources/js/blocks/marquee.js
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+
+export function initMarquee(root) {
+  return gsap.context(() => {
+    const marquee = root.querySelector('[data-marquee]');
+    if (!marquee) return;
+
+    const seconds = Number(root.dataset.duration) || 26;
+
+    // Hold the loop tween: the velocity boost animates THIS tween's timeScale.
+    // Targeting the element instead makes GSAP treat timeScale as an unknown
+    // CSS property, and `overwrite` then kills the loop itself.
+    const loop = gsap.to(marquee, { xPercent: -50, duration: seconds, ease: 'none', repeat: -1 });
+
+    ScrollTrigger.create({
+      trigger: marquee,
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate: (self) => {
+        const boost = 1 + Math.min(Math.abs(self.getVelocity()) / 900, 3);
+        gsap.to(loop, { timeScale: boost, duration: 0.3, overwrite: true });
+      },
+    });
+  }, root);
+}
+```
+
+`stats`:
+
+```js
+// resources/js/blocks/stats.js
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+
+export function initStats(root) {
+  return gsap.context(() => {
+    root.querySelectorAll('[data-count]').forEach((el) => {
+      const target = parseFloat(el.dataset.to);
+      if (Number.isNaN(target)) return;
+
+      const suffix = el.dataset.suffix || '';
+      const plain = el.hasAttribute('data-plain');
+      const state = { value: 0 };
+
+      const render = () => {
+        const rounded = Math.round(state.value);
+        el.textContent = (plain ? String(rounded) : rounded.toLocaleString()) + suffix;
+      };
+
+      ScrollTrigger.create({
+        trigger: el,
+        start: 'top 88%',
+        once: true,
+        onEnter: () => gsap.to(state, { value: target, duration: 1.6, ease: 'power2.out', onUpdate: render }),
+      });
+    });
+  }, root);
+}
+```
+
+`stacked-cards`:
+
+```js
+// resources/js/blocks/stackedCards.js
+import gsap from 'gsap';
+
+export function initStackedCards(root) {
+  return gsap.context(() => {
+    const cards = Array.from(root.querySelectorAll('[data-card]'));
+
+    cards.forEach((card, i) => {
+      if (i === cards.length - 1) return;
+
+      gsap.fromTo(card,
+        { scale: 1, y: 0 },
+        {
+          scale: 0.96 - i * 0.012, y: -12, ease: 'none',
+          scrollTrigger: { trigger: cards[i + 1], start: 'top bottom', end: 'top 110px', scrub: 0.4 },
+        });
+    });
+  }, root);
+}
+```
+
+`text-image`, `post-list`, `cta` and `contact` are short. `text-image` runs the shared reveal
+on `[data-fade]` and `[data-reveal]` within `root`; `post-list` binds the `x: 14` hover to each
+`[data-news]` row within `root`; `cta` binds the magnetic-button behaviour to `[data-magnetic]`
+within `root`; `contact` splits `[data-split]`, sets chars to `yPercent: 105`, and reveals them
+via a `ScrollTrigger` with `start: 'top 70%', once: true`. Each wraps its work in
+`gsap.context(fn, root)` exactly as above.
+
+- [ ] **Step 4: Write the registry**
+
+Create `resources/js/blocks/index.js`. **Keep the two-space quoted-key format** — the parity test parses it:
+
+```js
+import { initHero } from './hero';
+import { initTextImage } from './textImage';
+import { initStats } from './stats';
+import { initMarquee } from './marquee';
+import { initHorizontalScroll } from './horizontalScroll';
+import { initStackedCards } from './stackedCards';
+import { initPostList } from './postList';
+import { initCta } from './cta';
+import { initContact } from './contact';
+
+/**
+ * Mirror of App\Blocks\BlockRegistry. A test asserts the key sets match.
+ * 'reusable' has no entry: it is resolved away before rendering.
+ */
+export const BLOCKS = {
+  'hero': initHero,
+  'text-image': initTextImage,
+  'stats': initStats,
+  'marquee': initMarquee,
+  'horizontal-scroll': initHorizontalScroll,
+  'stacked-cards': initStackedCards,
+  'post-list': initPostList,
+  'cta': initCta,
+  'contact': initContact,
+};
+```
+
+- [ ] **Step 5: Rewrite the bootstrap**
+
+Replace `resources/js/scbd/index.js`'s per-section calls with page-level concerns plus a block dispatch:
+
+```js
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+
+import { prefersReducedMotion } from './motion';
+import { createSmoothScroll } from './smoothScroll';
+import { runLoader } from './loader';
+import { initHeader } from './header';
+import { initCursor } from './cursor';
+import { initLanguageSwitcher } from './i18n';
+import { splitElement } from './textSplit';
+import { BLOCKS } from '../blocks';
+
+gsap.registerPlugin(ScrollTrigger);
+
+export function initScbd() {
+  const reduced = prefersReducedMotion();
+  const lenis = createSmoothScroll(ScrollTrigger, reduced);
+
+  // Page-level, not per-block.
+  initCursor(gsap);
+  initLanguageSwitcher(ScrollTrigger);
+  initHeader(gsap, lenis);
+  runLoader(gsap, ScrollTrigger, lenis, reduced);
+
+  if (reduced) {
+    // Resting state for everything the block initialisers would have animated.
+    document.querySelectorAll('[data-split]').forEach(splitElement);
+    gsap.set('[data-char]', { y: 0, yPercent: 0 });
+    gsap.set('[data-fade]', { opacity: 1, y: 0 });
+    gsap.set('[data-reveal], [data-block] img', { clipPath: 'inset(0% 0% 0% 0%)', scale: 1 });
+    return;
+  }
+
+  document.querySelectorAll('[data-block]').forEach((el) => {
+    BLOCKS[el.dataset.block]?.(el);
+  });
+
+  ScrollTrigger.refresh();
+  window.addEventListener('resize', () => ScrollTrigger.refresh());
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initScbd);
+} else {
+  initScbd();
+}
+```
+
+The loader now reveals the first block rather than choreographing a handoff to `#top` — the cross-section timeline traded away when blocks were chosen.
+
+- [ ] **Step 6: Build and test**
+
+```bash
+npm run build
+php artisan test tests/Unit/Blocks/RegistryParityTest.php
+```
+
+Expected: build succeeds with no unresolved imports; both parity tests pass.
+
+**Prove the parity test has teeth:** remove one key from `BLOCKS`, confirm the test fails naming the missing type, restore. Report the observed failure message.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add resources/js/blocks resources/js/scbd/index.js tests/Unit/Blocks/RegistryParityTest.php
+git commit -m "feat: add per-block scoped animation contexts mirroring the PHP registry"
+```
+
+---
