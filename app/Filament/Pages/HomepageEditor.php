@@ -63,8 +63,7 @@ class HomepageEditor extends Page
         return LocaleTabs::make(fn (string $locale) => [
             Section::make('Brand & Navigation')->schema([
                 TextInput::make("brand_sub.$locale")
-                    ->label('Brand subtitle')
-                    ->required(LocaleTabs::isFallback($locale)),
+                    ->label('Brand subtitle'),
             ]),
             Section::make('Hero')->schema([
                 Textarea::make("hero_line.$locale")
