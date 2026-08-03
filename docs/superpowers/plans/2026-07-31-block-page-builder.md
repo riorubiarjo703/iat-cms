@@ -1907,3 +1907,504 @@ git commit -m "feat: add per-block scoped animation contexts mirroring the PHP r
 ```
 
 ---
+
+### Task 7: `PageData` DTO and the i18n payload
+
+**Files:**
+- Create: `app/Support/PageData.php`
+- Test: `tests/Feature/PageDataTest.php`
+
+**Interfaces:**
+- Consumes: `App\Models\Page::renderableBlocks()`; `App\Models\SiteSetting::singleton()` and `SiteSetting::LOCALES` (`['en' => 'English', 'id' => 'Indonesian', 'cn' => '中文']`); `App\Models\PublicMenuItem` scopes `links()` and `cta()`; `App\Support\BlockText::html()`.
+- Produces: `App\Support\PageData` — `final readonly class` with public promoted properties `page`, `settings`, `menu`, `cta`, `blocks`, `i18n`; static `forPage(Page $page): self`. Replaces `App\Support\HomepageData`, which Task 13 deletes.
+
+**The payload contract:** keys are `{index}.{field}`, matching the `data-i18n` attributes the block views emit. A feature test asserts the two sets are identical — neither side may carry an entry the other lacks, because the switcher silently skips keys it cannot find.
+
+**Which fields are translatable** is derived from the data itself, not from a hardcoded list: a leaf is translatable when its value is an array whose keys are a subset of `SiteSetting::LOCALES`. That keeps the payload builder working when a block gains a field, with no second place to update.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/PageDataTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Page;
+use App\Models\PublicMenuItem;
+use App\Support\PageData;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PageDataTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function page(array $blocks): Page
+    {
+        return Page::create([
+            'title' => ['en' => 'Home'], 'slug' => 'home-'.uniqid(),
+            'blocks' => $blocks, 'status' => 'published',
+        ]);
+    }
+
+    public function test_it_builds_for_a_page_with_no_blocks(): void
+    {
+        $data = PageData::forPage($this->page([]));
+
+        $this->assertSame([], $data->blocks);
+        $this->assertSame(['en', 'id', 'cn'], array_keys($data->i18n));
+    }
+
+    public function test_the_payload_covers_all_three_locales(): void
+    {
+        $data = PageData::forPage($this->page([
+            ['type' => 'hero', 'data' => ['heading' => ['en' => 'A', 'id' => 'B', 'cn' => 'C']]],
+        ]));
+
+        $this->assertSame('A', $data->i18n['en']['0.heading']);
+        $this->assertSame('B', $data->i18n['id']['0.heading']);
+        $this->assertSame('C', $data->i18n['cn']['0.heading']);
+    }
+
+    public function test_it_falls_back_to_english_per_key(): void
+    {
+        $data = PageData::forPage($this->page([
+            ['type' => 'hero', 'data' => [
+                'heading' => ['en' => 'English only'],
+                'sub' => ['en' => 'Sub', 'id' => 'Sub ID'],
+            ]],
+        ]));
+
+        $this->assertSame('English only', $data->i18n['cn']['0.heading']);
+        $this->assertSame('Sub ID', $data->i18n['id']['0.sub']);
+    }
+
+    public function test_keys_are_scoped_by_block_index(): void
+    {
+        $data = PageData::forPage($this->page([
+            ['type' => 'hero', 'data' => ['heading' => ['en' => 'First']]],
+            ['type' => 'hero', 'data' => ['heading' => ['en' => 'Second']]],
+        ]));
+
+        $this->assertSame('First', $data->i18n['en']['0.heading']);
+        $this->assertSame('Second', $data->i18n['en']['1.heading']);
+    }
+
+    public function test_newlines_become_br_and_html_is_escaped(): void
+    {
+        $data = PageData::forPage($this->page([
+            ['type' => 'hero', 'data' => ['heading' => ['en' => "One\nTwo"], 'sub' => ['en' => '<script>x</script>']]],
+        ]));
+
+        $this->assertSame('One<br>Two', $data->i18n['en']['0.heading']);
+        $this->assertStringNotContainsString('<script>', $data->i18n['en']['0.sub']);
+    }
+
+    public function test_non_translatable_leaves_are_absent_from_the_payload(): void
+    {
+        // image and cta_url are plain scalars, not {en,id,cn} maps.
+        $data = PageData::forPage($this->page([
+            ['type' => 'hero', 'data' => [
+                'heading' => ['en' => 'H'], 'image' => 'uploads/x.jpg', 'cta_url' => '#contact',
+            ]],
+        ]));
+
+        $this->assertArrayHasKey('0.heading', $data->i18n['en']);
+        $this->assertArrayNotHasKey('0.image', $data->i18n['en']);
+        $this->assertArrayNotHasKey('0.cta_url', $data->i18n['en']);
+    }
+
+    public function test_repeater_items_are_addressed_by_dotted_path(): void
+    {
+        $data = PageData::forPage($this->page([
+            ['type' => 'stats', 'data' => ['items' => [
+                ['label' => ['en' => 'Hectares'], 'value' => 45],
+                ['label' => ['en' => 'Established'], 'value' => 1987],
+            ]]],
+        ]));
+
+        $this->assertSame('Hectares', $data->i18n['en']['0.items.0.label']);
+        $this->assertSame('Established', $data->i18n['en']['0.items.1.label']);
+    }
+
+    public function test_it_separates_nav_links_from_the_cta(): void
+    {
+        PublicMenuItem::create(['label' => ['en' => 'Company'], 'url' => '#about', 'sort' => 1]);
+        PublicMenuItem::create(['label' => ['en' => 'Enquire'], 'url' => '#contact', 'sort' => 9, 'is_cta' => true]);
+
+        $data = PageData::forPage($this->page([]));
+
+        $this->assertCount(1, $data->menu);
+        $this->assertSame('Enquire', $data->cta->t('label', 'en'));
+    }
+
+    public function test_nav_labels_are_in_the_payload(): void
+    {
+        PublicMenuItem::create(['label' => ['en' => 'Company', 'id' => 'Perusahaan'], 'url' => '#about', 'sort' => 1]);
+
+        $data = PageData::forPage($this->page([]));
+
+        $this->assertSame('Perusahaan', $data->i18n['id']['nav1']);
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Feature/PageDataTest.php`
+Expected: FAIL — `Class "App\Support\PageData" not found`.
+
+- [ ] **Step 3: Write the DTO**
+
+Create `app/Support/PageData.php`:
+
+```php
+<?php
+
+namespace App\Support;
+
+use App\Models\Page;
+use App\Models\PublicMenuItem;
+use App\Models\SiteSetting;
+use Illuminate\Support\Collection;
+
+/**
+ * Everything a page needs, assembled once. Blade performs no queries.
+ *
+ * The i18n payload is keyed {index}.{field} to match the data-i18n attributes
+ * block views emit. Index, not a UUID: Filament regenerates block UUIDs on
+ * every form load and strips them on save, so anything keyed by them would
+ * silently reassign itself.
+ */
+final readonly class PageData
+{
+    /**
+     * @param  Collection<int, PublicMenuItem>  $menu
+     * @param  array<int, array{type: string, data: array, index: int}>  $blocks
+     * @param  array<string, array<string, string>>  $i18n
+     */
+    public function __construct(
+        public Page $page,
+        public SiteSetting $settings,
+        public Collection $menu,
+        public ?PublicMenuItem $cta,
+        public array $blocks,
+        public array $i18n,
+    ) {}
+
+    public static function forPage(Page $page): self
+    {
+        $menu = PublicMenuItem::query()->links()->get();
+        $cta = PublicMenuItem::query()->cta()->first();
+        $blocks = $page->renderableBlocks();
+
+        return new self(
+            page: $page,
+            settings: SiteSetting::singleton(),
+            menu: $menu,
+            cta: $cta,
+            blocks: $blocks,
+            i18n: self::payload($blocks, $menu, $cta),
+        );
+    }
+
+    /**
+     * @param  array<int, array{type: string, data: array, index: int}>  $blocks
+     * @param  Collection<int, PublicMenuItem>  $menu
+     * @return array<string, array<string, string>>
+     */
+    private static function payload(array $blocks, Collection $menu, ?PublicMenuItem $cta): array
+    {
+        $out = [];
+
+        foreach (array_keys(SiteSetting::LOCALES) as $locale) {
+            $bucket = [];
+
+            foreach ($blocks as $block) {
+                foreach (self::leaves($block['data'], (string) $block['index']) as $key => $map) {
+                    $bucket[$key] = self::html($map, $locale);
+                }
+            }
+
+            foreach ($menu->values() as $i => $item) {
+                $bucket['nav'.($i + 1)] = e((string) $item->t('label', $locale));
+            }
+
+            if ($cta !== null) {
+                $bucket['cta'] = e((string) $cta->t('label', $locale));
+            }
+
+            $out[$locale] = $bucket;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Walk block data and collect every translatable leaf, keyed by dotted path.
+     *
+     * A leaf is translatable when it is an array whose keys are a subset of the
+     * supported locales. Deriving it from the data means a block gaining a field
+     * needs no change here.
+     *
+     * @return array<string, array<string, string|null>>
+     */
+    private static function leaves(array $data, string $prefix): array
+    {
+        $locales = array_keys(SiteSetting::LOCALES);
+        $found = [];
+
+        foreach ($data as $key => $value) {
+            if (! is_array($value)) {
+                continue;
+            }
+
+            $path = $prefix.'.'.$key;
+
+            if ($value !== [] && array_diff(array_keys($value), $locales) === []) {
+                $found[$path] = $value;
+
+                continue;
+            }
+
+            $found = array_merge($found, self::leaves($value, $path));
+        }
+
+        return $found;
+    }
+
+    /**
+     * @param  array<string, string|null>  $map
+     */
+    private static function html(array $map, string $locale): string
+    {
+        $value = filled($map[$locale] ?? null)
+            ? $map[$locale]
+            : ($map[SiteSetting::FALLBACK_LOCALE] ?? '');
+
+        // Escape first, then convert newlines — the other order would escape the tags.
+        return str_replace(["\r\n", "\n", "\r"], '<br>', e((string) $value));
+    }
+}
+```
+
+- [ ] **Step 4: Run the tests**
+
+Run: `php artisan test tests/Feature/PageDataTest.php`
+Expected: PASS — 9 tests.
+
+**Two teeth-checks, both worth doing:**
+1. Swap the order in `html()` so it escapes after the newline replacement; confirm `test_newlines_become_br_and_html_is_escaped` fails with `&lt;br&gt;`. Restore.
+2. Change `leaves()` to accept any array as translatable; confirm `test_non_translatable_leaves_are_absent_from_the_payload` fails. Restore.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/Support/PageData.php tests/Feature/PageDataTest.php
+git commit -m "feat: add PageData DTO with index-keyed i18n payload"
+```
+
+---
+
+### Task 8: Routing
+
+**Files:**
+- Create: `app/Http/Controllers/PageController.php`
+- Create: `resources/views/page.blade.php`
+- Modify: `routes/web.php`
+- Test: `tests/Feature/PageRoutingTest.php`
+
+**Interfaces:**
+- Consumes: `Page::homepage()`, `Page::published()`, `PageData::forPage()`, `<x-block-renderer>`, `<x-layouts.public>`.
+- Produces: `PageController::__invoke(?string $slug = null): View`; named routes `home` and `page`.
+
+**Route ordering is load-bearing.** `/{slug}` is a catch-all. Registered before Story's blog routes or Filament's panel it would shadow them, so it must come **last** in `routes/web.php`, and Filament registers its own routes via its service provider (which run first). Add a `where` constraint excluding known prefixes as a second line of defence.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/PageRoutingTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Page;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PageRoutingTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function make(array $attrs = []): Page
+    {
+        return Page::create(array_merge([
+            'title' => ['en' => 'Test'],
+            'slug' => 'test',
+            'status' => 'published',
+            'blocks' => [['type' => 'cta', 'data' => ['heading' => ['en' => 'Hello']]]],
+        ], $attrs));
+    }
+
+    public function test_the_root_resolves_the_homepage_flagged_row(): void
+    {
+        $this->make(['slug' => 'other']);
+        $this->make(['slug' => 'home', 'is_homepage' => true, 'title' => ['en' => 'Landing']]);
+
+        $this->get('/')->assertSuccessful()->assertSee('data-block="cta"', false);
+    }
+
+    public function test_the_root_404s_when_no_homepage_is_flagged(): void
+    {
+        $this->make(['slug' => 'other']);
+
+        $this->get('/')->assertNotFound();
+    }
+
+    public function test_a_published_page_resolves_by_slug(): void
+    {
+        $this->make(['slug' => 'about']);
+
+        $this->get('/about')->assertSuccessful();
+    }
+
+    public function test_a_draft_page_404s(): void
+    {
+        $this->make(['slug' => 'secret', 'status' => 'draft']);
+
+        $this->get('/secret')->assertNotFound();
+    }
+
+    public function test_an_unknown_slug_404s(): void
+    {
+        $this->get('/no-such-page')->assertNotFound();
+    }
+
+    public function test_the_catch_all_does_not_shadow_the_blog(): void
+    {
+        // A page whose slug collides with the blog prefix must not hijack it.
+        $this->make(['slug' => 'blogs']);
+
+        $this->get('/blogs')->assertSuccessful();
+        $this->assertSame('filament-story.index', request()->route()?->getName() ?? 'filament-story.index');
+    }
+
+    public function test_the_catch_all_does_not_shadow_the_admin_panel(): void
+    {
+        $this->make(['slug' => 'superduper']);
+
+        // Unauthenticated admin access redirects to login rather than rendering a page.
+        $this->get('/superduper')->assertRedirect();
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Feature/PageRoutingTest.php`
+Expected: FAIL — `Class "App\Http\Controllers\PageController" not found`.
+
+- [ ] **Step 3: Write the controller**
+
+Create `app/Http/Controllers/PageController.php`:
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Page;
+use App\Models\SiteSetting;
+use App\Support\PageData;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
+
+class PageController extends Controller
+{
+    public function __invoke(?string $slug = null): View
+    {
+        $page = $slug === null
+            ? Page::homepage()
+            : Page::query()->published()->where('slug', $slug)->first();
+
+        if (! $page) {
+            if ($slug === null) {
+                Log::warning('No page is flagged as the homepage.');
+            }
+
+            abort(404);
+        }
+
+        // Both the headings and t() must agree on the locale. Read it through a
+        // composing class: SiteSetting::FALLBACK_LOCALE, never the trait's constant.
+        $configured = SiteSetting::singleton()->default_locale;
+        $locale = array_key_exists($configured, SiteSetting::LOCALES)
+            ? $configured
+            : SiteSetting::FALLBACK_LOCALE;
+
+        App::setLocale($locale);
+
+        return view('page', ['data' => PageData::forPage($page)]);
+    }
+}
+```
+
+- [ ] **Step 4: Write the page view**
+
+Create `resources/views/page.blade.php`:
+
+```blade
+<x-layouts.public :data="$data">
+    @include('partials.home.loader')
+    @include('partials.home.header', ['data' => $data])
+
+    <main style="position:relative;">
+        <x-block-renderer :blocks="$data->blocks" />
+    </main>
+</x-layouts.public>
+```
+
+`partials/home/loader.blade.php` and `header.blade.php` survive Task 13's removals — they are
+page chrome, not blocks. Confirm `layouts/public.blade.php` reads only `$data->settings`, and
+adjust it if it still references `$data->content`, which `PageData` does not carry.
+
+- [ ] **Step 5: Register the routes**
+
+Replace `routes/web.php`:
+
+```php
+<?php
+
+use App\Http\Controllers\PageController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', PageController::class)->name('home');
+
+// Catch-all: must be registered LAST so it cannot shadow the blog or the panel.
+// The where() constraint is a second line of defence in case ordering changes.
+Route::get('/{slug}', PageController::class)
+    ->where('slug', '^(?!blogs|superduper|storage|build|livewire)[A-Za-z0-9\-_]+$')
+    ->name('page');
+```
+
+- [ ] **Step 6: Run the tests**
+
+Run: `php artisan test tests/Feature/PageRoutingTest.php`
+Expected: PASS — 7 tests.
+
+**Prove the shadowing guard has teeth:** remove the `where()` constraint and move the catch-all
+above the other routes in the file; confirm `test_the_catch_all_does_not_shadow_the_blog` fails.
+Restore both.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add app/Http/Controllers/PageController.php resources/views/page.blade.php routes/web.php tests/Feature/PageRoutingTest.php
+git commit -m "feat: resolve pages by slug with the homepage as a flagged row"
+```
+
+---
