@@ -67,8 +67,6 @@
     place-items: center;
     width: 2.25rem;
     height: 2.25rem;
-    border: 1px solid var(--scbd-border);
-    border-radius: 0.5rem;
     color: var(--scbd-text-muted);
     transition: background-color 150ms, border-color 150ms;
 }

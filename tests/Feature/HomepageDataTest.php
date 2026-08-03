@@ -5,14 +5,15 @@ namespace Tests\Feature;
 use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Models\DistrictPlace;
 use App\Models\HomepageContent;
-use App\Models\PublicMenuItem;
 use App\Support\HomepageData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\SeedsHeaderMenu;
 use Tests\TestCase;
 
 class HomepageDataTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsHeaderMenu;
 
     public function test_it_builds_on_a_completely_empty_database(): void
     {
@@ -26,8 +27,10 @@ class HomepageDataTest extends TestCase
 
     public function test_it_separates_nav_links_from_the_cta(): void
     {
-        PublicMenuItem::create(['label' => ['en' => 'Company'], 'url' => '#about', 'sort' => 1]);
-        PublicMenuItem::create(['label' => ['en' => 'Leasing enquiry'], 'url' => '#contact', 'sort' => 9, 'is_cta' => true]);
+        $this->seedHeaderMenu(
+            links: [['label' => ['en' => 'Company'], 'url' => '#about']],
+            cta: ['label' => ['en' => 'Leasing enquiry'], 'url' => '#contact'],
+        );
 
         $data = HomepageData::build();
 
@@ -106,9 +109,13 @@ class HomepageDataTest extends TestCase
 
     public function test_the_payload_includes_nav_links_and_the_cta(): void
     {
-        PublicMenuItem::create(['label' => ['en' => 'Company', 'id' => 'Perusahaan'], 'url' => '#about', 'sort' => 1]);
-        PublicMenuItem::create(['label' => ['en' => 'District', 'id' => 'Kawasan'], 'url' => '#district', 'sort' => 2]);
-        PublicMenuItem::create(['label' => ['en' => 'Leasing enquiry', 'id' => 'Ajukan sewa'], 'url' => '#contact', 'sort' => 9, 'is_cta' => true]);
+        $this->seedHeaderMenu(
+            links: [
+                ['label' => ['en' => 'Company', 'id' => 'Perusahaan'], 'url' => '#about'],
+                ['label' => ['en' => 'District', 'id' => 'Kawasan'], 'url' => '#district'],
+            ],
+            cta: ['label' => ['en' => 'Leasing enquiry', 'id' => 'Ajukan sewa'], 'url' => '#contact'],
+        );
 
         $i18n = HomepageData::build()->i18n;
 

@@ -6,15 +6,16 @@ use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Models\DistrictPlace;
 use App\Models\Facility;
 use App\Models\HomepageContent;
-use App\Models\PublicMenuItem;
 use App\Models\SiteSetting;
 use App\Models\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\SeedsHeaderMenu;
 use Tests\TestCase;
 
 class HomepageRenderTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsHeaderMenu;
 
     private function seedMinimum(): void
     {
@@ -29,8 +30,10 @@ class HomepageRenderTest extends TestCase
             'marquee_text' => ['en' => 'Offices — Hotels'],
             'contact_address' => "Jl. Jenderal\nSudirman",
         ]);
-        PublicMenuItem::create(['label' => ['en' => 'Company'], 'url' => '#about', 'sort' => 1]);
-        PublicMenuItem::create(['label' => ['en' => 'Leasing enquiry'], 'url' => '#contact', 'sort' => 9, 'is_cta' => true]);
+        $this->seedHeaderMenu(
+            links: [['label' => ['en' => 'Company'], 'url' => '#about']],
+            cta: ['label' => ['en' => 'Leasing enquiry'], 'url' => '#contact'],
+        );
         DistrictPlace::create(['title' => ['en' => 'The towers'], 'caption' => ['en' => 'Grade A office'], 'sort' => 1]);
         Facility::create(['title' => ['en' => 'District clinic'], 'body' => ['en' => 'On-site care.'], 'sort' => 1]);
         Stat::create(['label' => ['en' => 'Hectares'], 'value' => 45, 'sort' => 1]);

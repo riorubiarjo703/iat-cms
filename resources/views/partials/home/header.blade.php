@@ -22,7 +22,7 @@
         </a>
         <nav style="display:flex; align-items:center; gap:28px;">
             @foreach ($data->menu as $item)
-                <a href="{{ $item->url }}"
+                <a href="{{ $item->resolveUrl() }}"
                    data-navlink
                    @if ($item->target && $item->target !== '_self') target="{{ $item->target }}" @endif
                    style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; text-decoration:none; color:#201e1d;"
@@ -35,7 +35,7 @@
                 @endforeach
             </div>
             @if ($data->cta)
-                <a href="{{ $data->cta->url }}"
+                <a href="{{ $data->cta->resolveUrl() }}"
                    class="btn btn-primary"
                    data-magnetic
                    @if ($data->cta->target && $data->cta->target !== '_self') target="{{ $data->cta->target }}" @endif

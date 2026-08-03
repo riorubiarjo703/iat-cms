@@ -189,7 +189,7 @@
             {{-- OVERRIDE: collapsed, the chevron points at an expansion that
                  cannot happen — children open in a flyout instead. --}}
             <x-filament::icon
-                icon="heroicon-m-chevron-down"
+                icon="heroicon-o-chevron-down"
                 class="fi-sidebar-item-chevron ms-auto h-5 w-5 transition-transform"
                 ::class="expanded ? 'rotate-180' : ''"
                 @if ($sidebarCollapsible && (! $subNavigation))

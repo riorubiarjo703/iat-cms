@@ -6,7 +6,8 @@ use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Models\DistrictPlace;
 use App\Models\Facility;
 use App\Models\HomepageContent;
-use App\Models\PublicMenuItem;
+use App\Models\MenuItem;
+use App\Support\MenuLocations;
 use App\Models\SiteSetting;
 use App\Models\Stat;
 use Illuminate\Support\Collection;
@@ -20,7 +21,7 @@ final readonly class HomepageData
 {
     /**
      * The reference markup's `data-i18n` keys mapped to HomepageContent columns.
-     * Nav keys (`nav1`..`navN`) and `cta` come from PublicMenuItem instead.
+     * Nav keys (`nav1`..`navN`) and `cta` come from the header menu instead.
      *
      * @var array<string, string>
      */
@@ -42,7 +43,7 @@ final readonly class HomepageData
     ];
 
     /**
-     * @param  Collection<int, PublicMenuItem>  $menu
+     * @param  Collection<int, MenuItem>  $menu
      * @param  Collection<int, DistrictPlace>  $places
      * @param  Collection<int, Facility>  $facilities
      * @param  Collection<int, Stat>  $stats
@@ -53,7 +54,7 @@ final readonly class HomepageData
         public HomepageContent $content,
         public SiteSetting $settings,
         public Collection $menu,
-        public ?PublicMenuItem $cta,
+        public ?MenuItem $cta,
         public Collection $places,
         public Collection $facilities,
         public Collection $stats,
@@ -64,8 +65,10 @@ final readonly class HomepageData
     public static function build(): self
     {
         $content = HomepageContent::singleton();
-        $menu = PublicMenuItem::query()->links()->get();
-        $cta = PublicMenuItem::query()->cta()->first();
+        // The header renders whichever menu is assigned to the header
+        // location. Nothing assigned means no nav rather than an error.
+        $menu = MenuRenderer::byLocation(MenuLocations::HEADER);
+        $cta = MenuRenderer::cta(MenuLocations::HEADER);
 
         return new self(
             content: $content,
@@ -85,10 +88,10 @@ final readonly class HomepageData
     }
 
     /**
-     * @param  Collection<int, PublicMenuItem>  $menu
+     * @param  Collection<int, MenuItem>  $menu
      * @return array<string, array<string, string>>
      */
-    private static function i18nPayload(HomepageContent $content, Collection $menu, ?PublicMenuItem $cta): array
+    private static function i18nPayload(HomepageContent $content, Collection $menu, ?MenuItem $cta): array
     {
         $payload = [];
 
