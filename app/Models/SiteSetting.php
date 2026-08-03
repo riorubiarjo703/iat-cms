@@ -22,7 +22,7 @@ class SiteSetting extends Model
     ];
 
     /** @var array<int, string> */
-    public const TRANSLATABLE = ['meta_title', 'meta_description'];
+    public const TRANSLATABLE = ['meta_title', 'meta_description', 'brand_subtitle'];
 
     protected $guarded = [];
 

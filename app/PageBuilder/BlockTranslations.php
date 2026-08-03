@@ -47,13 +47,15 @@ final class BlockTranslations
             $data = is_array($block['data'] ?? null) ? $block['data'] : [];
 
             foreach ($class::translatableKeys() as $key) {
-                $value = BlockData::t($data, $key, $locale);
-
-                if ($value !== null) {
-                    // Pre-escaped with <br> for line breaks, matching what the
-                    // switcher expects to assign straight into innerHTML.
-                    $bucket[BlockData::i18nKey($id, $key)] = nl2br(e($value));
-                }
+                // Every declared key is emitted, empty ones included. A block
+                // view renders its data-i18n attribute whether or not the field
+                // has content, so omitting the key would leave an element the
+                // switcher cannot answer for. Empty values are skipped by the
+                // switcher itself.
+                //
+                // Pre-escaped with <br> for line breaks, matching what the
+                // switcher assigns straight into innerHTML.
+                $bucket[BlockData::i18nKey($id, $key)] = nl2br(e(BlockData::t($data, $key, $locale) ?? ''));
             }
 
             foreach ($block['children'] ?? [] as $bucketNode) {

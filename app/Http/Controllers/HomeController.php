@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Support\HomepageData;
 use Illuminate\Contracts\View\View;
@@ -11,6 +12,17 @@ class HomeController extends Controller
 {
     public function __invoke(): View
     {
+        // A page flagged as the homepage takes over "/". While none exists the
+        // hand-built homepage still serves, so the switch is reversible by
+        // clearing one flag rather than by a deploy.
+        $homepage = Page::homepage();
+
+        if ($homepage !== null) {
+            App::setLocale($this->resolvedLocale());
+
+            return view('page', ['page' => $homepage]);
+        }
+
         $data = HomepageData::build();
 
         // HasTranslatableFields::t() falls back to app()->getLocale() whenever
@@ -39,5 +51,18 @@ class HomeController extends Controller
         $data->settings->default_locale = $locale;
 
         return view('home', ['data' => $data]);
+    }
+
+    /**
+     * The stored locale, or English when it is not one we know about. An
+     * invalid value in the column would otherwise blank every heading.
+     */
+    private function resolvedLocale(): string
+    {
+        $stored = SiteSetting::singleton()->default_locale;
+
+        return array_key_exists($stored, SiteSetting::LOCALES)
+            ? $stored
+            : SiteSetting::FALLBACK_LOCALE;
     }
 }

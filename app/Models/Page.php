@@ -30,6 +30,7 @@ class Page extends Model
     protected $casts = [
         'builder_payload' => 'array',
         'published_at' => 'datetime',
+        'is_homepage' => 'boolean',
     ];
 
     /** @return array<string, string> */
@@ -65,7 +66,17 @@ class Page extends Model
 
     public function getPublicUrl(): string
     {
-        return url('/'.$this->slug);
+        return $this->is_homepage ? url('/') : url('/'.$this->slug);
+    }
+
+    /**
+     * The page serving "/", or null while the site still uses the hand-built
+     * homepage. Only published pages qualify: an unpublished front page would
+     * take the site down.
+     */
+    public static function homepage(): ?self
+    {
+        return static::query()->published()->where('is_homepage', true)->first();
     }
 
     /**
