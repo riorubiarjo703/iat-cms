@@ -1,3 +1,13 @@
+/*
+ * Admin shell styling: sidebar user card, topbar cluster, two-column shell.
+ *
+ * Served through Filament's asset registry (see AdminPanelProvider::assets).
+ * NOTE: Filament cache-busts this with its own version string, not the file's
+ * mtime, so after editing you must run `php artisan filament:assets` AND hard
+ * reload — a normal refresh serves the cached copy. Moving to a Vite-built
+ * Filament theme would give content-hashed filenames and remove this footgun.
+ */
+
 /* Sidebar user card pinned beneath the nav, per the reference design. */
 .fi-sidebar-user { position: relative; padding: 0.75rem; border-top: 1px solid rgb(229 231 235); }
 .dark .fi-sidebar-user { border-color: rgb(255 255 255 / 0.1); }
@@ -92,23 +102,29 @@
 }
 
 /* ── Two-column shell ───────────────────────────────────────────────────
-   Filament renders .fi-topbar-ctn as a sibling of .fi-layout, spanning the
-   full viewport with the brand inside it. The reference instead puts the
-   brand in the sidebar and confines the bar to the content column.
-
-   Offset uses Filament's own --sidebar-width / --collapsed-sidebar-width, so
-   it tracks the sidebar instead of hardcoding a number. :has() reads the
-   open/collapsed state from the main container, which lives in a sibling
-   subtree the topbar cannot otherwise reach. */
+   The topbar is now a child of .fi-main-ctn (see the layout override), so
+   the content column is a single bordered card with the bar as its header
+   row. No margin offset is involved: the bar cannot escape the column
+   because it is inside it. */
 @media (min-width: 1024px) {
-    .fi-topbar-ctn {
-        margin-inline-start: var(--collapsed-sidebar-width);
-        transition: margin-inline-start 200ms ease;
+    .fi-main-ctn {
+        margin: 0.75rem 0.75rem 0.75rem 0;
+        border: 1px solid rgb(229 231 235);
+        border-radius: 0.875rem;
+        background: #fff;
+        overflow: hidden;
+        min-height: calc(100vh - 1.5rem);
     }
+    .dark .fi-main-ctn { border-color: rgb(255 255 255 / 0.1); background: rgb(24 24 27); }
 
-    .fi-body:has(.fi-main-ctn-sidebar-open) .fi-topbar-ctn {
-        margin-inline-start: var(--sidebar-width);
+    /* The bar is the card's header row: a rule, not a floating shadow. */
+    .fi-topbar-ctn { position: static; }
+    .fi-topbar {
+        border-bottom: 1px solid rgb(229 231 235);
+        box-shadow: none;
+        background: transparent;
     }
+    .dark .fi-topbar { border-color: rgb(255 255 255 / 0.1); }
 
     /* The brand now lives in the sidebar. */
     .fi-topbar-start .fi-logo,
@@ -125,6 +141,116 @@
     min-height: 3.5rem;
 }
 .fi-sidebar-brand-logo { height: 1.75rem; width: auto; display: block; }
+
+/* Collapsed, the brand has 4.5rem to live in — centre it and let the logo
+   shrink rather than overflow the rail. */
+.fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-brand {
+    justify-content: center;
+    padding-inline: 0.5rem;
+}
+/* Only one logo asset exists, so the collapsed rail scales the same wordmark
+   down to fit rather than swapping in a compact mark. If a square mark is
+   ever uploaded, prefer it here. */
+.fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-brand-logo {
+    height: auto;
+    max-height: 1.5rem;
+    max-width: 100%;
+    object-fit: contain;
+}
+.fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-brand-name { display: none; }
+
+/* ── Collapsed sidebar ──────────────────────────────────────────────────
+   Group labels are hidden when collapsed but their margins are not, which
+   leaves the ragged gaps the icons float in. Tighten the rhythm so the rail
+   reads as an even column. */
+@media (min-width: 1024px) {
+    /* Collapsed, Filament leaves the rail at flex: 0 1 auto and lets content
+       decide its width — so the brand logo alone held it open at ~100px. Pin
+       it to the declared collapsed width and make content fit inside. */
+    .fi-sidebar:not(.fi-sidebar-open) {
+        width: var(--collapsed-sidebar-width);
+        flex: 0 0 var(--collapsed-sidebar-width);
+        overflow-x: clip;
+    }
+
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-group-label,
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-group-collapse-btn { display: none; }
+
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-nav { gap: 0.25rem; }
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-group { margin: 0; }
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-group-items { gap: 0.125rem; }
+
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-item-btn {
+        justify-content: center;
+        padding-inline: 0;
+    }
+
+    /* The user card's name and email do not shrink, so on their own they held
+       the rail open at ~204px instead of the 4.5rem icon width. Collapsed,
+       the card is just the avatar. */
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-user-identity,
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-user-chevron { display: none; }
+
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-user { padding: 0.5rem; }
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-user-btn {
+        justify-content: center;
+        padding-inline: 0;
+    }
+
+    /* Its menu would otherwise be as narrow as the rail; float it alongside. */
+    .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-user-menu {
+        left: calc(100% - 0.25rem);
+        right: auto;
+        bottom: 0.5rem;
+        min-width: 15rem;
+    }
+}
+
+/* ── Collapsed-parent flyout ────────────────────────────────────────────
+   Fixed to the viewport, positioned from the trigger's rect, so it is not
+   clipped by the sidebar's overflow. */
+.fi-sidebar-flyout {
+    position: fixed;
+    z-index: 40;
+    min-width: 14rem;
+    background: #fff;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15);
+    overflow: hidden;
+}
+.dark .fi-sidebar-flyout { background: rgb(24 24 27); border-color: rgb(255 255 255 / 0.1); }
+
+.fi-sidebar-flyout-header {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid rgb(229 231 235);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(17 24 39);
+}
+.dark .fi-sidebar-flyout-header { border-color: rgb(255 255 255 / 0.1); color: rgb(244 244 245); }
+.fi-sidebar-flyout-count { font-weight: 500; color: rgb(107 114 128); }
+
+.fi-sidebar-flyout-items { padding: 0.375rem; }
+
+.fi-sidebar-flyout-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: rgb(17 24 39);
+}
+.fi-sidebar-flyout-item:hover { background: rgb(249 250 251); }
+.fi-sidebar-flyout-item.fi-active { color: rgb(37 99 235); background: rgb(239 246 255); }
+.dark .fi-sidebar-flyout-item { color: rgb(244 244 245); }
+.dark .fi-sidebar-flyout-item:hover { background: rgb(255 255 255 / 0.05); }
+
+.fi-sidebar-flyout-item-icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: rgb(107 114 128); }
+.fi-sidebar-flyout-item.fi-active .fi-sidebar-flyout-item-icon { color: rgb(37 99 235); }
+.fi-sidebar-flyout-item-label { flex: 1 1 auto; white-space: nowrap; }
+.fi-sidebar-flyout-item-badge { font-size: 0.75rem; color: rgb(107 114 128); }
 .fi-sidebar-brand-name { font-size: 1.05rem; font-weight: 700; color: rgb(17 24 39); }
 .dark .fi-sidebar-brand-name { color: rgb(244 244 245); }
 
