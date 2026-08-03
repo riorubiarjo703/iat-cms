@@ -1098,31 +1098,454 @@ git commit -m "feat: add the eight remaining content blocks"
 
 ---
 
+
 ---
 
-## Remaining tasks (not yet written in full)
+### Task 4: The `reusable` block and library resolution
 
-Tasks 1–3 above are complete and implementable. The following are specified at
-interface level so the plan is coherent, but each still needs its steps, code and
-tests written out before execution. **Do not execute from these summaries.**
+**Files:**
+- Create: `app/Blocks/Types/ReusableBlockType.php`
+- Modify: `app/Providers/AppServiceProvider.php`
+- Test: `tests/Unit/Blocks/ReusableBlockTest.php`
 
-| # | Task | Key interfaces it must produce |
-|---|---|---|
-| 4 | `reusable` block type + library resolution | `App\Blocks\Types\ReusableBlock` (schema: one `Select` over `reusable_blocks`, stores `{"ref": id}`); detach action replacing the entry with a copied `type`+`data` |
-| 5 | Block Blade partials + renderer | `resources/views/blocks/*.blade.php` (9); `<x-block-renderer :blocks="..." />`; every partial emits `data-block="{type}" data-block-index="{index}"` and `data-i18n="{index}.{field}"` on translatable leaves |
-| 6 | JS block registry + scoped contexts | `resources/js/blocks/index.js` exporting a `{type: initialiser}` map whose keys match the PHP registry exactly; each initialiser opens `gsap.context(fn, rootEl)`; bootstrap dispatches on `[data-block]` |
-| 7 | `PageData` DTO + i18n payload | `App\Support\PageData::forPage(Page $page): self`; payload keyed `{index}.{field}` across `en`/`id`/`cn`; replaces `HomepageData` |
-| 8 | Routing | `PageController::__invoke(?string $slug = null)`; `/` → `Page::homepage()`, `/{slug}` registered last so it cannot shadow `/blogs` or `/superduper`; drafts 404 for guests |
-| 9 | `PageResource` | Filament resource with `Builder::make('blocks')->blocks(app(BlockRegistry::class)->toBuilderBlocks())`; locale tabs for title/meta; slug auto-generation |
-| 10 | `ReusableBlockResource` | CRUD for the library; block-type Select drives which schema renders |
-| 11 | Homepage seeded as blocks | `HomepageBlocksSeeder` transcribing `homepage_contents`, `district_places`, `facilities`, `stats` into one `Page` flagged `is_homepage` |
-| 12 | Switch `/` and verify | Point the route at the page resolver; browser-verify pinning, char-split, counters, switcher against the **production bundle** |
-| 13 | Removals | Graper package + table + route; `DistrictPlace`/`Facility`/`Stat` models, resources, tables; the nine `partials/home/*`; `HomepageEditor`; `HomepageContent` + table |
-| 14 | Sidebar + docs | `AdminNavigation`: Content → Pages, Reusable Blocks, Media Library; drop `Homepage Data`; update `docs/scbd-homepage.md` |
+**Interfaces:**
+- Consumes: `App\Blocks\Block`; `App\Models\ReusableBlock` (columns `name`, `type`, `data`); `App\Concerns\HasBlocks::renderableBlocks()` which already resolves `type === 'reusable'` entries against the library (written in Task 1).
+- Produces: `App\Blocks\Types\ReusableBlockType` — type `reusable`, label `From library`, icon `heroicon-o-rectangle-stack`, schema a single `Select` bound to `data.ref`.
 
-**Ordering is load-bearing.** Tasks 1–11 change nothing user-visible: the block system is
-built alongside the existing homepage. Task 12 switches `/` and verifies. Only Task 13
-removes anything. The old homepage remains available as a working reference until the
-rebuilt one is confirmed correct — and since the SCBD homepage is the acceptance test for
-this entire slice, removing it before verification would destroy the only thing we can
-check the result against.
+**Naming note:** the class is `ReusableBlockType`, not `ReusableBlock`, because `App\Models\ReusableBlock` already exists. Importing both into one file otherwise collides.
+
+**Why this is a block type rather than a flag:** Filament persists only `type` and `data`, so a `ref` cannot sit beside them. See the Global Constraints.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Unit/Blocks/ReusableBlockTest.php`:
+
+```php
+<?php
+
+namespace Tests\Unit\Blocks;
+
+use App\Blocks\BlockRegistry;
+use App\Blocks\Types\ReusableBlockType;
+use App\Models\Page;
+use App\Models\ReusableBlock;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ReusableBlockTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function page(array $blocks): Page
+    {
+        return Page::create([
+            'title' => ['en' => 'T'],
+            'slug' => 'p-'.uniqid(),
+            'blocks' => $blocks,
+            'status' => 'published',
+        ]);
+    }
+
+    public function test_it_is_registered(): void
+    {
+        $this->assertTrue(app(BlockRegistry::class)->has('reusable'));
+        $this->assertSame(ReusableBlockType::class, app(BlockRegistry::class)->get('reusable'));
+    }
+
+    public function test_ten_block_types_are_registered_in_total(): void
+    {
+        $this->assertCount(10, app(BlockRegistry::class)->all());
+    }
+
+    public function test_a_reference_renders_the_library_entrys_type_and_data(): void
+    {
+        $lib = ReusableBlock::create([
+            'name' => 'Facilities',
+            'type' => 'stacked-cards',
+            'data' => ['heading' => ['en' => 'Services']],
+        ]);
+
+        $blocks = $this->page([['type' => 'reusable', 'data' => ['ref' => $lib->id]]])->renderableBlocks();
+
+        $this->assertSame('stacked-cards', $blocks[0]['type']);
+        $this->assertSame(['en' => 'Services'], $blocks[0]['data']['heading']);
+    }
+
+    public function test_editing_the_library_entry_changes_every_referencing_page(): void
+    {
+        $lib = ReusableBlock::create([
+            'name' => 'CTA', 'type' => 'cta', 'data' => ['heading' => ['en' => 'Before']],
+        ]);
+        $a = $this->page([['type' => 'reusable', 'data' => ['ref' => $lib->id]]]);
+        $b = $this->page([['type' => 'reusable', 'data' => ['ref' => $lib->id]]]);
+
+        $lib->update(['data' => ['heading' => ['en' => 'After']]]);
+
+        $this->assertSame('After', $a->fresh()->renderableBlocks()[0]['data']['heading']['en']);
+        $this->assertSame('After', $b->fresh()->renderableBlocks()[0]['data']['heading']['en']);
+    }
+
+    public function test_a_detached_copy_no_longer_tracks_the_library(): void
+    {
+        $lib = ReusableBlock::create([
+            'name' => 'CTA', 'type' => 'cta', 'data' => ['heading' => ['en' => 'Before']],
+        ]);
+        // Detaching replaces the reference with a plain block carrying a copy.
+        $page = $this->page([['type' => 'cta', 'data' => ['heading' => ['en' => 'Before']]]]);
+
+        $lib->update(['data' => ['heading' => ['en' => 'After']]]);
+
+        $this->assertSame('Before', $page->fresh()->renderableBlocks()[0]['data']['heading']['en']);
+    }
+
+    public function test_a_reference_to_a_library_entry_of_an_unregistered_type_is_dropped(): void
+    {
+        $lib = ReusableBlock::create(['name' => 'Stale', 'type' => 'no-such-block', 'data' => []]);
+
+        $blocks = $this->page([
+            ['type' => 'reusable', 'data' => ['ref' => $lib->id]],
+            ['type' => 'cta', 'data' => []],
+        ])->renderableBlocks();
+
+        $this->assertSame(['cta'], array_column($blocks, 'type'));
+    }
+
+    public function test_a_reference_with_no_ref_value_is_dropped(): void
+    {
+        $blocks = $this->page([
+            ['type' => 'reusable', 'data' => []],
+            ['type' => 'cta', 'data' => []],
+        ])->renderableBlocks();
+
+        $this->assertSame(['cta'], array_column($blocks, 'type'));
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Unit/Blocks/ReusableBlockTest.php`
+Expected: FAIL — `Class "App\Blocks\Types\ReusableBlockType" not found`.
+
+- [ ] **Step 3: Write the block type**
+
+Create `app/Blocks/Types/ReusableBlockType.php`:
+
+```php
+<?php
+
+namespace App\Blocks\Types;
+
+use App\Blocks\Block;
+use App\Models\ReusableBlock;
+use Filament\Forms\Components\Select;
+
+/**
+ * A reference to an entry in the reusable block library.
+ *
+ * Filament persists only `type` and `data`, so a reference cannot be a flag on
+ * a normal block — it has to be its own type. HasBlocks::renderableBlocks()
+ * swaps it for the library entry's own type and data before rendering.
+ *
+ * Named ...Type to avoid colliding with App\Models\ReusableBlock.
+ */
+class ReusableBlockType extends Block
+{
+    public static function type(): string
+    {
+        return 'reusable';
+    }
+
+    public static function label(): string
+    {
+        return 'From library';
+    }
+
+    public static function icon(): string
+    {
+        return 'heroicon-o-rectangle-stack';
+    }
+
+    public static function schema(): array
+    {
+        return [
+            Select::make('ref')
+                ->label('Library block')
+                ->options(fn (): array => ReusableBlock::query()
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all())
+                ->searchable()
+                ->required()
+                ->helperText('Editing the library entry updates every page that uses it.'),
+        ];
+    }
+
+    /**
+     * This type is never rendered directly — renderableBlocks() resolves it away.
+     * A view is declared only so the registry's "view exists" test has a target.
+     */
+    public static function view(): string
+    {
+        return 'blocks.reusable';
+    }
+}
+```
+
+- [ ] **Step 4: Register it**
+
+Append to the singleton closure in `app/Providers/AppServiceProvider.php`:
+
+```php
+    ->register(\App\Blocks\Types\ReusableBlockType::class);
+```
+
+- [ ] **Step 5: Run the tests**
+
+Run: `php artisan test tests/Unit/Blocks/ReusableBlockTest.php tests/Unit/Concerns/HasBlocksTest.php`
+Expected: PASS, except the registry's "view exists" test until Task 5 adds `blocks/reusable.blade.php`. Note `test_exactly_nine_content_blocks_are_registered` in `BlockSchemasTest` now fails — update it to expect 10 and rename it to `test_ten_block_types_are_registered`, since `reusable` is a legitimate registered type.
+
+**Prove the live-reference behaviour has teeth:** in `renderableBlocks()`, temporarily copy `$data` instead of taking `$entry->data`, confirm `test_editing_the_library_entry_changes_every_referencing_page` fails, then restore.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/Blocks/Types/ReusableBlockType.php app/Providers/AppServiceProvider.php tests/Unit/Blocks
+git commit -m "feat: add reusable block type with live library references"
+```
+
+---
+
+### Task 5: Block views and the renderer
+
+Transcribe the existing nine partials into block views. **The markup already exists** — it was itself transcribed from the reference design and is verified working in a browser. Do not redesign it; move it and swap its data bindings.
+
+**Files:**
+- Create: `resources/views/blocks/{hero,text-image,stats,marquee,horizontal-scroll,stacked-cards,post-list,cta,contact,reusable}.blade.php`
+- Create: `resources/views/components/block-renderer.blade.php`
+- Test: `tests/Feature/Blocks/BlockRenderingTest.php`
+
+**Interfaces:**
+- Consumes: `renderableBlocks()` entries shaped `['type' => string, 'data' => array, 'index' => int]`.
+- Produces: a renderer usable as `<x-block-renderer :blocks="$page->renderableBlocks()" />`.
+
+**Source of the markup:** `resources/views/partials/home/*.blade.php` — `hero`, `about` (→ `text-image`), `marquee`, `district` (→ `horizontal-scroll`), `facilities` (→ `stacked-cards`), `news` (→ `post-list`), `contact`. The stats markup lives inside `about.blade.php`; extract it. `cta` has no existing partial — build it from the CTA button markup in `header.blade.php`.
+
+**Every block view must satisfy this envelope:**
+
+```blade
+<section data-block="{{ $type }}" data-block-index="{{ $index }}" style="...">
+```
+
+and every translatable leaf it renders must carry `data-i18n="{{ $index }}.{{ $field }}"`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/Blocks/BlockRenderingTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature\Blocks;
+
+use App\Blocks\BlockRegistry;
+use App\Models\Page;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Blade;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\TestCase;
+
+class BlockRenderingTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public static function renderableTypes(): array
+    {
+        return [
+            ['hero'], ['text-image'], ['stats'], ['marquee'],
+            ['horizontal-scroll'], ['stacked-cards'], ['post-list'],
+            ['cta'], ['contact'],
+        ];
+    }
+
+    private function render(array $blocks): string
+    {
+        $page = Page::create([
+            'title' => ['en' => 'T'], 'slug' => 'p-'.uniqid(),
+            'blocks' => $blocks, 'status' => 'published',
+        ]);
+
+        return Blade::render(
+            '<x-block-renderer :blocks="$blocks" />',
+            ['blocks' => $page->renderableBlocks()],
+        );
+    }
+
+    #[DataProvider('renderableTypes')]
+    public function test_each_block_renders_its_envelope(string $type): void
+    {
+        $html = $this->render([['type' => $type, 'data' => []]]);
+
+        $this->assertStringContainsString('data-block="'.$type.'"', $html);
+        $this->assertStringContainsString('data-block-index="0"', $html);
+    }
+
+    public function test_blocks_render_in_stored_order(): void
+    {
+        $html = $this->render([
+            ['type' => 'cta', 'data' => []],
+            ['type' => 'hero', 'data' => []],
+        ]);
+
+        $this->assertLessThan(
+            strpos($html, 'data-block="hero"'),
+            strpos($html, 'data-block="cta"'),
+            'Blocks did not render in stored order',
+        );
+    }
+
+    public function test_reordering_blocks_reorders_the_output(): void
+    {
+        $a = $this->render([['type' => 'hero', 'data' => []], ['type' => 'cta', 'data' => []]]);
+        $b = $this->render([['type' => 'cta', 'data' => []], ['type' => 'hero', 'data' => []]]);
+
+        $this->assertNotSame(
+            strpos($a, 'data-block="hero"') < strpos($a, 'data-block="cta"'),
+            strpos($b, 'data-block="hero"') < strpos($b, 'data-block="cta"'),
+        );
+    }
+
+    public function test_indexes_are_unique_and_contiguous(): void
+    {
+        $html = $this->render([
+            ['type' => 'hero', 'data' => []],
+            ['type' => 'cta', 'data' => []],
+            ['type' => 'contact', 'data' => []],
+        ]);
+
+        preg_match_all('/data-block-index="(\d+)"/', $html, $m);
+        $this->assertSame(['0', '1', '2'], $m[1]);
+    }
+
+    public function test_two_instances_of_one_type_get_distinct_indexes(): void
+    {
+        $html = $this->render([
+            ['type' => 'hero', 'data' => []],
+            ['type' => 'hero', 'data' => []],
+        ]);
+
+        preg_match_all('/data-block-index="(\d+)"/', $html, $m);
+        $this->assertSame(['0', '1'], $m[1]);
+    }
+
+    public function test_a_missing_image_never_emits_an_empty_src(): void
+    {
+        $html = $this->render([
+            ['type' => 'hero', 'data' => []],
+            ['type' => 'stacked-cards', 'data' => ['items' => [['title' => ['en' => 'X']]]]],
+        ]);
+
+        $this->assertStringNotContainsString('src=""', $html);
+    }
+
+    public function test_every_registered_renderable_type_has_a_view(): void
+    {
+        foreach (app(BlockRegistry::class)->all() as $type => $class) {
+            $this->assertTrue(view()->exists($class::view()), "No view for block [{$type}]");
+        }
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Feature/Blocks/BlockRenderingTest.php`
+Expected: FAIL — the `block-renderer` component does not exist.
+
+- [ ] **Step 3: Write the renderer**
+
+Create `resources/views/components/block-renderer.blade.php`:
+
+```blade
+@props(['blocks' => []])
+
+@foreach ($blocks as $block)
+    @include(
+        app(\App\Blocks\BlockRegistry::class)->get($block['type'])::view(),
+        ['data' => $block['data'], 'index' => $block['index'], 'type' => $block['type']]
+    )
+@endforeach
+```
+
+`renderableBlocks()` has already filtered unregistered types, so `get()` cannot return null here.
+
+- [ ] **Step 4: Write the block views**
+
+For each type, copy the corresponding partial listed above, then apply these four substitutions throughout:
+
+1. Wrap the root element in the envelope: `data-block="{{ $type }}" data-block-index="{{ $index }}"`.
+2. Replace `$data->content->t('hero_line')` style bindings with `data_get($data, 'heading.'.app()->getLocale())` falling back to English — use the helper below rather than repeating the fallback logic.
+3. Replace `data-i18n="heroline"` with `data-i18n="{{ $index }}.heading"`, matching the block's own field names.
+4. Replace repeated model loops (`$data->places`, `$data->facilities`, `$data->stats`) with `data_get($data, 'items', [])`.
+
+Add a Blade helper so the locale fallback is written once. Create `app/Support/BlockText.php`:
+
+```php
+<?php
+
+namespace App\Support;
+
+use App\Models\SiteSetting;
+
+class BlockText
+{
+    /**
+     * Read a translatable leaf from block data with per-key English fallback,
+     * matching HasTranslatableFields::t() semantics for model columns.
+     */
+    public static function get(array $data, string $key, ?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+        $map = data_get($data, $key, []);
+
+        if (! is_array($map)) {
+            return (string) $map;
+        }
+
+        return (string) (filled($map[$locale] ?? null)
+            ? $map[$locale]
+            : ($map[SiteSetting::FALLBACK_LOCALE] ?? ''));
+    }
+
+    /** Escape, then convert newlines to <br> for the char-split animation. */
+    public static function html(array $data, string $key, ?string $locale = null): string
+    {
+        return str_replace(["\r\n", "\n", "\r"], '<br>', e(static::get($data, $key, $locale)));
+    }
+}
+```
+
+Order matters in `html()`: escaping after the newline conversion would escape the `<br>` tags themselves.
+
+`blocks/reusable.blade.php` renders nothing — `renderableBlocks()` resolves the type away before the renderer sees it. It exists so the registry's view test has a target:
+
+```blade
+{{-- Never rendered: HasBlocks::renderableBlocks() resolves a reusable
+     reference to the referenced block's own type and data first. --}}
+```
+
+- [ ] **Step 5: Run the tests**
+
+Run: `php artisan test tests/Feature/Blocks/BlockRenderingTest.php`
+Expected: PASS — 15 tests.
+
+**Prove `test_indexes_are_unique_and_contiguous` has teeth:** change `renderableBlocks()` to emit the stored array key rather than `count($out)`, insert an unregistered block first, and confirm the test fails on the resulting gap. Restore.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add resources/views/blocks resources/views/components/block-renderer.blade.php app/Support/BlockText.php tests/Feature/Blocks
+git commit -m "feat: add block views and renderer"
+```
+
+---
