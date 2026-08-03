@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             // Gives the sidebar user menu a Change Password destination.
             ->profile(isSimple: false)
             ->sidebarCollapsibleOnDesktop()
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             // Branding comes from Site Settings so a logo swap needs no deploy.
             // Resolved lazily: the panel is constructed before the database is
             // necessarily reachable, and singleton() would query at boot.
@@ -77,6 +78,14 @@ class AdminPanelProvider extends PanelProvider
             ->assets([
                 \Filament\Support\Assets\Css::make('sidebar-user', resource_path('css/filament/admin/sidebar-user.css')),
             ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_START,
+                fn (): \Illuminate\Contracts\View\View => view('filament.sidebar.brand'),
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::TOPBAR_END,
+                fn (): \Illuminate\Contracts\View\View => view('filament.topbar.actions'),
+            )
             ->renderHook(
                 \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
                 fn (): \Illuminate\Contracts\View\View => view('filament.sidebar.user-card'),

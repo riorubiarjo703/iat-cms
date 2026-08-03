@@ -75,6 +75,19 @@ class PublicMenuItemResource extends Resource
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['url'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return (string) $record->url;
+    }
+
     public static function getPages(): array
     {
         return [

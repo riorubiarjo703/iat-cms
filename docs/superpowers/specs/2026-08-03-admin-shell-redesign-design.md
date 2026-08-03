@@ -145,8 +145,38 @@ Filament provides all of it; this is configuration, not construction.
 - Theme toggle — Filament's built-in light/dark switch
 - User menu with avatar initials
 
-The reference's "Pro" badge and help icon are omitted: one is a vendor upsell, the other has no
-destination.
+
+[☰]                    [🔍  Search              ⌘K]                     [☀/🌙] [?] [⚙] [DA]
+ ↑ sidebar                    ↑ centered-ish search field                        ↑ right icon cluster
+ toggle                       (pill/rounded, ~400-500px wide)
+
+ Left side
+- Single icon button: sidebar collapse/expand toggle (two-panel icon). Bordered square button, sits flush at the top-left of the main content area (not inside the sidebar itself).
+- A thin vertical divider separates it from the rest of the bar in the full-dashboard view (image 1), but it's absent/less visible in the collapsed-sidebar view (image 2) — so the divider is tied to sidebar state, not fixed.
+
+Center — Search input
+- Rounded-rectangle input, light gray border, white/very-light-gray fill.
+- Left-aligned search icon (magnifying glass, gray, ~18px).
+- Placeholder text "Search" in muted gray.
+- Right-aligned keyboard shortcut hint inside the field: a small bordered chip showing ⌘K.
+- Field does not stretch full width — it's centered with fixed max-width, leaving space on both sides.
+
+Right side — icon cluster (left to right)
+- "Pro" badge — small solid blue pill, bold white uppercase-ish text. Signals plan tier, not a button.
+- Theme toggle — sun icon (line style) in a bordered square button; toggles light/dark.
+- Help — circled question-mark icon, same bordered square button style.
+- Settings — gear icon, same button style.
+- User avatar — circular, filled blue background, white bold initials ("DA"), no border. Rightmost element, likely opens an account dropdown.
+
+Consistent styling across the cluster
+- All icon buttons share the same size (~36–40px square), light gray border, rounded corners (~8px), subtle hover state implied.
+- Even spacing (~12–16px gaps) between each icon button.
+- No labels on any of these icons — icon-only, relying on common recognition (search, theme, help, settings, avatar).
+
+Behavior notes worth specifying in a build prompt
+- Top bar is sticky/fixed while the main content scrolls beneath it.
+- It sits flush against the sidebar with no header background separation — same off-white/white tone, separated only by the sidebar's right border.
+- No page title or breadcrumb shown here — the "Good morning, [loggedin user]" headline in the hero card below effectively serves that role for the Dashboard page.
 
 ## Dashboard
 

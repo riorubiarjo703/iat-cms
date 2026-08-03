@@ -44,3 +44,106 @@
 .dark .fi-sidebar-user-menu-item-danger { color: rgb(248 113 113); }
 
 [x-cloak] { display: none !important; }
+
+/* ── Topbar ─────────────────────────────────────────────────────────────
+   The reference puts the bar inside the content column, flush to the
+   sidebar, with an evenly spaced cluster of bordered square icon buttons. */
+
+.fi-topbar > nav {
+    gap: 0.875rem;
+}
+
+/* Help and Settings, injected via TOPBAR_END. */
+.fi-topbar-action {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+    color: rgb(107 114 128);
+    transition: background-color 150ms, border-color 150ms;
+}
+.fi-topbar-action:hover {
+    background: rgb(249 250 251);
+    border-color: rgb(209 213 219);
+    color: rgb(55 65 81);
+}
+.dark .fi-topbar-action { border-color: rgb(255 255 255 / 0.1); color: rgb(161 161 170); }
+.dark .fi-topbar-action:hover { background: rgb(255 255 255 / 0.05); color: rgb(228 228 231); }
+
+/* Match Filament's own topbar buttons to the same bordered-square treatment. */
+.fi-topbar .fi-icon-btn,
+.fi-topbar .fi-dropdown-trigger > button:not(.fi-user-avatar) {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+}
+.dark .fi-topbar .fi-icon-btn { border-color: rgb(255 255 255 / 0.1); }
+
+/* Search: fixed max-width pill rather than full-bleed. */
+.fi-topbar .fi-global-search-field {
+    max-width: 30rem;
+    width: 100%;
+}
+.fi-topbar .fi-global-search-field input {
+    border-radius: 0.625rem;
+}
+
+/* ── Two-column shell ───────────────────────────────────────────────────
+   Filament renders .fi-topbar-ctn as a sibling of .fi-layout, spanning the
+   full viewport with the brand inside it. The reference instead puts the
+   brand in the sidebar and confines the bar to the content column.
+
+   Offset uses Filament's own --sidebar-width / --collapsed-sidebar-width, so
+   it tracks the sidebar instead of hardcoding a number. :has() reads the
+   open/collapsed state from the main container, which lives in a sibling
+   subtree the topbar cannot otherwise reach. */
+@media (min-width: 1024px) {
+    .fi-topbar-ctn {
+        margin-inline-start: var(--collapsed-sidebar-width);
+        transition: margin-inline-start 200ms ease;
+    }
+
+    .fi-body:has(.fi-main-ctn-sidebar-open) .fi-topbar-ctn {
+        margin-inline-start: var(--sidebar-width);
+    }
+
+    /* The brand now lives in the sidebar. */
+    .fi-topbar-start .fi-logo,
+    .fi-topbar-start img {
+        display: none;
+    }
+}
+
+.fi-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 1rem 0.75rem 0.5rem;
+    min-height: 3.5rem;
+}
+.fi-sidebar-brand-logo { height: 1.75rem; width: auto; display: block; }
+.fi-sidebar-brand-name { font-size: 1.05rem; font-weight: 700; color: rgb(17 24 39); }
+.dark .fi-sidebar-brand-name { color: rgb(244 244 245); }
+
+/* ── Topbar cluster order ───────────────────────────────────────────────
+   Filament wraps search and the user menu together in .fi-topbar-end, and a
+   TOPBAR_END hook renders *after* that wrapper — so injected buttons land to
+   the right of the avatar. `display: contents` dissolves the wrapper so its
+   children join the topbar's flex row, letting the reference order be set
+   explicitly: search, help, settings, avatar. */
+@media (min-width: 1024px) {
+    .fi-topbar-end { display: contents; }
+
+    .fi-topbar > .fi-topbar-start        { order: 1; }
+    .fi-topbar .fi-global-search-ctn     { order: 2; margin-inline-start: auto; }
+    .fi-topbar > .fi-topbar-action       { order: 3; }
+    .fi-topbar .fi-user-menu             { order: 4; }
+
+    /* Mobile sidebar toggles collapse to zero width on desktop but still
+       paint; hide them outright so they cannot bleed over the sidebar. */
+    .fi-topbar-open-sidebar-btn,
+    .fi-topbar-close-sidebar-btn { display: none; }
+}
