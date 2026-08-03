@@ -3,9 +3,9 @@
 namespace Tests\Feature\Filament;
 
 use AjayDhakal\FilamentStory\Models\BlogPost;
+use App\Filament\Pages\Placeholders\PagesPlaceholder;
 use App\Filament\Pages\Placeholders\PlaceholderPage;
 use App\Models\User;
-use CybertronianKelvin\Graper\Resources\GraperPageResource;
 use Filament\Facades\Filament;
 use Filament\Navigation\NavigationItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -119,7 +119,7 @@ class AdminNavigationTest extends TestCase
     public function test_the_appearance_parent_lists_its_children_in_order(): void
     {
         $this->assertSame(
-            ['Navigation Menus', 'Pages', 'Template Settings', 'Translations', 'Theme Editor', 'Admin Topbar Menu'],
+            ['Navigation Menus', 'Pages', 'Template Settings', 'Translations', 'Theme Editor'],
             $this->tree()['Administration > Appearance'],
         );
     }
@@ -182,9 +182,10 @@ class AdminNavigationTest extends TestCase
         $this->assertSame(count($urls), count(array_unique($urls)), 'Two menu entries lead to the same page');
     }
 
-    public function test_content_pages_points_at_the_graper_resource(): void
+    public function test_content_pages_points_at_the_placeholder_until_the_builder_lands(): void
     {
-        $this->assertSame(GraperPageResource::getUrl('index'), $this->child('Content', 'Pages')->getUrl());
+        // Graper is removed; the page builder slice replaces this.
+        $this->assertSame(PagesPlaceholder::getUrl(), $this->child('Content', 'Pages')->getUrl());
     }
 
     public function test_appearance_pages_is_a_separate_placeholder(): void
@@ -192,7 +193,7 @@ class AdminNavigationTest extends TestCase
         // "Pages" appears under both Content and Appearance; they are different things.
         $url = $this->child('Appearance', 'Pages')->getUrl();
 
-        $this->assertNotSame(GraperPageResource::getUrl('index'), $url);
+        $this->assertNotSame(PagesPlaceholder::getUrl(), $url);
         $this->assertStringContainsString('appearance-pages', $url);
     }
 
@@ -244,8 +245,9 @@ class AdminNavigationTest extends TestCase
         $this->assertFalse($class::canGloballySearch());
     }
 
-    public function test_nineteen_placeholders_are_registered(): void
+    public function test_twenty_placeholders_are_registered(): void
     {
-        $this->assertCount(19, static::placeholderClasses());
+        // Nineteen, plus Pages once Graper was removed.
+        $this->assertCount(20, static::placeholderClasses());
     }
 }

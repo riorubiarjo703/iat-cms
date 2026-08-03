@@ -82,7 +82,7 @@ return [
             'id' => 'Perkantoran — Hotel — Ritel — Residensial — Ruang Publik',
             'cn' => '写字楼 — 酒店 — 零售 — 住宅 — 公共空间',
         ],
-        // Graper's /pages/{slug} route exists but no company-profile page is
+        // No page route exists yet (the page builder slice adds it), and no
         // seeded, so that URL 404s on a fresh install. #contact matches the
         // reference design's own anchor for this button.
         'about_cta_url' => '#contact',

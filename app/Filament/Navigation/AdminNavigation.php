@@ -9,13 +9,11 @@ use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\BlogCategories\BlogCategoryResource;
 use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
 use App\Filament\Resources\Users\UserResource;
-use CybertronianKelvin\Graper\Resources\GraperPageResource;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Slimani\MediaManager\Pages\MediaManager;
-use Vaslv\FilamentTopbarMenu\Filament\Resources\TopbarMenuItemResource;
 
 /**
  * The single owner of the admin sidebar.
@@ -40,7 +38,7 @@ final class AdminNavigation
                 self::item('Dashboard', 'heroicon-o-home', Dashboard::getUrl(), 1, Dashboard::getRouteName()),
                 self::parent('Content', 'heroicon-o-document-text', 2, [
                     self::resource(BlogPostResource::class, 'Posts', 'heroicon-o-newspaper', 1, self::pendingPostCount()),
-                    self::resource(GraperPageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
+                    self::page(P\PagesPlaceholder::class, 'Pages', 'heroicon-o-document-duplicate', 2),
                     self::page(P\ContentBlocksPlaceholder::class, 'Content Blocks', 'heroicon-o-rectangle-stack', 3),
                     self::resource(BlogCategoryResource::class, 'Categories', 'heroicon-o-tag', 4),
                     self::page(P\CommentsPlaceholder::class, 'Comments', 'heroicon-o-chat-bubble-left-right', 5),
@@ -83,8 +81,6 @@ final class AdminNavigation
                     self::page(P\TemplateSettingsPlaceholder::class, 'Template Settings', 'heroicon-o-adjustments-horizontal', 3),
                     self::page(P\TranslationsPlaceholder::class, 'Translations', 'heroicon-o-language', 4),
                     self::page(P\ThemeEditorPlaceholder::class, 'Theme Editor', 'heroicon-o-swatch', 5),
-                    // Added to the reference structure, same reason as Media Library.
-                    self::resource(TopbarMenuItemResource::class, 'Admin Topbar Menu', 'heroicon-o-bars-3-bottom-left', 6),
                 ]),
                 self::pageUrl('Settings', 'heroicon-o-cog-6-tooth', SiteSettingsPage::getUrl(), 2, SiteSettingsPage::getRouteName()),
             ]),

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4f5fb1e35001fc416930df532dcbce3e",
+    "content-hash": "4c56ca098990ef5be5e218f29eabf7b1",
     "packages": [
         {
             "name": "ajaydhakal/filament-story",
@@ -860,90 +860,6 @@
                 }
             ],
             "time": "2025-08-20T19:15:30+00:00"
-        },
-        {
-            "name": "cybertroniankelvin/graper",
-            "version": "v1.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/CybertronianKelvin/Graper.git",
-                "reference": "667e01c5a84650835657b073c53a013db0aec4b6"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/CybertronianKelvin/Graper/zipball/667e01c5a84650835657b073c53a013db0aec4b6",
-                "reference": "667e01c5a84650835657b073c53a013db0aec4b6",
-                "shasum": ""
-            },
-            "require": {
-                "filament/filament": "^5.0",
-                "illuminate/contracts": "^11.0||^12.0||^13.0",
-                "php": "^8.2",
-                "spatie/laravel-package-tools": "^1.16"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.0",
-                "laravel/pint": "^1.14",
-                "nunomaduro/collision": "^8.8",
-                "orchestra/testbench": "^10.0.0||^9.0.0",
-                "pestphp/pest": "^4.0",
-                "pestphp/pest-plugin-arch": "^4.0",
-                "pestphp/pest-plugin-laravel": "^4.0",
-                "phpstan/extension-installer": "^1.4",
-                "phpstan/phpstan-deprecation-rules": "^2.0",
-                "phpstan/phpstan-phpunit": "^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Graper": "CybertronianKelvin\\Graper\\Facades\\Graper"
-                    },
-                    "providers": [
-                        "CybertronianKelvin\\Graper\\GraperServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "CybertronianKelvin\\Graper\\": "src/",
-                    "CybertronianKelvin\\Graper\\Database\\Factories\\": "database/factories/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Kelvin Atawura",
-                    "email": "katawura@gmail.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "A visual drag-and-drop page builder for Filament admin panels, powered by GrapeJS v3. Build landing pages, marketing sites, and custom content pages without writing code.",
-            "homepage": "https://github.com/cybertroniankelvin/graper",
-            "keywords": [
-                "admin",
-                "cms",
-                "drag-and-drop",
-                "filament",
-                "grapejs",
-                "laravel",
-                "page-builder",
-                "visual-editor"
-            ],
-            "support": {
-                "issues": "https://github.com/CybertronianKelvin/Graper/issues",
-                "source": "https://github.com/CybertronianKelvin/Graper/tree/v1.0.1"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/cybertroniankelvin",
-                    "type": "github"
-                }
-            ],
-            "time": "2026-04-29T23:05:24+00:00"
         },
         {
             "name": "danharrin/date-format-converter",
@@ -9228,70 +9144,6 @@
                 }
             ],
             "time": "2026-06-12T18:19:46+00:00"
-        },
-        {
-            "name": "vaslv/filament-topbar-menu",
-            "version": "v1.7.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/vaslv/filament-topbar-menu.git",
-                "reference": "44522ea6a58a8cbbeecc04f35d96c52658b43e2e"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/vaslv/filament-topbar-menu/zipball/44522ea6a58a8cbbeecc04f35d96c52658b43e2e",
-                "reference": "44522ea6a58a8cbbeecc04f35d96c52658b43e2e",
-                "shasum": ""
-            },
-            "require": {
-                "filament/filament": "^5.0",
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "larastan/larastan": "^3.0",
-                "laravel/pint": "^1.18",
-                "orchestra/testbench": "^10.0|^11.0",
-                "phpunit/phpunit": "^11.5|^12.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Vaslv\\FilamentTopbarMenu\\TopbarMenuServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Vaslv\\FilamentTopbarMenu\\": "src/",
-                    "Vaslv\\FilamentTopbarMenu\\Database\\Seeders\\": "database/seeders/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Andrei Vasilev",
-                    "email": "andrei@vaslv.ru"
-                }
-            ],
-            "description": "A configurable topbar menu plugin for Filament 5 — external and internal links, dropdowns, favicons, caching.",
-            "homepage": "https://github.com/vaslv/filament-topbar-menu",
-            "keywords": [
-                "filament",
-                "filament-plugin",
-                "laravel",
-                "menu",
-                "navigation",
-                "topbar"
-            ],
-            "support": {
-                "issues": "https://github.com/vaslv/filament-topbar-menu/issues",
-                "source": "https://github.com/vaslv/filament-topbar-menu/tree/v1.7.0"
-            },
-            "time": "2026-07-28T11:06:58+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

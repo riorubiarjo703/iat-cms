@@ -20,6 +20,6 @@ class ContentBlocksPlaceholder extends PlaceholderPage
 
     public static function plannedIn(): ?string
     {
-        return 'the Graper page builder slice';
+        return 'the page builder slice';
     }
 }

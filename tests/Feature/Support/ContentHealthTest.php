@@ -43,16 +43,23 @@ class ContentHealthTest extends TestCase
     {
         // Zero means "nothing yet"; null means "cannot say". Conflating them
         // would make an empty install look broken.
-        $this->assertSame(0, $this->health->pages());
+        $this->assertSame(0, $this->health->menuItems());
+    }
+
+    public function test_pages_reports_unknown_until_the_page_builder_exists(): void
+    {
+        // Graper is removed and no page model has replaced it. 0 would claim
+        // the site has no pages; null renders as an em dash instead.
+        $this->assertNull($this->health->pages());
     }
 
     public function test_a_missing_table_reports_null_and_logs_once(): void
     {
         Log::spy();
-        Schema::drop('graper_pages');
+        Schema::drop('public_menu_items');
 
-        $this->assertNull($this->health->pages());
-        $this->assertNull($this->health->pages());
+        $this->assertNull($this->health->menuItems());
+        $this->assertNull($this->health->menuItems());
 
         Log::shouldHaveReceived('warning')->once();
     }

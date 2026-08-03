@@ -2,20 +2,20 @@
 
 namespace App\Filament\Pages\Placeholders;
 
-class TranslationsPlaceholder extends PlaceholderPage
+class PagesPlaceholder extends PlaceholderPage
 {
-    protected static ?string $title = 'Translations';
+    protected static ?string $title = 'Pages';
 
-    protected static ?string $slug = 'translations';
+    protected static ?string $slug = 'pages';
 
     public static function getNavigationLabel(): string
     {
-        return 'Translations';
+        return 'Pages';
     }
 
     public static function summary(): string
     {
-        return 'Per-locale copy for every translatable string on the site.';
+        return 'Site pages built from drag-and-drop blocks, each with its own layout, SEO and per-language content.';
     }
 
     public static function plannedIn(): ?string

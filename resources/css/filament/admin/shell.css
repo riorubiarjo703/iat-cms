@@ -131,6 +131,7 @@
     }
 
     .fi-body-has-topbar .fi-sidebar {
+        height: calc(100dvh - 1rem);
         top: 1rem;
     }
 }

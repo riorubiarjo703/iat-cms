@@ -6,7 +6,6 @@ use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Models\PublicMenuItem;
 use App\Models\SiteSetting;
 use App\Models\User;
-use CybertronianKelvin\Graper\Models\GraperPage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -25,9 +24,14 @@ class ContentHealth
     /** @var array<string, bool> */
     private array $loggedMissing = [];
 
+    /**
+     * No page model exists between the Graper removal and the page builder
+     * slice. Null renders as an em dash — "cannot say" — where 0 would claim
+     * the site has no pages, which is a different and wrong statement.
+     */
     public function pages(): ?int
     {
-        return $this->count(GraperPage::class);
+        return null;
     }
 
     public function publishedPosts(): ?int

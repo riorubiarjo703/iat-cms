@@ -14,9 +14,9 @@ use Throwable;
  * composing HasTranslatableFields is walked and its TRANSLATABLE constant read,
  * so the panel keeps working as models come and go.
  *
- * NOTE: after the Graper slice, page copy moves into page_translations and this
- * calculation will need extending to cover it. Recorded here so it is a known
- * limit rather than a later surprise.
+ * NOTE: the page builder slice will introduce page copy in its own table, and
+ * this calculation will need extending to cover it. Recorded here so it is a
+ * known limit rather than a later surprise.
  */
 class TranslationCoverage
 {

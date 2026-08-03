@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Support\ContentHealth;
-use CybertronianKelvin\Graper\Resources\GraperPageResource;
+use App\Filament\Pages\Placeholders\PagesPlaceholder;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -35,7 +35,7 @@ class WelcomeBanner extends Widget
             'date' => $this->now()->translatedFormat('l, j F Y'),
             'greeting' => $this->greeting(),
             'firstName' => Str::before(auth()->user()?->name ?? '', ' ') ?: 'there',
-            'createPageUrl' => GraperPageResource::getUrl('create'),
+            'createPageUrl' => PagesPlaceholder::getUrl(),
             // Four figures that are all real queries — the reference's analytics
             // are not available, and fabricating them would be worse than
             // showing something true and duller.

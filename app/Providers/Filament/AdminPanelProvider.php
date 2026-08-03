@@ -4,8 +4,6 @@ namespace App\Providers\Filament;
 
 use AjayDhakal\FilamentStory\FilamentStoryPlugin;
 use App\Filament\Navigation\AdminNavigation;
-use CybertronianKelvin\Graper\GraperPlugin;
-use Vaslv\FilamentTopbarMenu\TopbarMenuPlugin;
 use Slimani\MediaManager\MediaManagerPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -58,8 +56,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->plugin(FilamentStoryPlugin::make())
-            ->plugin(GraperPlugin::make())
-            ->plugin(TopbarMenuPlugin::make())
             ->plugin(MediaManagerPlugin::make())
             ->middleware([
                 EncryptCookies::class,
