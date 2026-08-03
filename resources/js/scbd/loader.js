@@ -3,7 +3,23 @@ export function runLoader(gsap, ScrollTrigger, lenis, reduced) {
   const number = document.querySelector('[data-loader-num]');
   const bar = document.querySelector('[data-loader-bar]');
 
-  if (!loader) return;
+  // index.js parks every [data-char] at yPercent 105 before anything runs, so
+  // whatever path we take from here has to put the intro elements back. Miss
+  // it and the hero renders with a clean console and stays invisible.
+  const settle = () => {
+    gsap.set('#top [data-char]', { yPercent: 0 });
+    gsap.set('#top [data-parallax-wrap]', { clipPath: 'inset(0% 0% 0% 0%)' });
+    gsap.set('header[data-header]', { yPercent: 0 });
+  };
+
+  // A builder page can use the hero block without the loader overlay, which
+  // belongs to the homepage's intro rather than to the hero itself.
+  if (!loader) {
+    settle();
+    ScrollTrigger.refresh();
+
+    return;
+  }
 
   const finish = () => {
     loader.style.display = 'none';
@@ -13,10 +29,9 @@ export function runLoader(gsap, ScrollTrigger, lenis, reduced) {
 
   // Reduced motion: skip the whole intro and jump to the resting state.
   if (reduced || !number || !bar) {
-    gsap.set('#top [data-char]', { yPercent: 0 });
-    gsap.set('#top [data-parallax-wrap]', { clipPath: 'inset(0% 0% 0% 0%)' });
-    gsap.set('header[data-header]', { yPercent: 0 });
+    settle();
     finish();
+
     return;
   }
 

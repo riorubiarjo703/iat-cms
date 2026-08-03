@@ -23,14 +23,38 @@
         <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($settings->favicon) }}">
     @endif
 
-    {{-- Pages do not load the homepage's GSAP/Lenis bundle. That bundle drives
-         the homepage's pinned scroll and custom cursor, none of which a content
-         page needs, and its `cursor:none` would leave a page with no pointer. --}}
-    @vite(['resources/css/scbd.css'])
+    {{-- Builder pages get the animation bundle: every registered block depends
+         on its hooks (data-split, data-parallax, data-stack, data-horizontal),
+         and without it their content renders but never becomes visible.
+         Standard pages skip it — they have no such hooks, and the bundle's
+         `cursor:none` would leave a text page with no pointer. --}}
+    @if ($page->usesBuilder())
+        @vite(['resources/css/scbd.css', 'resources/js/scbd/index.js'])
+    @else
+        @vite(['resources/css/scbd.css'])
+    @endif
 </head>
 <body>
-    <div style="position:relative; width:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',system-ui,sans-serif;">
+    <div @style([
+        'position:relative; width:100%; background:#f3f2f2; color:#201e1d;',
+        "font-family:'Archivo',system-ui,sans-serif;",
+        // The custom cursor replaces the native one, so it is only hidden where
+        // that cursor actually exists.
+        'cursor:none' => $page->usesBuilder(),
+    ])>
+        @if ($page->usesBuilder())
+            <div class="scbd-cursor" data-cursor style="position:fixed;top:0;left:0;width:14px;height:14px;background:#ec3013;z-index:9999;pointer-events:none;transform:translate(-50%,-50%);"></div>
+            <div class="scbd-cursor" data-cursor-ring style="position:fixed;top:0;left:0;width:44px;height:44px;border:1.5px solid rgba(32,30,29,0.45);z-index:9998;pointer-events:none;transform:translate(-50%,-50%);"></div>
+        @endif
+
         {{ $slot }}
     </div>
+
+    @if ($page->usesBuilder())
+        {{-- Consumed by resources/js/scbd/i18n.js. Blocks publish their
+             translatable leaves under per-block keys, so the existing
+             switcher works unchanged. --}}
+        <script type="application/json" id="scbd-i18n">@json(\App\PageBuilder\BlockTranslations::forPage($page, app(\App\PageBuilder\BlockRegistry::class)))</script>
+    @endif
 </body>
 </html>
