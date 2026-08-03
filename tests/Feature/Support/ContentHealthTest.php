@@ -46,11 +46,12 @@ class ContentHealthTest extends TestCase
         $this->assertSame(0, $this->health->menuItems());
     }
 
-    public function test_pages_reports_unknown_until_the_page_builder_exists(): void
+    public function test_it_counts_pages(): void
     {
-        // Graper is removed and no page model has replaced it. 0 would claim
-        // the site has no pages; null renders as an em dash instead.
-        $this->assertNull($this->health->pages());
+        \App\Models\Page::create(['title' => ['en' => 'One'], 'slug' => 'one']);
+        \App\Models\Page::create(['title' => ['en' => 'Two'], 'slug' => 'two']);
+
+        $this->assertSame(2, $this->health->pages());
     }
 
     public function test_a_missing_table_reports_null_and_logs_once(): void

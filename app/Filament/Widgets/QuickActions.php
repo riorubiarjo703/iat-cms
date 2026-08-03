@@ -6,7 +6,7 @@ use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
 use App\Filament\Resources\Users\UserResource;
-use App\Filament\Pages\Placeholders\PagesPlaceholder;
+use App\Filament\Resources\Pages\PageResource;
 use Filament\Widgets\Widget;
 use Slimani\MediaManager\Pages\MediaManager;
 
@@ -43,7 +43,7 @@ class QuickActions extends Widget
     public static function actions(): array
     {
         return [
-            ['label' => 'New Page', 'icon' => 'heroicon-o-document-plus', 'tint' => 'blue', 'url' => PagesPlaceholder::getUrl()],
+            ['label' => 'New Page', 'icon' => 'heroicon-o-document-plus', 'tint' => 'blue', 'url' => PageResource::getUrl('create')],
             ['label' => 'New Post', 'icon' => 'heroicon-o-pencil-square', 'tint' => 'violet', 'url' => BlogPostResource::getUrl('create')],
             ['label' => 'Media Library', 'icon' => 'heroicon-o-photo', 'tint' => 'emerald', 'url' => MediaManager::getUrl()],
             ['label' => 'Navigation Menus', 'icon' => 'heroicon-o-bars-3', 'tint' => 'amber', 'url' => PublicMenuItemResource::getUrl('index')],

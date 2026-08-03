@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use AjayDhakal\FilamentStory\Models\BlogPost;
+use App\Models\Page;
 use App\Models\PublicMenuItem;
 use App\Models\SiteSetting;
 use App\Models\User;
@@ -24,14 +25,9 @@ class ContentHealth
     /** @var array<string, bool> */
     private array $loggedMissing = [];
 
-    /**
-     * No page model exists between the Graper removal and the page builder
-     * slice. Null renders as an em dash — "cannot say" — where 0 would claim
-     * the site has no pages, which is a different and wrong statement.
-     */
     public function pages(): ?int
     {
-        return null;
+        return $this->count(Page::class);
     }
 
     public function publishedPosts(): ?int

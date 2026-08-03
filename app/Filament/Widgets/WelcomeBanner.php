@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Support\ContentHealth;
-use App\Filament\Pages\Placeholders\PagesPlaceholder;
+use App\Filament\Resources\Pages\PageResource;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -35,7 +35,7 @@ class WelcomeBanner extends Widget
             'date' => $this->now()->translatedFormat('l, j F Y'),
             'greeting' => $this->greeting(),
             'firstName' => Str::before(auth()->user()?->name ?? '', ' ') ?: 'there',
-            'createPageUrl' => PagesPlaceholder::getUrl(),
+            'createPageUrl' => PageResource::getUrl('create'),
             // Four figures that are all real queries — the reference's analytics
             // are not available, and fabricating them would be worse than
             // showing something true and duller.

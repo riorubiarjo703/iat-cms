@@ -10,6 +10,7 @@ use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * The menu builder: pick items on the left, arrange them on the right.
@@ -176,15 +177,43 @@ class EditMenuPage extends Page
         return BlogCategory::query()->orderBy('name')->get();
     }
 
-    /**
-     * Pages do not exist until the page builder slice. The panel says so
-     * rather than showing an empty list that looks like a loading failure.
-     *
-     * @return Collection<int, mixed>
-     */
+    /** @return Collection<int, \App\Models\Page> */
     public function getAvailablePages(): Collection
     {
-        return collect();
+        return \App\Models\Page::query()->orderBy('slug')->get();
+    }
+
+    /**
+     * Adds the ticked pages as linked items. Labels are left empty so each
+     * borrows the page's own translated title — renaming the page renames the
+     * link, in every language.
+     */
+    public function addSelectedPages(): void
+    {
+        $pages = \App\Models\Page::query()->whereKey($this->selectedPages)->get();
+
+        if ($pages->isEmpty()) {
+            Notification::make()->title('Select at least one page')->warning()->send();
+
+            return;
+        }
+
+        $sort = $this->nextSort();
+
+        foreach ($pages as $page) {
+            MenuItem::create([
+                'menu_id' => $this->getRecord()->id,
+                'type' => MenuItem::TYPE_PAGE,
+                'label' => [],
+                'linkable_type' => \App\Models\Page::class,
+                'linkable_id' => $page->getKey(),
+                'sort' => $sort++,
+            ]);
+        }
+
+        $this->selectedPages = [];
+
+        Notification::make()->title("Added {$pages->count()} ".Str::plural('page', $pages->count()))->success()->send();
     }
 
     // ── Inline editing ──────────────────────────────────────────────────

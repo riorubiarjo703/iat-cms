@@ -87,7 +87,6 @@ class SiteSettingsPage extends Page
                             ->maxLength(255),
                         TextInput::make('contact_phone')
                             ->label('Phone')
-                            ->tel()
                             ->maxLength(255),
                         Textarea::make('contact_address')
                             ->label('Address')

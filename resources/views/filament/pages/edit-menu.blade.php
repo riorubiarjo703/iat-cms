@@ -54,9 +54,25 @@
                     </button>
 
                     <div x-show="open === 'pages'" x-cloak x-collapse>
-                        {{-- Honest about why this is empty: an empty checkbox list
-                             would read as a loading failure. --}}
-                        <p class="scbd-empty">Pages arrive with the page builder. Until then, link to them with a Custom Link.</p>
+                        @if ($pages->isEmpty())
+                            {{-- Honest about why this is empty: a bare checkbox
+                                 list would read as a loading failure. --}}
+                            <p class="scbd-empty">No pages yet. Create one under Content &rsaquo; Pages.</p>
+                        @else
+                            <div class="scbd-checkboxes">
+                                @foreach ($pages as $page)
+                                    <label class="scbd-checkbox">
+                                        <input type="checkbox" value="{{ $page->id }}" wire:model="selectedPages">
+                                        <span>{{ $page->t('title') ?: $page->slug }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+
+                            <button type="button" wire:click="addSelectedPages" class="scbd-add-btn">
+                                <x-filament::icon icon="heroicon-o-plus" />
+                                Add Selected ({{ count($selectedPages) }})
+                            </button>
+                        @endif
                     </div>
                 </div>
 

@@ -8,6 +8,7 @@ use App\Filament\Pages\Placeholders as P;
 use App\Filament\Pages\NavigationMenusPage;
 use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\BlogCategories\BlogCategoryResource;
+use App\Filament\Resources\Pages\PageResource;
 use App\Filament\Resources\Users\UserResource;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
@@ -38,7 +39,7 @@ final class AdminNavigation
                 self::item('Dashboard', 'heroicon-o-home', Dashboard::getUrl(), 1, Dashboard::getRouteName()),
                 self::parent('Content', 'heroicon-o-document-text', 2, [
                     self::resource(BlogPostResource::class, 'Posts', 'heroicon-o-newspaper', 1, self::pendingPostCount()),
-                    self::page(P\PagesPlaceholder::class, 'Pages', 'heroicon-o-document-duplicate', 2),
+                    self::resource(PageResource::class, 'Pages', 'heroicon-o-document-duplicate', 2),
                     self::page(P\ContentBlocksPlaceholder::class, 'Content Blocks', 'heroicon-o-rectangle-stack', 3),
                     self::resource(BlogCategoryResource::class, 'Categories', 'heroicon-o-tag', 4),
                     self::page(P\CommentsPlaceholder::class, 'Comments', 'heroicon-o-chat-bubble-left-right', 5),
