@@ -1,0 +1,243 @@
+/*
+ * Navigation Menus: the locations/menus index and the two-panel menu builder.
+ * Tokens come from theme.css.
+ */
+
+.scbd-menus-card + .scbd-menus-card { margin-top: 1.5rem; }
+
+.scbd-menus-intro { display: flex; align-items: flex-start; gap: 0.875rem; margin-bottom: 1.5rem; }
+.scbd-menus-intro-icon {
+    display: grid; place-items: center; flex-shrink: 0;
+    width: 2.5rem; height: 2.5rem; border-radius: 0.625rem;
+}
+.scbd-menus-intro-icon svg { width: 1.25rem; height: 1.25rem; }
+
+/* ── Location rows ──────────────────────────────────────────────────── */
+.scbd-location-row,
+.scbd-menu-row {
+    display: flex; align-items: center; gap: 0.875rem;
+    padding: 1rem 0;
+}
+.scbd-location-row + .scbd-location-row,
+.scbd-menu-row + .scbd-menu-row { border-top: 1px solid var(--scbd-border); }
+
+.scbd-location-icon,
+.scbd-menu-icon {
+    display: grid; place-items: center; flex-shrink: 0;
+    width: 2.5rem; height: 2.5rem;
+    border: 1px solid var(--scbd-border); border-radius: 0.625rem;
+    color: var(--scbd-text-muted);
+}
+.scbd-location-icon svg,
+.scbd-menu-icon svg { width: 1.125rem; height: 1.125rem; }
+
+.scbd-location-body,
+.scbd-menu-body { flex: 1 1 auto; min-width: 0; }
+
+.scbd-location-title,
+.scbd-menu-title {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    font-size: 0.9375rem; font-weight: 600; color: var(--scbd-text);
+}
+.scbd-location-desc,
+.scbd-menu-meta {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    margin-top: 0.25rem; font-size: 0.8125rem; color: var(--scbd-text-muted);
+}
+
+.scbd-count-pill {
+    padding: 0.125rem 0.5rem; border: 1px solid var(--scbd-border); border-radius: 999px;
+    font-size: 0.6875rem; font-weight: 500; color: var(--scbd-text-muted);
+}
+
+.scbd-location-badge {
+    display: inline-flex; align-items: center; gap: 0.3125rem;
+    padding: 0.1875rem 0.5rem; border-radius: 0.375rem;
+    background: rgb(59 130 246 / 0.1); color: var(--scbd-accent-strong);
+    font-size: 0.6875rem; font-weight: 500;
+}
+.scbd-location-badge svg { width: 0.875rem; height: 0.875rem; }
+
+.scbd-menu-dot { color: var(--scbd-border); }
+
+.scbd-directive {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem; color: var(--scbd-text-muted); cursor: pointer;
+}
+.scbd-directive:hover { color: var(--scbd-accent-strong); }
+.scbd-directive-copy { width: 0.875rem; height: 0.875rem; }
+
+.scbd-location-assign { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+.scbd-select, .scbd-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--scbd-border); border-radius: var(--scbd-radius-control);
+    background: var(--scbd-surface); color: var(--scbd-text); font-size: 0.875rem;
+    width: 100%;
+}
+.scbd-location-assign .scbd-select { min-width: 12rem; }
+
+.scbd-icon-btn {
+    display: grid; place-items: center; flex-shrink: 0;
+    width: 2.25rem; height: 2.25rem;
+    border: 1px solid var(--scbd-border); border-radius: var(--scbd-radius-control);
+    color: var(--scbd-accent-strong); background: var(--scbd-surface);
+}
+.scbd-icon-btn:hover { background: var(--scbd-canvas); }
+.scbd-icon-btn svg { width: 1.125rem; height: 1.125rem; }
+
+/* ── Menu row actions ───────────────────────────────────────────────── */
+.scbd-menu-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+.scbd-manage-btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--scbd-border); border-radius: var(--scbd-radius-control);
+    color: var(--scbd-accent-strong); font-size: 0.875rem; font-weight: 500;
+}
+.scbd-manage-btn:hover { background: var(--scbd-canvas); }
+.scbd-manage-btn svg { width: 1.125rem; height: 1.125rem; }
+
+.scbd-more { position: relative; }
+.scbd-more-menu {
+    position: absolute; right: 0; top: calc(100% + 0.375rem); z-index: 20; min-width: 12rem;
+    background: var(--scbd-surface); border: 1px solid var(--scbd-border);
+    border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15);
+    padding: 0.375rem; overflow: hidden;
+}
+.scbd-more-item {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%;
+    padding: 0.5rem 0.625rem; border-radius: 0.5rem;
+    font-size: 0.875rem; color: var(--scbd-text); text-align: left;
+}
+.scbd-more-item:hover { background: var(--scbd-canvas); }
+.scbd-more-item svg { width: 1.125rem; height: 1.125rem; color: var(--scbd-text-muted); }
+/* Destructive action isolated from the rest. */
+.scbd-more-item-danger { color: #dc2626; margin-top: 0.375rem; border-top: 1px solid var(--scbd-border); border-radius: 0; padding-top: 0.625rem; }
+.scbd-more-item-danger svg { color: #dc2626; }
+
+/* ── Menu editor ────────────────────────────────────────────────────── */
+.scbd-menu-editor { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+@media (min-width: 1024px) {
+    .scbd-menu-editor { grid-template-columns: 19rem minmax(0, 1fr); align-items: start; }
+}
+
+.scbd-add-items .scbd-card-title { margin-bottom: 1rem; }
+.scbd-accordion-section + .scbd-accordion-section { border-top: 1px solid var(--scbd-border); }
+
+.scbd-accordion-head {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%;
+    padding: 0.875rem 0; font-size: 0.9375rem; font-weight: 500; color: var(--scbd-text);
+}
+.scbd-accordion-head > span:first-of-type { flex: 1 1 auto; text-align: left; }
+.scbd-accordion-head svg { width: 1.125rem; height: 1.125rem; }
+.scbd-accordion-chevron { color: var(--scbd-text-muted); transition: transform 150ms; }
+.scbd-accordion-note { font-size: 0.8125rem; color: var(--scbd-text-muted); margin-bottom: 0.75rem; }
+
+.scbd-field { margin-bottom: 0.875rem; }
+.scbd-field label { display: block; margin-bottom: 0.375rem; font-size: 0.8125rem; font-weight: 500; color: var(--scbd-text); }
+
+.scbd-add-btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;
+    padding: 0.625rem; margin-bottom: 0.875rem;
+    border-radius: var(--scbd-radius-control);
+    background: #818cf8; color: #fff; font-size: 0.875rem; font-weight: 600;
+}
+.scbd-add-btn:hover { background: #6366f1; }
+.scbd-add-btn-solid { background: var(--scbd-accent); }
+.scbd-add-btn-solid:hover { background: var(--scbd-accent-strong); }
+.scbd-add-btn svg { width: 1.125rem; height: 1.125rem; }
+
+/* ── Structure panel ────────────────────────────────────────────────── */
+.scbd-structure-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.scbd-structure .scbd-card-title { display: flex; align-items: center; gap: 0.5rem; }
+.scbd-structure .scbd-card-title svg { width: 1.125rem; height: 1.125rem; color: var(--scbd-text); }
+.scbd-inline-icon { width: 0.875rem; height: 0.875rem; display: inline-block; vertical-align: -2px; }
+
+.scbd-structure-actions { display: flex; gap: 0.5rem; }
+.scbd-pill {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--scbd-border); border-radius: var(--scbd-radius-control);
+    color: var(--scbd-accent-strong); font-size: 0.8125rem; font-weight: 500;
+}
+.scbd-pill:hover { background: var(--scbd-canvas); }
+.scbd-pill svg { width: 1rem; height: 1rem; }
+
+.scbd-tree, .scbd-tree-children { list-style: none; margin: 0; padding: 0; }
+
+/* Children are indented behind a guide, and hidden until the row is opened.
+   min-height keeps a childless row a valid drop target, which is what lets it
+   become a parent. */
+.scbd-tree-children {
+    margin-inline-start: 1.75rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid var(--scbd-border);
+    min-height: 0.5rem;
+    display: none;
+}
+.scbd-tree-item-open > .scbd-tree-children { display: block; }
+/* A childless list still exists as a drop target, but shows no guide — an
+   orphan tick under every leaf row reads as broken nesting. */
+.scbd-tree-children-empty {
+    margin-inline-start: 1.75rem;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+    min-height: 0;
+}
+
+/* While a drag is in progress every list must be visible and droppable, even
+   collapsed or empty ones, or an item can never become the first child. */
+.scbd-dragging .scbd-tree-children { display: block; }
+.scbd-dragging .scbd-tree-children-empty {
+    min-height: 1.5rem;
+    border-inline-start: 2px dashed var(--scbd-accent);
+    border-radius: 0.25rem;
+}
+
+.scbd-tree-row {
+    display: flex; align-items: center; gap: 0.625rem;
+    padding: 0.625rem 0.75rem; border-radius: var(--scbd-radius-control);
+}
+.scbd-tree-row:hover { background: rgb(59 130 246 / 0.06); }
+.scbd-tree-row-inactive { opacity: 0.55; }
+
+.scbd-tree-handle { display: grid; place-items: center; cursor: grab; color: var(--scbd-text-muted); }
+.scbd-tree-handle:active { cursor: grabbing; }
+.scbd-tree-handle svg { width: 1.125rem; height: 1.125rem; }
+
+.scbd-tree-chevron { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; color: var(--scbd-text-muted); transition: transform 150ms; }
+.scbd-tree-item-open > .scbd-tree-row .scbd-tree-chevron { transform: rotate(90deg); }
+.scbd-tree-chevron svg { width: 1rem; height: 1rem; }
+.scbd-tree-chevron-spacer { width: 1.25rem; }
+
+.scbd-tree-dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--scbd-positive); flex-shrink: 0; }
+.scbd-tree-dot-off { background: var(--scbd-text-muted); }
+
+.scbd-tree-label { flex: 1 1 auto; font-size: 0.9375rem; font-weight: 500; color: var(--scbd-text); }
+
+.scbd-tree-badges { display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0; }
+.scbd-type-badge { padding: 0.1875rem 0.5rem; border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 600; }
+.scbd-type-link { background: rgb(59 130 246 / 0.12); color: var(--scbd-accent-strong); }
+.scbd-type-page { background: rgb(16 185 129 / 0.12); color: var(--scbd-positive); }
+.scbd-type-category { background: rgb(139 92 246 / 0.12); color: #7c3aed; }
+.scbd-type-cta { background: rgb(245 158 11 / 0.15); color: #b45309; }
+
+/* Actions appear on hover, so a resting row stays legible. */
+.scbd-tree-actions { display: flex; align-items: center; gap: 0.125rem; flex-shrink: 0; opacity: 0; transition: opacity 120ms; }
+.scbd-tree-row:hover .scbd-tree-actions,
+.scbd-tree-row:focus-within .scbd-tree-actions { opacity: 1; }
+
+.scbd-tree-action { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; color: var(--scbd-text-muted); }
+.scbd-tree-action:hover { background: var(--scbd-surface); color: var(--scbd-text); }
+.scbd-tree-action svg { width: 1rem; height: 1rem; }
+.scbd-tree-action-danger:hover { color: #dc2626; }
+
+.scbd-tree-ghost { opacity: 0.4; }
+
+.scbd-root-drop {
+    margin-top: 1rem; padding: 1.25rem;
+    border: 1px dashed var(--scbd-border); border-radius: var(--scbd-radius-control);
+    text-align: center; font-size: 0.875rem; color: var(--scbd-text-muted);
+}

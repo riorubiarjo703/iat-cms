@@ -83,7 +83,6 @@
 .fi-topbar .fi-dropdown-trigger > button:not(.fi-user-avatar) {
     width: 2.25rem;
     height: 2.25rem;
-    border: 1px solid var(--scbd-border);
     border-radius: 0.5rem;
 }
 .dark .fi-topbar .fi-icon-btn { border-color: rgb(255 255 255 / 0.1); }

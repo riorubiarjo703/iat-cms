@@ -186,16 +186,24 @@
             </span>
         @endif
         @if ($childItems)
-            {{-- OVERRIDE: collapsed, the chevron points at an expansion that
-                 cannot happen — children open in a flyout instead. --}}
-            <x-filament::icon
-                icon="heroicon-o-chevron-down"
-                class="fi-sidebar-item-chevron ms-auto h-5 w-5 transition-transform"
-                ::class="expanded ? 'rotate-180' : ''"
-                @if ($sidebarCollapsible && (! $subNavigation))
-                    x-show="$store.sidebar.isOpen"
-                @endif
-            />
+            @php
+                $chevronAttributes = [
+                    'class' => 'fi-sidebar-item-chevron ms-auto h-5 w-5 transition-transform',
+                    'x-bind:class' => "expanded ? 'rotate-180' : ''",
+                ];
+
+                if ($sidebarCollapsible && (! $subNavigation)) {
+                    $chevronAttributes['x-show'] = '$store.sidebar.isOpen';
+                }
+            @endphp
+
+            {{
+                \Filament\Support\generate_icon_html(
+                    'heroicon-o-chevron-down',
+                    attributes: new \Filament\Support\View\ComponentAttributeBag($chevronAttributes),
+                    size: \Filament\Support\Enums\IconSize::Large,
+                )
+            }}
         @endif
     </a>
 

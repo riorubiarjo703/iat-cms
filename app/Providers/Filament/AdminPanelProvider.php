@@ -73,6 +73,10 @@ class AdminPanelProvider extends PanelProvider
             // version string instead, which meant every edit needed
             // `filament:assets` plus a hard reload before it showed up.
             ->viteTheme('resources/css/filament/admin/theme.css')
+            // Admin-side Alpine components (the menu builder's drag-and-drop).
+            ->assets([
+                \Filament\Support\Assets\Js::make('scbd-admin', \Illuminate\Support\Facades\Vite::asset('resources/js/admin/index.js'))->module(),
+            ])
             ->renderHook(
                 \Filament\View\PanelsRenderHook::SIDEBAR_START,
                 fn (): \Illuminate\Contracts\View\View => view('filament.sidebar.brand'),

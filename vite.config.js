@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/css/scbd.css',
                 'resources/js/scbd/index.js',
                 'resources/css/filament/admin/theme.css',
+                'resources/js/admin/index.js',
             ],
             refresh: true,
             fonts: [

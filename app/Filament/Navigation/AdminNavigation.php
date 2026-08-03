@@ -5,9 +5,9 @@ namespace App\Filament\Navigation;
 use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
 use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Filament\Pages\Placeholders as P;
+use App\Filament\Pages\NavigationMenusPage;
 use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\BlogCategories\BlogCategoryResource;
-use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
 use App\Filament\Resources\Users\UserResource;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
@@ -75,7 +75,7 @@ final class AdminNavigation
 
             self::group('Administration', [
                 self::parent('Appearance', 'heroicon-o-paint-brush', 1, [
-                    self::resource(PublicMenuItemResource::class, 'Navigation Menus', 'heroicon-o-bars-3', 1),
+                    self::pageUrl('Navigation Menus', 'heroicon-o-bars-3', NavigationMenusPage::getUrl(), 1, NavigationMenusPage::getRouteName()),
                     // Distinct from Content > Pages: template assignment, not content.
                     self::page(P\TemplatePagesPlaceholder::class, 'Pages', 'heroicon-o-document', 2),
                     self::page(P\TemplateSettingsPlaceholder::class, 'Template Settings', 'heroicon-o-adjustments-horizontal', 3),

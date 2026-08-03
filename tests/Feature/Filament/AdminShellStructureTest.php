@@ -64,9 +64,16 @@ class AdminShellStructureTest extends TestCase
         // point at something that cannot happen.
         $html = $this->panel();
 
-        $chevron = substr($html, strpos($html, 'fi-sidebar-item-chevron'), 400);
+        // Bound to the whole element. A forward window from the class name
+        // misses attributes rendered before it, and Filament's icon component
+        // does not guarantee attribute order.
+        $at = strpos($html, 'fi-sidebar-item-chevron');
+        $this->assertNotFalse($at, 'No chevron rendered');
 
-        $this->assertStringContainsString('$store.sidebar.isOpen', $chevron);
+        $start = strrpos(substr($html, 0, $at), '<');
+        $element = substr($html, $start, strpos($html, '>', $at) - $start + 1);
+
+        $this->assertStringContainsString('$store.sidebar.isOpen', $element);
     }
 
     public function test_parents_with_children_render_a_flyout(): void
