@@ -1,6 +1,6 @@
 # Handoff — iat-cms
 
-**Written:** 2026-07-31. Read this before continuing work on the block page builder.
+**Written:** 2026-07-31, revised 2026-08-03. Read this before continuing work on the page builder.
 
 ## Where things stand
 
