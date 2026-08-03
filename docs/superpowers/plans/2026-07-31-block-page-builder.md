@@ -2897,3 +2897,427 @@ git commit -m "feat: add reusable block library resource"
 ```
 
 ---
+
+### Task 11: Seed the homepage as blocks
+
+Nothing user-visible changes here. `/` still serves the old hand-built homepage; this task only
+creates the `Page` row that Task 12 will switch to.
+
+**Files:**
+- Create: `database/seeders/HomepageBlocksSeeder.php`
+- Modify: `database/seeders/DatabaseSeeder.php`
+- Test: `tests/Feature/Seeders/HomepageBlocksSeederTest.php`
+
+**Interfaces:**
+- Consumes: `App\Models\{HomepageContent, DistrictPlace, Facility, Stat, Page}` — all still present at this point; Task 13 removes the first four.
+- Produces: `Database\Seeders\HomepageBlocksSeeder` — idempotent; creates or updates exactly one `Page` with `is_homepage = true` and `slug = 'home'`.
+
+**Transcription, not authorship.** Every string comes from the existing database rows. Do not
+paraphrase, re-translate, or invent copy — an earlier build shipped fabricated contact details
+for a real company and had to be corrected. If a value is absent, leave it absent.
+
+The block list reproduces the current section order:
+
+| # | Block | Source |
+|---|---|---|
+| 0 | `hero` | `homepage_contents.hero_line`, `hero_sub`, `hero_image` |
+| 1 | `marquee` | `homepage_contents.marquee_text` |
+| 2 | `text-image` | `about_heading`, `about_body`, `about_cta_label`, `about_cta_url`, `about_image` |
+| 3 | `stats` | all `stats` rows, ordered |
+| 4 | `horizontal-scroll` | `district_heading`, `district_body`, all `district_places` rows |
+| 5 | `stacked-cards` | `facilities_heading`, `facilities_body`, all `facilities` rows |
+| 6 | `post-list` | `news_heading`, `news_cta_label` |
+| 7 | `contact` | `contact_heading`, `contact_email`, `contact_phone`, `contact_address` |
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/Seeders/HomepageBlocksSeederTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature\Seeders;
+
+use App\Models\DistrictPlace;
+use App\Models\Facility;
+use App\Models\HomepageContent;
+use App\Models\Page;
+use App\Models\Stat;
+use Database\Seeders\HomepageBlocksSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class HomepageBlocksSeederTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function seedSource(): void
+    {
+        HomepageContent::singleton()->update([
+            'hero_line' => ['en' => "A district\nthat never\nclocks out", 'id' => 'Kawasan'],
+            'hero_sub' => ['en' => 'Forty-five hectares.'],
+            'marquee_text' => ['en' => 'Offices — Hotels'],
+            'about_heading' => ['en' => 'Built by Danayasa.'],
+            'about_body' => ['en' => 'Body copy.'],
+            'district_heading' => ['en' => "Everything inside\none walk"],
+            'facilities_heading' => ['en' => "Services that\nrun underneath"],
+            'news_heading' => ['en' => "Latest from\nthe district"],
+            'contact_heading' => ['en' => "Take an address"],
+            'contact_email' => null,
+            'contact_phone' => '+62 (21) 515-2390',
+        ]);
+        DistrictPlace::create(['title' => ['en' => 'The towers'], 'caption' => ['en' => 'Grade A office'], 'sort' => 1]);
+        Facility::create(['title' => ['en' => 'District clinic'], 'body' => ['en' => 'On-site care.'], 'sort' => 1]);
+        Stat::create(['label' => ['en' => 'Established'], 'value' => 1987, 'format' => 'plain', 'sort' => 1]);
+    }
+
+    public function test_it_creates_exactly_one_homepage(): void
+    {
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $this->assertSame(1, Page::query()->where('is_homepage', true)->count());
+    }
+
+    public function test_the_block_order_matches_the_current_page(): void
+    {
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $this->assertSame(
+            ['hero', 'marquee', 'text-image', 'stats', 'horizontal-scroll', 'stacked-cards', 'post-list', 'contact'],
+            array_column(Page::homepage()->blocks, 'type'),
+        );
+    }
+
+    public function test_hero_copy_is_transcribed_verbatim_including_locales(): void
+    {
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $hero = Page::homepage()->blocks[0]['data'];
+
+        $this->assertSame("A district\nthat never\nclocks out", $hero['heading']['en']);
+        $this->assertSame('Kawasan', $hero['heading']['id']);
+    }
+
+    public function test_repeater_rows_are_transcribed(): void
+    {
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $blocks = collect(Page::homepage()->blocks)->keyBy('type');
+
+        $this->assertSame('The towers', $blocks['horizontal-scroll']['data']['items'][0]['title']['en']);
+        $this->assertSame('District clinic', $blocks['stacked-cards']['data']['items'][0]['title']['en']);
+        $this->assertSame('Established', $blocks['stats']['data']['items'][0]['label']['en']);
+        $this->assertSame('plain', $blocks['stats']['data']['items'][0]['format']);
+    }
+
+    public function test_absent_values_stay_absent(): void
+    {
+        // contact_email is null in the source. It must not be invented.
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $contact = collect(Page::homepage()->blocks)->firstWhere('type', 'contact')['data'];
+
+        $this->assertNull($contact['email'] ?? null);
+        $this->assertSame('+62 (21) 515-2390', $contact['phone']);
+    }
+
+    public function test_it_is_idempotent(): void
+    {
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $this->assertSame(1, Page::query()->count());
+        $this->assertCount(8, Page::homepage()->blocks);
+    }
+
+    public function test_every_produced_block_type_is_registered(): void
+    {
+        $this->seedSource();
+        $this->seed(HomepageBlocksSeeder::class);
+
+        $registry = app(\App\Blocks\BlockRegistry::class);
+
+        foreach (Page::homepage()->blocks as $block) {
+            $this->assertTrue($registry->has($block['type']), "Seeded unregistered block [{$block['type']}]");
+        }
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Feature/Seeders/HomepageBlocksSeederTest.php`
+Expected: FAIL — `Class "Database\Seeders\HomepageBlocksSeeder" not found`.
+
+- [ ] **Step 3: Write the seeder**
+
+Create `database/seeders/HomepageBlocksSeeder.php`:
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\DistrictPlace;
+use App\Models\Facility;
+use App\Models\HomepageContent;
+use App\Models\Page;
+use App\Models\Stat;
+use Illuminate\Database\Seeder;
+
+/**
+ * Rebuilds the existing homepage as a block list.
+ *
+ * Every value is transcribed from the current rows. Nothing is authored here:
+ * if a source value is null it stays null.
+ */
+class HomepageBlocksSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $c = HomepageContent::singleton();
+
+        $blocks = [
+            ['type' => 'hero', 'data' => [
+                'heading' => $c->translations('hero_line'),
+                'sub' => $c->translations('hero_sub'),
+                'image' => $c->hero_image,
+            ]],
+            ['type' => 'marquee', 'data' => [
+                'text' => $c->translations('marquee_text'),
+                'duration' => 26,
+            ]],
+            ['type' => 'text-image', 'data' => [
+                'heading' => $c->translations('about_heading'),
+                'body' => $c->translations('about_body'),
+                'cta_label' => $c->translations('about_cta_label'),
+                'cta_url' => $c->about_cta_url,
+                'image' => $c->about_image,
+                'reversed' => false,
+            ]],
+            ['type' => 'stats', 'data' => [
+                'heading' => [],
+                'items' => Stat::query()->ordered()->get()->map(fn (Stat $s): array => [
+                    'label' => $s->translations('label'),
+                    'value' => $s->value,
+                    'suffix' => $s->suffix,
+                    'format' => $s->format->value,
+                ])->all(),
+            ]],
+            ['type' => 'horizontal-scroll', 'data' => [
+                'heading' => $c->translations('district_heading'),
+                'body' => $c->translations('district_body'),
+                'items' => DistrictPlace::query()->active()->ordered()->get()->map(fn (DistrictPlace $p): array => [
+                    'title' => $p->translations('title'),
+                    'caption' => $p->translations('caption'),
+                    'image' => $p->image,
+                ])->all(),
+            ]],
+            ['type' => 'stacked-cards', 'data' => [
+                'heading' => $c->translations('facilities_heading'),
+                'body' => $c->translations('facilities_body'),
+                'items' => Facility::query()->active()->ordered()->get()->map(fn (Facility $f): array => [
+                    'title' => $f->translations('title'),
+                    'body' => $f->translations('body'),
+                    'image' => $f->image,
+                ])->all(),
+            ]],
+            ['type' => 'post-list', 'data' => [
+                'heading' => $c->translations('news_heading'),
+                'cta_label' => $c->translations('news_cta_label'),
+                'count' => 3,
+            ]],
+            ['type' => 'contact', 'data' => [
+                'heading' => $c->translations('contact_heading'),
+                'email' => $c->contact_email,
+                'phone' => $c->contact_phone,
+                'address' => $c->contact_address,
+            ]],
+        ];
+
+        Page::query()->updateOrCreate(
+            ['slug' => 'home'],
+            [
+                'title' => ['en' => 'Home'],
+                'blocks' => $blocks,
+                'status' => 'published',
+                'is_homepage' => true,
+                'meta_title' => $c->translations('meta_title') ?: [],
+            ],
+        );
+    }
+}
+```
+
+`meta_title` may not exist on `HomepageContent`; if `translations()` returns `[]` for it, that
+is correct — site-wide meta lives on `SiteSetting`. Remove the line if it errors and say so.
+
+- [ ] **Step 4: Register and run**
+
+Add `$this->call(HomepageBlocksSeeder::class);` to `DatabaseSeeder::run()` after the existing
+`HomepageSeeder` call — the source rows must exist before this reads them.
+
+```bash
+php artisan test tests/Feature/Seeders/HomepageBlocksSeederTest.php
+php artisan db:seed --class=Database\\Seeders\\HomepageBlocksSeeder
+```
+
+Expected: 7 tests pass; the real database gains one `Page` row. **`/` still serves the old
+homepage** — verify that it does, unchanged, before continuing.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add database/seeders tests/Feature/Seeders/HomepageBlocksSeederTest.php
+git commit -m "feat: seed the homepage as a block list"
+```
+
+---
+
+### Task 12: Switch `/` to the block renderer and verify
+
+The first user-visible change. Nothing is deleted yet, so this is reversible by reverting one commit.
+
+**Files:**
+- Modify: `routes/web.php` (already points at `PageController` from Task 8 — confirm)
+- Test: `tests/Feature/HomepageParityTest.php`
+
+**Interfaces:**
+- Consumes: everything from Tasks 1–11.
+
+- [ ] **Step 1: Write the parity test**
+
+Create `tests/Feature/HomepageParityTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Page;
+use Database\Seeders\HomepageBlocksSeeder;
+use Database\Seeders\HomepageSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+class HomepageParityTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake('public');
+        Http::fake(['scbd.com/*' => Http::response('img', 200)]);
+        $this->seed(HomepageSeeder::class);
+        $this->seed(HomepageBlocksSeeder::class);
+    }
+
+    public function test_the_root_renders_the_block_homepage(): void
+    {
+        $this->get('/')->assertSuccessful();
+    }
+
+    public function test_every_expected_block_is_present_in_order(): void
+    {
+        $html = $this->get('/')->getContent();
+
+        preg_match_all('/data-block="([a-z-]+)"/', $html, $m);
+
+        $this->assertSame(
+            ['hero', 'marquee', 'text-image', 'stats', 'horizontal-scroll', 'stacked-cards', 'post-list', 'contact'],
+            $m[1],
+        );
+    }
+
+    public function test_the_animation_hooks_survive_the_move_to_blocks(): void
+    {
+        $html = $this->get('/')->getContent();
+
+        foreach ([
+            'data-split', 'data-parallax-wrap', 'data-parallax', 'data-marquee',
+            'data-count', 'data-horizontal-track', 'data-card', 'data-news',
+        ] as $hook) {
+            $this->assertStringContainsString($hook, $html, "Lost animation hook [{$hook}]");
+        }
+    }
+
+    public function test_the_i18n_payload_matches_the_rendered_attributes_exactly(): void
+    {
+        // The switcher silently skips keys it cannot find, so a mismatch is
+        // invisible at runtime. This is the test that catches it.
+        $html = $this->get('/')->getContent();
+
+        preg_match('/<script type="application\/json" id="scbd-i18n">(.*?)<\/script>/s', $html, $script);
+        $payload = json_decode($script[1] ?? '{}', true);
+
+        preg_match_all('/data-i18n="([^"]+)"/', $html, $attrs);
+
+        $rendered = array_values(array_unique($attrs[1]));
+        sort($rendered);
+
+        $keys = array_keys($payload['en'] ?? []);
+        sort($keys);
+
+        $this->assertSame($keys, $rendered, 'data-i18n attributes and payload keys have diverged');
+    }
+
+    public function test_all_three_locales_are_present(): void
+    {
+        $html = $this->get('/')->getContent();
+        preg_match('/id="scbd-i18n">(.*?)<\/script>/s', $html, $m);
+
+        $this->assertSame(['en', 'id', 'cn'], array_keys(json_decode($m[1], true)));
+    }
+}
+```
+
+- [ ] **Step 2: Run it**
+
+Run: `php artisan test tests/Feature/HomepageParityTest.php`
+Expected: PASS — 5 tests. If `test_the_i18n_payload_matches_the_rendered_attributes_exactly`
+fails, a block view emits a `data-i18n` key the payload does not build, or vice versa. Fix the
+mismatch; do not relax the assertion.
+
+- [ ] **Step 3: Build and verify in a real browser**
+
+```bash
+npm run build
+```
+
+Do **not** run `npm run dev`; do not create `public/hot`. Confirm `/` serves
+`/build/assets/*.js` and not `[::1]:5173`, then load `http://iat-cms.test/` and check:
+
+- [ ] No console errors
+- [ ] Loader completes and the hero characters become visible
+- [ ] Marquee scrolls, speeds up under scroll, and does not freeze
+- [ ] Stats count up, and a `plain`-format stat renders `1987` not `1,987`
+- [ ] `horizontal-scroll` pins, scrubs, and releases
+- [ ] `stacked-cards` scale and stack
+- [ ] EN/ID/CN switching swaps text without breaking scrolling
+- [ ] Reduced motion applies resting states without throwing
+
+Use dispatched `WheelEvent`s, not `scrollTo()` — **Lenis ignores `scrollTo()`** and tracks its
+own wheel-driven target, which produces stalled readings that look like broken pinning.
+
+- [ ] **Step 4: Reorder a block in the admin and reload**
+
+The point of the whole slice. In `/superduper` → Pages → Home, drag `stats` above `text-image`,
+save, reload `/`, and confirm the order changed and every effect still works. Report what you saw.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add tests/Feature/HomepageParityTest.php
+git commit -m "test: assert the block homepage reaches parity with the hand-built one"
+```
+
+---
