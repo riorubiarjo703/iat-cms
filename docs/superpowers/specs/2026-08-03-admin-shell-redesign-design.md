@@ -54,7 +54,7 @@ So the dashboard keeps the reference's **visual composition** but is populated w
 | Decision | Choice | Rejected |
 |---|---|---|
 | Stack | Restyle the existing Filament panel | Rebuild the admin in React |
-| Sidebar contents | Real destinations only; grows as features land | Scaffold all 25 with placeholder screens |
+| Sidebar contents | **Full reference structure, with placeholder pages behind unbuilt entries** (owner's decision, 2026-08-03, reversing an earlier "real items only" choice) | Real destinations only |
 | Dashboard data | Content-health metrics from real counts | Literal spec metrics showing zeros; honest empty states for every unavailable tile; minimal hero-only dashboard |
 | Analytics | Out of scope, tracked as a later slice | Build tracking first |
 | Activity feed | Omitted this slice — no audit log exists | Add an activity log package now |
@@ -109,17 +109,27 @@ SYSTEM
 └─ Users
 ```
 
-Differences from the reference, each deliberate:
+**The full reference structure is built, including entries with nothing behind them.** Nineteen
+of the twenty-eight destinations are placeholder pages; nine are real. The owner chose this over
+a shorter honest menu so the product's intended shape is visible.
 
-- **Contacts, Marketing, Roles, Permissions, Analytics, Email Activity, SEO/Redirects, Code
-  Snippets, Backups, Template Settings, Theme Editor, Comments** — omitted. Nothing behind them.
-- **Media Library** — present, though absent from the reference sidebar. It exists and is used.
-- **Content Blocks** and **Translations** — omitted here; both arrive with the Graper page
-  builder slice, whose spec already covers them. They slot into `Content` and `Appearance`
-  respectively when built.
-- **Blog** is folded into `Content` rather than being its own group. The owner's earlier
-  preferred structure had a separate `Blog` group containing a Blog Dashboard and Authors —
-  those arrive in slice A2, at which point `Blog` becomes its own group as originally asked.
+Placeholders must therefore be unambiguous. Each renders a single centred panel naming the
+feature, stating plainly that it is not built yet, and — where known — which slice will build
+it. No fake tables, no dummy charts, no invented counts. An editor who lands on one must not be
+able to mistake it for a broken page.
+
+Two additions to the reference structure, since `AdminNavigation` owns the sidebar exclusively
+and an unlisted resource becomes URL-only:
+
+- **Media Library** joins `Content`, beside Pages and Posts.
+- **Admin Topbar Menu** joins `Appearance`, beside Navigation Menus.
+
+`Pages` appears twice in the reference. `Content → Pages` is the real Graper resource;
+`Appearance → Pages` is a placeholder for page-template assignment.
+
+**Badges show real counts only.** The reference's `Content (22)` and `Comments (22)` are mock
+figures. Posts carries a real draft-plus-scheduled count; entries with no underlying feature
+carry no badge, because a hardcoded number beside a placeholder would be inventing data.
 
 `AdminNavigation` remains the sole owner of the sidebar, so every item is declared in one file.
 The accepted trade-off is unchanged: a resource added later must be registered there or it will
