@@ -8,13 +8,13 @@
 |---|---|
 | SCBD homepage + admin (slice 0) | Complete, 144 tests / 417 assertions, published |
 | Block page builder spec (slice A1) | `docs/superpowers/specs/2026-07-31-block-page-builder-design.md` — approved |
-| Block page builder plan (slice A1) | `docs/superpowers/plans/2026-07-31-block-page-builder.md` — **Tasks 1–3 written in full; Tasks 4–14 outlined only** |
+| Block page builder plan (slice A1) | `docs/superpowers/plans/2026-07-31-block-page-builder.md` — **complete: 14 tasks, 91 steps, self-reviewed** |
 | Repository | `main`, pushed to `github.com/riorubiarjo703/iat-cms` (**public**) |
 
-**The immediate next job** is to write Tasks 4–14 of the plan to the same fidelity as
-Tasks 1–3 (real code, real tests, teeth-checks), then execute the whole plan with
-`superpowers:subagent-driven-development`. The remaining-tasks table at the foot of the plan
-lists each task's required interfaces.
+**The immediate next job** is to execute the plan with `superpowers:subagent-driven-development`
+— a fresh subagent per task, a spec-and-quality review between each, and a whole-branch review
+at the end. Task 13 (removals) must not begin until Task 12 has been verified in a real browser:
+the hand-built homepage is the only reference the rebuilt one can be compared against.
 
 ## Hard rules for this project
 
