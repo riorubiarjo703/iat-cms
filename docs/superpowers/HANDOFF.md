@@ -7,14 +7,22 @@
 | Item | State |
 |---|---|
 | SCBD homepage + admin (slice 0) | Complete, 144 tests / 417 assertions, published |
-| Block page builder spec (slice A1) | `docs/superpowers/specs/2026-07-31-block-page-builder-design.md` — approved |
-| Block page builder plan (slice A1) | `docs/superpowers/plans/2026-07-31-block-page-builder.md` — **complete: 14 tasks, 91 steps, self-reviewed** |
+| Page builder spec (slice A1) | `docs/superpowers/specs/2026-08-03-graper-page-builder-design.md` — **approved, current**. The 2026-07-31 Filament-Builder spec is SUPERSEDED. |
+| Page builder plan (slice A1) | **Not yet written for the current direction.** The 2026-07-31 plan is SUPERSEDED but retained for its animation-binding analysis. |
 | Repository | `main`, pushed to `github.com/riorubiarjo703/iat-cms` (**public**) |
 
-**The immediate next job** is to execute the plan with `superpowers:subagent-driven-development`
-— a fresh subagent per task, a spec-and-quality review between each, and a whole-branch review
-at the end. Task 13 (removals) must not begin until Task 12 has been verified in a real browser:
-the hand-built homepage is the only reference the rebuilt one can be compared against.
+**The immediate next job** is to write the implementation plan for
+`2026-08-03-graper-page-builder-design.md` with `superpowers:writing-plans`, then execute it.
+
+**Direction changed on 2026-08-03.** The owner wants a live visual drag-and-drop canvas, so the
+page builder is GrapesJS via the Graper plugin — which the previous plan was going to delete.
+Graper is NOT removed. Its stock Tailwind blocks are unused; we write SCBD-styled blocks and
+override `graper::display` so pages render in our layout with our CSS and animation bundle.
+Translations move to a side table plus a screen driven by the `data-i18n` keys parsed from the
+saved HTML, which keeps the instant no-reload switcher working.
+
+Removal of the old models and partials stays last: until the canvas-built homepage is verified
+in a browser, the hand-built one is the only thing it can be compared against.
 
 ## Hard rules for this project
 
