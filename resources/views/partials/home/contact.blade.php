@@ -1,7 +1,21 @@
 @php
     $locale = $data->settings->default_locale ?? 'en';
     $contactHeading = $data->i18n[$locale]['contacth'] ?? '';
-    $addressLines = $data->content->contact_address ? e($data->content->contact_address) : null;
+    $addressLines = $data->settings->contact_address ? e($data->settings->contact_address) : null;
+
+    // This section is the site's footer. Its Sitemap column renders whichever
+    // menu is assigned to the footer location; top-level items with children
+    // would become sub-columns, but this design uses a single flat column, so
+    // children are flattened in alongside their parent.
+    $footerMenu = \App\Support\MenuRenderer::byLocation(\App\Support\MenuLocations::FOOTER);
+    $sitemapLinks = $footerMenu->flatMap(function ($item) {
+        $children = $item->children->where('is_active', true);
+
+        // A parent that only groups children is a heading, not a link.
+        return $children->isNotEmpty() ? $children : collect([$item]);
+    });
+
+    $social = \App\Support\SocialNetworks::configured($data->settings->social);
 @endphp
 
 <section id="contact" style="background:#ec3013; color:#f3f2f2; padding:120px 40px;">
@@ -16,30 +30,31 @@
         <div style="background:#ec3013; padding:28px;">
             <div style="font-size:11px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.8; margin-bottom:12px;">Contact</div>
             <div style="font-size:14px; line-height:1.6;">
-                @if ($data->content->contact_phone)
-                    Tel {{ $data->content->contact_phone }}<br>
+                @if ($data->settings->contact_phone)
+                    Tel {{ $data->settings->contact_phone }}<br>
                 @endif
-                @if ($data->content->contact_email)
-                    {{ $data->content->contact_email }}
+                @if ($data->settings->contact_email)
+                    {{ $data->settings->contact_email }}
                 @endif
             </div>
         </div>
         <div style="background:#ec3013; padding:28px;">
             <div style="font-size:11px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.8; margin-bottom:12px;">Sitemap</div>
             <div style="display:flex; flex-direction:column; gap:6px; font-size:14px;">
-                <a href="https://scbd.com/menu/page/profile" style="color:#f3f2f2; text-decoration:none;">Company profile</a>
-                <a href="https://scbd.com/menu/page/milestone" style="color:#f3f2f2; text-decoration:none;">Milestone</a>
-                <a href="https://scbd.com/menu/page/places" style="color:#f3f2f2; text-decoration:none;">Place of interest</a>
-                <a href="https://scbd.com/menu/page/careers" style="color:#f3f2f2; text-decoration:none;">Careers</a>
+                @foreach ($sitemapLinks as $link)
+                    <a href="{{ $link->resolveUrl() }}"
+                       @if ($link->target && $link->target !== '_self') target="{{ $link->target }}" rel="noopener" @endif
+                       style="color:#f3f2f2; text-decoration:none;">{{ $link->t('label') }}</a>
+                @endforeach
             </div>
         </div>
         <div style="background:#ec3013; padding:28px;">
             <div style="font-size:11px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.8; margin-bottom:12px;">Social</div>
             <div style="display:flex; flex-direction:column; gap:6px; font-size:14px;">
-                <a href="https://web.facebook.com/SCBD.ID" style="color:#f3f2f2; text-decoration:none;">Facebook</a>
-                <a href="https://twitter.com/scbd_id" style="color:#f3f2f2; text-decoration:none;">X / Twitter</a>
-                <a href="https://www.instagram.com/scbd_official/" style="color:#f3f2f2; text-decoration:none;">Instagram</a>
-                <a href="https://www.linkedin.com/feed/" style="color:#f3f2f2; text-decoration:none;">LinkedIn</a>
+                @foreach ($social as $network)
+                    <a href="{{ $network['url'] }}" target="_blank" rel="noopener"
+                       style="color:#f3f2f2; text-decoration:none;">{{ $network['label'] }}</a>
+                @endforeach
             </div>
         </div>
     </div>

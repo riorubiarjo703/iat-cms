@@ -76,6 +76,27 @@ class SiteSettingsPage extends Page
                         ->maxLength(500),
                 ], 'Search & Social Preview'),
 
+                // Organisation facts, not homepage copy: the footer shows
+                // these on every page, so they cannot live on HomepageContent.
+                Section::make('Contact')
+                    ->description('Shown in the site footer and the contact section.')
+                    ->schema([
+                        TextInput::make('contact_email')
+                            ->label('Email')
+                            ->email()
+                            ->maxLength(255),
+                        TextInput::make('contact_phone')
+                            ->label('Phone')
+                            ->tel()
+                            ->maxLength(255),
+                        Textarea::make('contact_address')
+                            ->label('Address')
+                            ->helperText('One line per row — the footer renders each on its own line.')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
                 Section::make('Social Links')
                     ->schema([
                         TextInput::make('social.instagram')->label('Instagram')->url()->maxLength(255),

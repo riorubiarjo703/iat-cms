@@ -1,6 +1,10 @@
 {{-- One row of the menu tree, recursing into its children. --}}
 <li class="scbd-tree-item" data-menu-item="{{ $item->id }}" wire:key="item-{{ $item->id }}">
-    <div class="scbd-tree-row" @class(['scbd-tree-row-inactive' => ! $item->is_active])>
+    <div @class([
+        'scbd-tree-row',
+        'scbd-tree-row-inactive' => ! $item->is_active,
+        'scbd-tree-row-editing' => $this->editingId === (string) $item->id,
+    ])>
         <span class="scbd-tree-handle" data-menu-handle aria-hidden="true">
             <x-filament::icon icon="heroicon-o-ellipsis-vertical" />
         </span>
@@ -38,6 +42,10 @@
         </span>
 
         <span class="scbd-tree-actions">
+            <button type="button" class="scbd-tree-action" wire:click="startEditing('{{ $item->id }}')" title="Edit this item">
+                <x-filament::icon icon="heroicon-o-pencil" />
+            </button>
+
             <button type="button" class="scbd-tree-action" wire:click="toggleCta('{{ $item->id }}')"
                     title="{{ $item->is_cta ? 'Stop treating this as the call-to-action' : 'Make this the call-to-action button' }}">
                 <x-filament::icon icon="heroicon-o-cursor-arrow-rays" />
@@ -55,6 +63,70 @@
             </button>
         </span>
     </div>
+
+    @if ($this->editingId === (string) $item->id)
+        <div class="scbd-item-editor">
+            @php($locales = $this->getLocales())
+
+            <div class="scbd-field" x-data="{ locale: @js(array_key_first($locales)) }">
+                <label>Label</label>
+
+                {{-- Locale tabs rather than three stacked inputs: the quick-add
+                     path stays one field, and translating stays one click away. --}}
+                <div class="scbd-locale-tabs">
+                    @foreach ($locales as $code => $name)
+                        <button type="button" class="scbd-locale-tab"
+                                x-on:click="locale = @js($code)"
+                                x-bind:class="locale === @js($code) ? 'scbd-locale-tab-active' : ''">
+                            {{ strtoupper($code) }}
+                        </button>
+                    @endforeach
+                </div>
+
+                @foreach ($locales as $code => $name)
+                    <input type="text" class="scbd-input"
+                           x-show="locale === @js($code)"
+                           wire:model="editLabel.{{ $code }}"
+                           placeholder="{{ $name }}{{ $code === \App\Models\MenuItem::FALLBACK_LOCALE ? '' : ' — falls back to English if left blank' }}">
+                @endforeach
+            </div>
+
+            @if ($item->type === \App\Models\MenuItem::TYPE_CUSTOM)
+                <div class="scbd-field">
+                    <label for="edit-url-{{ $item->id }}">URL</label>
+                    <input id="edit-url-{{ $item->id }}" type="text" class="scbd-input" wire:model="editUrl">
+                </div>
+            @else
+                {{-- A linked item follows its record, so an editable URL here
+                     would be a field that silently does nothing. --}}
+                <p class="scbd-field-note">Links to {{ class_basename($item->linkable_type) }} — the URL follows that record.</p>
+            @endif
+
+            <div class="scbd-editor-row">
+                <div class="scbd-field">
+                    <label for="edit-target-{{ $item->id }}">Target</label>
+                    <select id="edit-target-{{ $item->id }}" class="scbd-select" wire:model="editTarget">
+                        <option value="_self">Same window</option>
+                        <option value="_blank">New window</option>
+                    </select>
+                </div>
+
+                <label class="scbd-toggle">
+                    <input type="checkbox" wire:model="editActive">
+                    <span class="scbd-toggle-track"><span class="scbd-toggle-thumb"></span></span>
+                    Active
+                </label>
+            </div>
+
+            <div class="scbd-editor-actions">
+                <button type="button" class="scbd-editor-cancel" wire:click="cancelEditing">
+                    <x-filament::icon icon="heroicon-o-x-mark" />
+                    Cancel
+                </button>
+                <button type="button" class="scbd-editor-save" wire:click="saveItem">Save</button>
+            </div>
+        </div>
+    @endif
 
     {{-- Always rendered, even when empty: an empty list is the drop target
          that makes a childless item able to become a parent. The empty class is

@@ -11,4 +11,5 @@
         @include('partials.home.news', ['data' => $data])
         @include('partials.home.contact', ['data' => $data])
     </main>
+
 </x-layouts.public>

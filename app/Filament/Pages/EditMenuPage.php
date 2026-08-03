@@ -48,6 +48,18 @@ class EditMenuPage extends Page
     /** @var array<int, string> */
     public array $selectedPages = [];
 
+    // ── Inline edit state ───────────────────────────────────────────────
+    public ?string $editingId = null;
+
+    /** @var array<string, string> locale => label */
+    public array $editLabel = [];
+
+    public string $editUrl = '';
+
+    public string $editTarget = '_self';
+
+    public bool $editActive = true;
+
     public function mount(string|int $record): void
     {
         $this->recordId = $record;
@@ -173,6 +185,83 @@ class EditMenuPage extends Page
     public function getAvailablePages(): Collection
     {
         return collect();
+    }
+
+    // ── Inline editing ──────────────────────────────────────────────────
+
+    /** @return array<string, string> */
+    public function getLocales(): array
+    {
+        return \App\Models\SiteSetting::LOCALES;
+    }
+
+    public function startEditing(string $itemId): void
+    {
+        $item = $this->getRecord()->items()->whereKey($itemId)->first();
+
+        if ($item === null) {
+            return;
+        }
+
+        $this->editingId = (string) $item->getKey();
+
+        // Every locale gets a key so the inputs bind, even the untranslated
+        // ones — an absent key would silently discard what is typed into it.
+        $stored = $item->translations('label');
+        $this->editLabel = [];
+
+        foreach (array_keys($this->getLocales()) as $locale) {
+            $this->editLabel[$locale] = $stored[$locale] ?? '';
+        }
+
+        $this->editUrl = (string) $item->url;
+        $this->editTarget = $item->target ?: '_self';
+        $this->editActive = (bool) $item->is_active;
+    }
+
+    public function cancelEditing(): void
+    {
+        $this->editingId = null;
+        $this->editLabel = [];
+        $this->editUrl = '';
+        $this->editTarget = '_self';
+        $this->editActive = true;
+    }
+
+    public function saveItem(): void
+    {
+        $item = $this->getRecord()->items()->whereKey($this->editingId)->first();
+
+        if ($item === null) {
+            $this->cancelEditing();
+
+            return;
+        }
+
+        // Blank locales are dropped rather than stored as empty strings, so
+        // the fallback and the linked-record title still apply to them.
+        $label = collect($this->editLabel)
+            ->map(fn (?string $value): string => trim((string) $value))
+            ->filter(fn (string $value): bool => $value !== '')
+            ->all();
+
+        // A custom link with no label anywhere would render as a blank row.
+        if ($label === [] && $item->type === MenuItem::TYPE_CUSTOM) {
+            Notification::make()->title('A label is required in at least one language')->danger()->send();
+
+            return;
+        }
+
+        $item->update([
+            'label' => $label,
+            'url' => $item->type === MenuItem::TYPE_CUSTOM ? trim($this->editUrl) : $item->url,
+            'target' => in_array($this->editTarget, ['_self', '_blank'], true) ? $this->editTarget : '_self',
+            'is_active' => $this->editActive,
+        ]);
+
+        $this->cancelEditing();
+
+        Notification::make()->title('Saved')->success()->send();
     }
 
     // ── Editing and removing ────────────────────────────────────────────

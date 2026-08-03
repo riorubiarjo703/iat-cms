@@ -26,7 +26,13 @@ export default function menuTree() {
             document.addEventListener('livewire:navigated', () => this.buildSortables())
             Livewire.hook('morph.updated', ({ component }) => {
                 if (component.id === this.$wire.id) {
-                    this.$nextTick(() => this.buildSortables())
+                    this.$nextTick(() => {
+                        this.buildSortables()
+                        // Expansion is a DOM class, so a morph wipes it. Without
+                        // this the tree folds shut every time an item is added,
+                        // edited or deleted.
+                        this.restoreExpansion()
+                    })
                 }
             })
         },
