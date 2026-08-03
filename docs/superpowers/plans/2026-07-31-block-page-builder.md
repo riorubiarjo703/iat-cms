@@ -2408,3 +2408,492 @@ git commit -m "feat: resolve pages by slug with the homepage as a flagged row"
 ```
 
 ---
+
+### Task 9: `PageResource`
+
+**Files:**
+- Create: `app/Filament/Resources/Pages/PageResource.php` + `Pages/{ListPages,CreatePage,EditPage}.php`
+- Test: `tests/Feature/Filament/PageResourceTest.php`
+
+**Interfaces:**
+- Consumes: `App\Models\Page`; `app(BlockRegistry::class)->toBuilderBlocks()`; `App\Filament\Support\LocaleTabs`.
+- Produces: `PageResource::getUrl('index'|'create'|'edit')` for Task 14's sidebar.
+
+**Two Filament facts that bite here.** Forms materialise every locale key, so an `assertFormSet`
+on `title` must expect the full three-key map. And the Builder persists a plain indexed array of
+`{type, data}` — do not attempt to add an id column or preserve UUIDs.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/Filament/PageResourceTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature\Filament;
+
+use App\Filament\Resources\Pages\PageResource;
+use App\Filament\Resources\Pages\Pages\CreatePage;
+use App\Filament\Resources\Pages\Pages\EditPage;
+use App\Models\Page;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class PageResourceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAs(User::factory()->create());
+    }
+
+    public function test_the_index_and_create_pages_render(): void
+    {
+        $this->get(PageResource::getUrl('index'))->assertSuccessful();
+        $this->get(PageResource::getUrl('create'))->assertSuccessful();
+    }
+
+    public function test_it_creates_a_page_with_blocks(): void
+    {
+        Livewire::test(CreatePage::class)
+            ->fillForm([
+                'title' => ['en' => 'About us', 'id' => null, 'cn' => null],
+                'slug' => 'about-us',
+                'status' => 'published',
+                'blocks' => [
+                    ['type' => 'hero', 'data' => ['heading' => ['en' => 'Hello', 'id' => null, 'cn' => null]]],
+                    ['type' => 'cta', 'data' => ['heading' => ['en' => 'Act', 'id' => null, 'cn' => null], 'button_label' => ['en' => 'Go', 'id' => null, 'cn' => null], 'url' => '#x']],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $page = Page::query()->sole();
+
+        $this->assertSame(['hero', 'cta'], array_column($page->blocks, 'type'));
+        $this->assertSame('Hello', $page->blocks[0]['data']['heading']['en']);
+    }
+
+    public function test_blocks_round_trip_through_edit_without_losing_order(): void
+    {
+        $page = Page::create([
+            'title' => ['en' => 'P'], 'slug' => 'p', 'status' => 'published',
+            'blocks' => [
+                ['type' => 'hero', 'data' => []],
+                ['type' => 'marquee', 'data' => []],
+                ['type' => 'cta', 'data' => []],
+            ],
+        ]);
+
+        Livewire::test(EditPage::class, ['record' => $page->getRouteKey()])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['hero', 'marquee', 'cta'], array_column($page->fresh()->blocks, 'type'));
+    }
+
+    public function test_english_title_is_required(): void
+    {
+        Livewire::test(CreatePage::class)
+            ->fillForm(['title' => ['en' => null, 'id' => 'Ada', 'cn' => null], 'slug' => 'x', 'status' => 'draft'])
+            ->call('create')
+            ->assertHasFormErrors(['title.en' => 'required']);
+    }
+
+    public function test_the_slug_must_be_unique(): void
+    {
+        Page::create(['title' => ['en' => 'A'], 'slug' => 'taken', 'status' => 'published']);
+
+        Livewire::test(CreatePage::class)
+            ->fillForm(['title' => ['en' => 'B'], 'slug' => 'taken', 'status' => 'draft'])
+            ->call('create')
+            ->assertHasFormErrors(['slug' => 'unique']);
+    }
+
+    public function test_the_builder_offers_every_registered_block(): void
+    {
+        $this->get(PageResource::getUrl('create'))
+            ->assertSuccessful()
+            ->assertSee('Horizontal Scroll')
+            ->assertSee('From library');
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Feature/Filament/PageResourceTest.php`
+Expected: FAIL — `Class "App\Filament\Resources\Pages\PageResource" not found`.
+
+- [ ] **Step 3: Generate the scaffold**
+
+```bash
+php artisan make:filament-resource Page --panel=admin
+```
+
+Note the exact namespace the generator produces and adapt the imports below to match; the
+generator's layout wins over the paths guessed here. Remove any generated `Schemas/` or
+`Tables/` subdirectories, matching the convention of the existing resources.
+
+- [ ] **Step 4: Write the resource**
+
+```php
+<?php
+
+namespace App\Filament\Resources\Pages;
+
+use App\Blocks\BlockRegistry;
+use App\Filament\Support\LocaleTabs;
+use App\Models\Page;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Builder;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Support\Str;
+
+class PageResource extends Resource
+{
+    protected static ?string $model = Page::class;
+
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-duplicate';
+
+    // Placement is owned by App\Filament\Navigation\AdminNavigation.
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make('Page')->schema([
+                LocaleTabs::make(fn (string $locale): array => [
+                    TextInput::make("title.$locale")
+                        ->label('Title')
+                        ->required(LocaleTabs::isFallback($locale))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (?string $state, callable $set) use ($locale): void {
+                            if ($locale === 'en' && filled($state)) {
+                                $set('slug', Str::slug($state));
+                            }
+                        }),
+                ]),
+                TextInput::make('slug')
+                    ->required()
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(255)
+                    ->helperText('The public URL path. Generated from the English title.'),
+                Select::make('status')
+                    ->options(['draft' => 'Draft', 'published' => 'Published'])
+                    ->default('draft')
+                    ->required(),
+                Toggle::make('is_homepage')
+                    ->label('This is the homepage')
+                    ->helperText('Only one page may carry this. It is served at /.'),
+            ])->columns(2),
+
+            Builder::make('blocks')
+                ->label('Content')
+                ->blocks(app(BlockRegistry::class)->toBuilderBlocks())
+                ->collapsible()
+                ->cloneable()
+                ->blockNumbers(false)
+                ->columnSpanFull(),
+
+            Section::make('Search & Social')->schema([
+                LocaleTabs::make(fn (string $locale): array => [
+                    TextInput::make("meta_title.$locale")->label('Meta title')->maxLength(255),
+                    Textarea::make("meta_description.$locale")->label('Meta description')->rows(3)->maxLength(500),
+                ]),
+                FileUpload::make('og_image')
+                    ->label('Social share image')
+                    ->image()->disk('public')->directory('uploads/pages')
+                    ->visibility('public')->maxSize(5120),
+            ])->collapsed(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('title')
+                    ->label('Title')
+                    ->getStateUsing(fn (Page $record): ?string => $record->t('title', 'en'))
+                    ->searchable(query: fn ($query, string $search) => $query->where('slug', 'like', "%{$search}%")),
+                TextColumn::make('slug')->color('gray'),
+                TextColumn::make('blocks')
+                    ->label('Blocks')
+                    ->getStateUsing(fn (Page $record): int => count($record->blocks ?? [])),
+                IconColumn::make('is_homepage')->boolean()->label('Home'),
+                TextColumn::make('status')->badge()
+                    ->color(fn (string $state): string => $state === 'published' ? 'success' : 'gray'),
+            ])
+            ->defaultSort('slug')
+            ->recordActions([EditAction::make(), DeleteAction::make()])
+            ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListPages::route('/'),
+            'create' => Pages\CreatePage::route('/create'),
+            'edit' => Pages\EditPage::route('/{record}/edit'),
+        ];
+    }
+}
+```
+
+`TextColumn::make('title')` needs `getStateUsing` because `title` is a JSON column; without it
+the table renders a raw array. The custom `searchable(query:)` closure is needed for the same
+reason — the default search would compare against JSON.
+
+- [ ] **Step 5: Run the tests**
+
+Run: `php artisan test tests/Feature/Filament/PageResourceTest.php`
+Expected: PASS — 6 tests.
+
+**Teeth-check the round trip**, which is the subtle one: change the Builder's field name from
+`blocks` to `content`, confirm `test_blocks_round_trip_through_edit_without_losing_order` fails,
+restore. Report both outcomes.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/Filament/Resources/Pages tests/Feature/Filament/PageResourceTest.php
+git commit -m "feat: add PageResource with the block builder field"
+```
+
+---
+
+### Task 10: `ReusableBlockResource`
+
+**Files:**
+- Create: `app/Filament/Resources/ReusableBlocks/ReusableBlockResource.php` + `Pages/{ListReusableBlocks,CreateReusableBlock,EditReusableBlock}.php`
+- Test: `tests/Feature/Filament/ReusableBlockResourceTest.php`
+
+**Interfaces:**
+- Consumes: `App\Models\ReusableBlock`; `app(BlockRegistry::class)`.
+- Produces: `ReusableBlockResource::getUrl(...)` for Task 14.
+
+**The interesting part:** a library entry stores one block's `type` and `data`, so the form must
+render *that block's* schema once a type is chosen. A `Select` drives a reactive `Section` whose
+children come from `BlockRegistry::get($type)::schema()`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/Filament/ReusableBlockResourceTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature\Filament;
+
+use App\Filament\Resources\ReusableBlocks\Pages\CreateReusableBlock;
+use App\Filament\Resources\ReusableBlocks\ReusableBlockResource;
+use App\Models\ReusableBlock;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class ReusableBlockResourceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAs(User::factory()->create());
+    }
+
+    public function test_the_index_page_renders(): void
+    {
+        $this->get(ReusableBlockResource::getUrl('index'))->assertSuccessful();
+    }
+
+    public function test_it_creates_a_library_entry(): void
+    {
+        Livewire::test(CreateReusableBlock::class)
+            ->fillForm([
+                'name' => 'Facilities',
+                'type' => 'stacked-cards',
+                'data' => ['heading' => ['en' => 'Services', 'id' => null, 'cn' => null]],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $entry = ReusableBlock::query()->sole();
+
+        $this->assertSame('Facilities', $entry->name);
+        $this->assertSame('stacked-cards', $entry->type);
+        $this->assertSame('Services', $entry->data['heading']['en']);
+    }
+
+    public function test_name_and_type_are_required(): void
+    {
+        Livewire::test(CreateReusableBlock::class)
+            ->fillForm(['name' => null, 'type' => null])
+            ->call('create')
+            ->assertHasFormErrors(['name' => 'required', 'type' => 'required']);
+    }
+
+    public function test_the_type_select_excludes_the_reusable_type(): void
+    {
+        // A library entry that referenced another library entry would recurse.
+        $this->get(ReusableBlockResource::getUrl('create'))
+            ->assertSuccessful()
+            ->assertDontSee('From library');
+    }
+}
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `php artisan test tests/Feature/Filament/ReusableBlockResourceTest.php`
+Expected: FAIL — resource class not found.
+
+- [ ] **Step 3: Generate and write the resource**
+
+```bash
+php artisan make:filament-resource ReusableBlock --panel=admin
+```
+
+Then:
+
+```php
+<?php
+
+namespace App\Filament\Resources\ReusableBlocks;
+
+use App\Blocks\BlockRegistry;
+use App\Models\ReusableBlock;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+
+class ReusableBlockResource extends Resource
+{
+    protected static ?string $model = ReusableBlock::class;
+
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    // Placement is owned by App\Filament\Navigation\AdminNavigation.
+
+    /**
+     * Block types offered by the library, excluding 'reusable' itself — a
+     * library entry pointing at another library entry would recurse.
+     *
+     * @return array<string, string>
+     */
+    private static function typeOptions(): array
+    {
+        $options = [];
+
+        foreach (app(BlockRegistry::class)->all() as $type => $class) {
+            if ($type === 'reusable') {
+                continue;
+            }
+
+            $options[$type] = $class::label();
+        }
+
+        asort($options);
+
+        return $options;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make()->schema([
+                TextInput::make('name')
+                    ->required()
+                    ->maxLength(255)
+                    ->helperText('Shown in the block picker when adding this to a page.'),
+                Select::make('type')
+                    ->label('Block type')
+                    ->options(static::typeOptions())
+                    ->required()
+                    ->live()
+                    ->helperText('Choosing a type loads that block’s fields below.'),
+            ])->columns(2),
+
+            // The chosen block's own schema, nested under `data` so it stores in
+            // the same shape an inline block would.
+            Section::make('Content')
+                ->schema(fn (Get $get): array => filled($get('type')) && app(BlockRegistry::class)->has($get('type'))
+                    ? app(BlockRegistry::class)->get($get('type'))::schema()
+                    : [])
+                ->statePath('data')
+                ->visible(fn (Get $get): bool => filled($get('type')))
+                ->columnSpanFull(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('type')->badge()
+                    ->formatStateUsing(fn (string $state): string => app(BlockRegistry::class)->has($state)
+                        ? app(BlockRegistry::class)->get($state)::label()
+                        : $state),
+                TextColumn::make('updated_at')->dateTime()->label('Updated'),
+            ])
+            ->defaultSort('name')
+            ->recordActions([EditAction::make(), DeleteAction::make()])
+            ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListReusableBlocks::route('/'),
+            'create' => Pages\CreateReusableBlock::route('/create'),
+            'edit' => Pages\EditReusableBlock::route('/{record}/edit'),
+        ];
+    }
+}
+```
+
+If the reactive `Section` with a closure `schema()` does not re-render on type change, the
+fallback is a `Section` per block type, each `->visible(fn (Get $get) => $get('type') === '<type>')`
+and `->statePath('data')`. That is more verbose but certain. **Report which you used and why.**
+
+- [ ] **Step 4: Run the tests and commit**
+
+Run: `php artisan test tests/Feature/Filament/ReusableBlockResourceTest.php`
+Expected: PASS — 4 tests.
+
+```bash
+git add app/Filament/Resources/ReusableBlocks tests/Feature/Filament/ReusableBlockResourceTest.php
+git commit -m "feat: add reusable block library resource"
+```
+
+---
