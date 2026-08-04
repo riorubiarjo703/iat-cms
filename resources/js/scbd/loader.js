@@ -9,7 +9,10 @@ export function runLoader(gsap, ScrollTrigger, lenis, reduced) {
   const settle = () => {
     gsap.set('#top [data-char]', { yPercent: 0 });
     gsap.set('#top [data-parallax-wrap]', { clipPath: 'inset(0% 0% 0% 0%)' });
-    gsap.set('header[data-header]', { yPercent: 0 });
+    // clearProps, not yPercent: 0. Writing the transform at all makes the
+    // header a containing block for its position:fixed descendants, which
+    // traps the mobile drawer inside the header.
+    gsap.set('header[data-header]', { clearProps: 'transform' });
   };
 
   // A builder page can use the hero block without the loader overlay, which
@@ -65,7 +68,15 @@ export function runLoader(gsap, ScrollTrigger, lenis, reduced) {
       { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'expo.out' }, 2.6)
     .fromTo('header[data-header]',
       { yPercent: -100 },
-      { yPercent: 0, duration: 0.6, ease: 'power3.out' }, 2.8);
+      {
+        yPercent: 0,
+        duration: 0.6,
+        ease: 'power3.out',
+        // The transform has to go once the header has arrived: while it is set,
+        // the header is the containing block for its position:fixed drawer,
+        // which then cannot cover the viewport.
+        onComplete: () => gsap.set('header[data-header]', { clearProps: 'transform' }),
+      }, 2.8);
 
   // Failsafe from the reference: never trap the user behind the loader.
   const forceOpen = () => {

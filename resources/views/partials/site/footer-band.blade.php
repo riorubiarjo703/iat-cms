@@ -20,7 +20,7 @@
     $social = \App\Support\SocialNetworks::configured($settings->social);
 @endphp
 
-<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:2px; background:rgba(243,242,242,0.3); border:2px solid rgba(243,242,242,0.3);">
+<div class="scbd-footer-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:2px; background:rgba(243,242,242,0.3); border:2px solid rgba(243,242,242,0.3);">
     <div style="background:#ec3013; padding:28px;">
         <div style="font-size:11px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.8; margin-bottom:12px;">Address</div>
         @if ($addressLines)
@@ -58,7 +58,7 @@
         </div>
     </div>
 </div>
-<div style="display:flex; justify-content:space-between; gap:24px; margin-top:32px; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; opacity:0.8;">
+<div class="scbd-footer-meta" style="display:flex; justify-content:space-between; gap:24px; margin-top:32px; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; opacity:0.8;">
     <span>PT Danayasa Arthatama — developer &amp; operator of SCBD</span>
     <span>© {{ now()->year }} All rights reserved</span>
 </div>

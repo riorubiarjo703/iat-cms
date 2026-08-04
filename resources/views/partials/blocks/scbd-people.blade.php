@@ -17,9 +17,9 @@
 @endphp
 
 @if ($groups->isNotEmpty())
-    <section id="people" style="padding:120px 40px;">
+    <section id="people" class="scbd-pad">
         @if ($heading)
-            <h2 data-split style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+            <h2 data-split class="scbd-h2" style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
         @endif
 
         @foreach ($groups as $group)
@@ -29,7 +29,7 @@
                     <span style="flex:1; height:2px; background:rgba(32,30,29,0.35);"></span>
                 </div>
 
-                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:32px;">
+                <div class="scbd-people-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:32px;">
                     @foreach ($group['people'] as $person)
                         <article data-org-card>
                             <div style="overflow:hidden; border:2px solid rgba(32,30,29,0.35); background:#e8e7e6; aspect-ratio:4/3;">

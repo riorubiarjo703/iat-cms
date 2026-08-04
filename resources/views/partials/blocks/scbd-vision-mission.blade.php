@@ -19,10 +19,10 @@
         ->values();
 @endphp
 
-<section id="vision" style="padding:120px 40px;">
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:64px; max-width:1400px;">
+<section id="vision" class="scbd-pad">
+    <div class="scbd-split-2" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); max-width:1400px;">
         <div>
-            <h2 data-split style="font-size:clamp(28px,3.4vw,44px); line-height:1; letter-spacing:-0.03em; text-transform:uppercase; margin:0 0 24px;" data-i18n="{{ BlockData::i18nKey($blockId, 'vision_label') }}">{{ $visionLabel }}</h2>
+            <h2 data-split class="scbd-h2" style="font-size:clamp(28px,3.4vw,44px); line-height:1; letter-spacing:-0.03em; text-transform:uppercase; margin:0 0 24px;" data-i18n="{{ BlockData::i18nKey($blockId, 'vision_label') }}">{{ $visionLabel }}</h2>
 
             @if ($vision)
                 <p data-fade style="font-size:17px; line-height:1.75; color:rgba(32,30,29,0.8); margin:0 0 32px; max-width:46ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'vision') }}">{{ $vision }}</p>

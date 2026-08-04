@@ -20,8 +20,11 @@
     $activeLocale = $settings->default_locale ?? 'en';
 @endphp
 
-<header data-header style="position:fixed; top:0; left:0; right:0; z-index:900; background:rgba(243,242,242,0.92); backdrop-filter:blur(10px); border-bottom:2px solid rgba(32,30,29,0.4);">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:32px; padding:14px 40px;">
+{{-- The blur lives in the stylesheet, not here: it is only applied at the
+     desktop breakpoint, because backdrop-filter makes the header a containing
+     block for its position:fixed drawer. --}}
+<header data-header class="scbd-header" style="position:fixed; top:0; left:0; right:0; z-index:900; background:rgba(243,242,242,0.92); border-bottom:2px solid rgba(32,30,29,0.4);">
+    <div class="scbd-header-bar">
         <a href="#top" data-magnetic style="display:flex; align-items:baseline; gap:10px; text-decoration:none; color:#201e1d;">
             @if ($settings->logo)
                 <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($settings->logo) }}"
@@ -34,13 +37,19 @@
             @endif
             <span style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(32,30,29,0.55);" data-i18n="brandsub">{{ $brandSub }}</span>
         </a>
-        <nav style="display:flex; align-items:center; gap:28px;">
+        {{-- Shown only below the desktop breakpoint. Its aria-expanded is
+             kept in sync by nav.js so a screen reader knows the drawer state. --}}
+        <button type="button" class="scbd-burger" data-nav-toggle aria-label="Open menu" aria-expanded="false" aria-controls="scbd-mobile-nav">
+            <span></span><span></span><span></span>
+        </button>
+
+        <nav id="scbd-mobile-nav" class="scbd-header-nav">
             <ul class="scbd-nav">
                 @foreach ($tree as $node)
                     @include('partials.site.nav-item', ['node' => $node, 'depth' => 0])
                 @endforeach
             </ul>
-            <div style="display:flex; align-items:center; gap:2px; border-left:1px solid rgba(32,30,29,0.3); padding-left:20px;">
+            <div class="scbd-locales">
                 @foreach ($locales as $code => $label)
                     <button data-lang="{{ $code }}"
                             style="border:0; background:{{ $code === $activeLocale ? '#201e1d' : 'transparent' }}; color:{{ $code === $activeLocale ? '#f3f2f2' : '#201e1d' }}; font-family:inherit; font-weight:800; font-size:11px; letter-spacing:0.1em; padding:6px 9px; cursor:none;">{{ strtoupper($code) }}</button>
@@ -56,4 +65,7 @@
             @endif
         </nav>
     </div>
+
+    {{-- Closes the drawer when the page behind it is tapped. --}}
+    <div class="scbd-nav-backdrop" data-nav-backdrop hidden></div>
 </header>

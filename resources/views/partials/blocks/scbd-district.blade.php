@@ -17,14 +17,14 @@
 {{-- The pinned horizontal scroll needs panels to scroll through; with no
      places there is nothing to pin, so the section is omitted entirely. --}}
 @if ($places->isNotEmpty())
-    <section id="district" data-horizontal style="position:relative; background:#201e1d; color:#f3f2f2; overflow:hidden;">
-        <div data-horizontal-track style="display:flex; align-items:stretch; height:100vh; will-change:transform;">
-            <div style="flex:0 0 46vw; min-width:420px; padding:80px 48px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; border-right:2px solid rgba(243,242,242,0.25);">
+    <section id="district" data-horizontal class="scbd-district" style="position:relative; background:#201e1d; color:#f3f2f2; overflow:hidden;">
+        <div data-horizontal-track class="scbd-district-track" style="display:flex; align-items:stretch; height:100vh; will-change:transform;">
+            <div class="scbd-district-panel" style="flex:0 0 46vw; min-width:420px; padding:80px 48px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; border-right:2px solid rgba(243,242,242,0.25);">
                 <div>
                     @if ($eyebrow)
                         <div style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#ff563c; margin-bottom:20px;" data-i18n="{{ BlockData::i18nKey($blockId, 'eyebrow') }}">{{ $eyebrow }}</div>
                     @endif
-                    <h2 data-split style="font-size:clamp(34px,4.4vw,66px); line-height:0.95; letter-spacing:-0.035em; margin:0; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+                    <h2 data-split class="scbd-h2" style="font-size:clamp(34px,4.4vw,66px); line-height:0.95; letter-spacing:-0.035em; margin:0; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
                 </div>
                 <p style="font-size:14px; line-height:1.7; max-width:38ch; color:rgba(243,242,242,0.7); margin:0;" data-i18n="{{ BlockData::i18nKey($blockId, 'body') }}">{{ $body }}</p>
             </div>
@@ -45,7 +45,7 @@
                 </div>
             @endforeach
 
-            <div style="flex:0 0 40vw; min-width:360px; padding:80px 48px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:20px; background:#ec3013;">
+            <div class="scbd-district-panel" style="flex:0 0 40vw; min-width:360px; padding:80px 48px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:20px; background:#ec3013;">
                 @if ($locationLabel)
                     <div style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; opacity:0.85;" data-i18n="{{ BlockData::i18nKey($blockId, 'location_label') }}">{{ $locationLabel }}</div>
                 @endif

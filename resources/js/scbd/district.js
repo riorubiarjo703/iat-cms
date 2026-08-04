@@ -15,6 +15,15 @@ export function initDistrict(gsap, ScrollTrigger) {
 
   if (!track || !section) return false;
 
+  // Below the layout breakpoint the track is a vertical stack (see the
+  // responsive rules in scbd.css), so there is nothing to scroll sideways and
+  // pinning would trap the reader in a section that cannot advance.
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    gsap.set(track, { x: 0 });
+
+    return false;
+  }
+
   const overflow = () => track.scrollWidth - window.innerWidth;
 
   if (overflow() <= 0) {

@@ -10,12 +10,12 @@
 @endphp
 
 @if ($items->isNotEmpty())
-    <section id="awards" style="padding:120px 40px;">
+    <section id="awards" class="scbd-pad">
         @if ($heading)
-            <h2 data-split style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+            <h2 data-split class="scbd-h2" style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
         @endif
 
-        <div data-awards-timeline style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:32px;">
+        <div data-awards-timeline class="scbd-awards-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:32px;">
             @foreach ($items as $item)
                 <article data-award style="border:2px solid rgba(32,30,29,0.35); background:#f3f2f2; display:flex; flex-direction:column;">
                     {{-- Certificates are portrait scans, so they are contained

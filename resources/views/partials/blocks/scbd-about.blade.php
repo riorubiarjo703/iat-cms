@@ -18,12 +18,12 @@
         : collect();
 @endphp
 
-<section id="about" style="padding:120px 40px; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:80px; align-items:start;">
+<section id="about" class="scbd-pad scbd-split-2" style="grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); align-items:start;">
     <div style="position:sticky; top:110px;">
         @if ($eyebrow)
             <div style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#ec3013; margin-bottom:20px;" data-i18n="{{ BlockData::i18nKey($blockId, 'eyebrow') }}">{{ $eyebrow }}</div>
         @endif
-        <h2 data-fade style="font-size:clamp(34px,4.4vw,66px); line-height:0.98; letter-spacing:-0.035em; margin:0 0 24px; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+        <h2 data-fade class="scbd-h2" style="font-size:clamp(34px,4.4vw,66px); line-height:0.98; letter-spacing:-0.035em; margin:0 0 24px; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
         <p data-fade style="font-size:15px; line-height:1.7; max-width:44ch; color:rgba(32,30,29,0.75);" data-i18n="{{ BlockData::i18nKey($blockId, 'body') }}">{{ $body }}</p>
         @if ($ctaLabel)
             <a href="{{ BlockData::get($data, 'cta_url') ?: '#contact' }}" class="btn btn-secondary" data-magnetic style="margin-top:20px; justify-content:flex-start; cursor:none;" data-i18n="{{ BlockData::i18nKey($blockId, 'cta_label') }}">{{ $ctaLabel }}</a>
@@ -31,7 +31,7 @@
     </div>
     <div style="display:grid; gap:2px; background:rgba(32,30,29,0.4); border:2px solid rgba(32,30,29,0.4);">
         @if ($stats->isNotEmpty())
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px;">
+            <div class="scbd-stats-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:2px;">
                 @foreach ($stats as $stat)
                     <div style="background:#f3f2f2; padding:36px 28px;">
                         <div data-count

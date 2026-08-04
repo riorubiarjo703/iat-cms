@@ -10,16 +10,16 @@
 @endphp
 
 @if ($entries->isNotEmpty())
-    <section id="milestones" style="padding:120px 40px;">
+    <section id="milestones" class="scbd-pad">
         @if ($heading)
-            <h2 data-split style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+            <h2 data-split class="scbd-h2" style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
         @endif
 
         {{-- A single vertical rule the cards hang off, so the eye follows one
              line down the page rather than a border per card. --}}
         <div style="position:relative; padding-left:0;">
             @foreach ($entries as $entry)
-                <article data-timeline-card style="display:grid; grid-template-columns:minmax(120px,180px) 1fr; gap:40px; align-items:start; padding:40px 0; border-top:2px solid rgba(32,30,29,0.35);">
+                <article data-timeline-card class="scbd-timeline-row" style="display:grid; grid-template-columns:minmax(120px,180px) 1fr; gap:40px; align-items:start; padding:40px 0; border-top:2px solid rgba(32,30,29,0.35);">
                     <div style="font-weight:800; font-size:clamp(20px,2.4vw,34px); line-height:1; letter-spacing:-0.03em; color:#ec3013;">{{ $entry['year'] }}</div>
 
                     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:32px; align-items:start;">
