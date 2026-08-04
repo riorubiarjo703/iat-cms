@@ -46,9 +46,14 @@ class Menu extends Model
 
     public static function assignedTo(string $location): ?self
     {
-        return MenuLocations::exists($location)
-            ? static::forLocation($location)->first()
-            : null;
+        if (! MenuLocations::exists($location)) {
+            return null;
+        }
+
+        return \App\Support\RequestCache::remember(
+            "menu.assigned.{$location}",
+            fn (): ?self => static::forLocation($location)->first(),
+        );
     }
 
     /**
@@ -76,6 +81,12 @@ class Menu extends Model
 
     protected static function booted(): void
     {
+        // Any menu write invalidates every cached location and tree: an
+        // assignment moves a location between menus, and the admin saves and
+        // re-renders within one request.
+        static::saved(fn () => \App\Support\RequestCache::flush('menu.'));
+        static::deleted(fn () => \App\Support\RequestCache::flush('menu.'));
+
         static::creating(function (self $menu): void {
             $menu->slug = filled($menu->slug) ? Str::slug($menu->slug) : static::uniqueSlug($menu->name);
         });

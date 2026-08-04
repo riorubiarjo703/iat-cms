@@ -41,6 +41,12 @@ class MenuItem extends Model
         'sort' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => \App\Support\RequestCache::flush('menu.'));
+        static::deleted(fn () => \App\Support\RequestCache::flush('menu.'));
+    }
+
     public function menu(): BelongsTo
     {
         return $this->belongsTo(Menu::class);

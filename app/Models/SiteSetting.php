@@ -39,9 +39,22 @@ class SiteSetting extends Model
 
     public static function singleton(): self
     {
-        return static::query()->firstOrCreate(
-            ['id' => 1],
-            ['available_locales' => array_keys(self::LOCALES)],
+        // Read on every block view, the header, the footer and the translation
+        // payload — fourteen identical queries on one homepage render before
+        // this. Writes flush it, so a save is still visible in the same
+        // request (the admin saves and re-renders in one round trip).
+        return \App\Support\RequestCache::remember(
+            'site_settings',
+            fn (): self => static::query()->firstOrCreate(
+                ['id' => 1],
+                ['available_locales' => array_keys(self::LOCALES)],
+            ),
         );
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => \App\Support\RequestCache::flush('site_settings'));
+        static::deleted(fn () => \App\Support\RequestCache::flush('site_settings'));
     }
 }

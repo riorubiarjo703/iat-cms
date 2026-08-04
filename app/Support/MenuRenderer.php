@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Menu;
 use Illuminate\Support\Collection;
+use App\Support\RequestCache;
 
 /**
  * Resolves a menu to its renderable tree. Kept out of the models so a template
@@ -22,9 +23,11 @@ final class MenuRenderer
     /** @return Collection<int, \App\Models\MenuItem> */
     public static function byLocation(string $location): Collection
     {
-        $menu = Menu::assignedTo($location);
+        return RequestCache::remember("menu.tree.{$location}", function () use ($location): Collection {
+            $menu = Menu::assignedTo($location);
 
-        return $menu ? self::tree($menu) : collect();
+            return $menu ? self::tree($menu) : collect();
+        });
     }
 
     /**
@@ -44,8 +47,9 @@ final class MenuRenderer
 
     public static function cta(string $location): ?\App\Models\MenuItem
     {
-        $menu = Menu::assignedTo($location);
-
-        return $menu?->items()->cta()->first();
+        return RequestCache::remember(
+            "menu.cta.{$location}",
+            fn (): ?\App\Models\MenuItem => Menu::assignedTo($location)?->items()->cta()->first(),
+        );
     }
 }
