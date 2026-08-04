@@ -58,7 +58,7 @@ class ContentBlocksTest extends TestCase
         $this->get('/built')->assertSuccessful()->assertSee('Bare', false);
     }
 
-    public function test_mission_points_are_numbered_in_order(): void
+    public function test_each_mission_point_gets_its_own_marked_item_in_order(): void
     {
         $this->page([$this->block(Blocks\VisionMissionBlock::type(), [
             'vision' => ['en' => 'The vision'],
@@ -72,14 +72,18 @@ class ContentBlocksTest extends TestCase
 
         $this->assertCount(2, $items, 'each commitment should render as its own item');
 
-        // Each number is asserted inside the item it belongs to. Searching the
-        // whole document for "01" passed even with the numbering deleted —
-        // that string occurs in colours, class names and the header — which is
-        // how the numbers went missing without a single test failing.
-        $this->assertStringContainsString('01', $items[0]);
+        // Asserted inside the item each belongs to, not across the document.
+        // The predecessor of this test looked for "01" anywhere in the HTML,
+        // which stayed true from colours and class names alone — so the
+        // markers could vanish with the suite still green.
         $this->assertStringContainsString('Alpha', $items[0]);
-        $this->assertStringContainsString('02', $items[1]);
+        $this->assertStringContainsString('scbd-mission-marker', $items[0]);
         $this->assertStringContainsString('Bravo', $items[1]);
+        $this->assertStringContainsString('scbd-mission-marker', $items[1]);
+
+        // The marker is decorative; a screen reader should read the commitment,
+        // not announce a bullet before it.
+        $this->assertStringContainsString('aria-hidden="true"', $items[0]);
     }
 
     public function test_mission_points_fall_back_to_english_for_an_untranslated_locale(): void

@@ -65,10 +65,14 @@
                      leads, its text follows a fraction of the scroll behind.
                      Blocks stagger against each other because each carries its
                      own trigger. --}}
+                {{-- Still an ordered list: the commitments have a declared
+                     order even though the marker no longer counts. The marker
+                     is decorative, so it is hidden from assistive tech rather
+                     than announced as a character. --}}
                 <ol class="scbd-mission-list">
                     @foreach ($mission as $point)
                         <li class="scbd-mission-item" data-scroll-block>
-                            <span class="scbd-mission-index" data-scroll-lead>{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="scbd-mission-marker" data-scroll-lead aria-hidden="true"></span>
                             <span class="scbd-mission-text" data-scroll-body>{{ $point }}</span>
                         </li>
                     @endforeach

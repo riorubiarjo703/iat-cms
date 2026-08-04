@@ -784,8 +784,13 @@ textarea.input { min-height: 90px; resize: vertical; }
     white-space: nowrap;
 }
 
-.scbd-tl-text { grid-column: 1; text-align: right; padding-top: 46px; min-width: 0; }
-.scbd-tl-media { grid-column: 2; padding-top: 46px; min-width: 0; }
+/* grid-row is pinned as well as grid-column. On a flipped row the markup
+   order is text-then-media but the text asks for column 2, and grid's default
+   sparse auto-placement never moves its cursor backwards — so the media,
+   asking for column 1, was pushed onto a second row and sat a whole row below
+   its own text. Placing both explicitly removes the auto-placement entirely. */
+.scbd-tl-text { grid-row: 1; grid-column: 1; text-align: right; padding-top: 46px; min-width: 0; }
+.scbd-tl-media { grid-row: 1; grid-column: 2; padding-top: 46px; min-width: 0; }
 .scbd-tl-row-flip .scbd-tl-text { grid-column: 2; text-align: left; }
 .scbd-tl-row-flip .scbd-tl-media { grid-column: 1; }
 
@@ -853,14 +858,20 @@ textarea.input { min-height: 90px; resize: vertical; }
 .scbd-mission-list { list-style: none; margin: 0; padding: 0; }
 .scbd-mission-item {
     display: grid;
-    grid-template-columns: 56px 1fr;
-    gap: 20px;
+    grid-template-columns: 22px 1fr;
+    gap: 18px;
     padding: 30px 0;
     border-top: 1px solid rgba(32, 30, 29, 0.25);
 }
-.scbd-mission-index {
-    font-weight: 800; font-size: 13px; letter-spacing: 0.08em; color: #ec3013;
-    padding-top: 8px;
+
+/* A hard-edged accent square rather than a counter: the numbers implied a
+   ranking the commitments do not have. Sized and offset to sit on the centre
+   of the first line of its text, so it reads as a marker for that line rather
+   than as a separate column of its own. */
+.scbd-mission-marker {
+    width: 11px; height: 11px;
+    background: #ec3013;
+    margin-top: 0.83em;
 }
 .scbd-mission-text {
     font-size: clamp(17px, 1.35vw, 21px);
@@ -884,7 +895,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     .scbd-page-hero-inner { padding: 140px 24px 64px; }
 
     .scbd-vm-row { grid-template-columns: 1fr; gap: 32px; margin-bottom: 64px !important; }
-    .scbd-mission-item { grid-template-columns: 40px 1fr; gap: 14px; padding: 22px 0; }
+    .scbd-mission-item { grid-template-columns: 18px 1fr; gap: 14px; padding: 22px 0; }
     /* One column: the heading leads regardless of which side its image was on,
        so both rows read the same way down a phone. */
     .scbd-vm-row-flip > *:first-child { order: 2; }
@@ -909,10 +920,12 @@ textarea.input { min-height: 90px; resize: vertical; }
     .scbd-tl::before { left: 9px; }
     .scbd-tl-row { grid-template-columns: 1fr; column-gap: 0; row-gap: 20px; padding: 34px 0 34px 40px; }
     .scbd-tl-marker { left: 9px; top: 34px; transform: translateX(-50%) translateY(-4px); font-size: 13px; padding: 6px 12px; }
+    /* One column: the two cells stack, so the desktop row pinning has to go
+       or they would be forced to overlap in a single row. */
     .scbd-tl-text,
-    .scbd-tl-row-flip .scbd-tl-text { grid-column: 1; text-align: left; padding-top: 34px; }
+    .scbd-tl-row-flip .scbd-tl-text { grid-row: auto; grid-column: 1; text-align: left; padding-top: 34px; }
     .scbd-tl-media,
-    .scbd-tl-row-flip .scbd-tl-media { grid-column: 1; padding-top: 0; }
+    .scbd-tl-row-flip .scbd-tl-media { grid-row: auto; grid-column: 1; padding-top: 0; }
     .scbd-tl-frame img { height: 220px; }
 
     /* Portraits and certificates: two per row rather than one huge column. */
