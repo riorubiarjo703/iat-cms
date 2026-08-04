@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasTranslatableFields;
+use App\Models\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +44,15 @@ class MenuItem extends Model
 
     protected static function booted(): void
     {
+        // A self-parented row vanishes from the tree and makes any recursive
+        // walk loop. Refused here so no caller can create one, however it
+        // arrives — a seeder, an import or a crafted request.
+        static::saving(function (self $item): void {
+            if ($item->parent_id !== null && (string) $item->parent_id === (string) $item->getKey()) {
+                $item->parent_id = null;
+            }
+        });
+
         static::saved(fn () => \App\Support\RequestCache::flush('menu.'));
         static::deleted(fn () => \App\Support\RequestCache::flush('menu.'));
     }
@@ -75,6 +85,42 @@ class MenuItem extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Whether this item should appear on the site.
+     *
+     * An item linked to an unpublished page is hidden: the menu can be built
+     * ahead of the content, and each entry appears by itself the moment its
+     * page goes live, rather than sitting there as a link to a 404.
+     */
+    public function isVisible(int $depth = 0): bool
+    {
+        if (! $this->is_active) {
+            return false;
+        }
+
+        $linked = $this->linkable;
+
+        if ($linked instanceof Page) {
+            return $linked->isPublished();
+        }
+
+        // A linked record that has been deleted leaves nothing to point at.
+        if ($this->type !== self::TYPE_CUSTOM && $this->linkable_type !== null && $linked === null) {
+            return false;
+        }
+
+        // A heading exists to group its children. With every child hidden it
+        // is a dead entry pointing at "#", so it hides with them. The depth
+        // guard stops a malformed tree from recursing forever.
+        $children = $this->children;
+
+        if ($children->isNotEmpty() && blank($this->url) === false && $this->url === '#' && $depth < 10) {
+            return $children->contains(fn (self $child): bool => $child->isVisible($depth + 1));
+        }
+
+        return true;
     }
 
     /** Ordinary navigation links — everything the CTA is not. */

@@ -41,7 +41,7 @@ final class MenuRenderer
         return $menu->rootItems()
             ->with(['childrenRecursive', 'linkable'])
             ->get()
-            ->filter(fn ($item) => $item->is_active && ! $item->is_cta)
+            ->filter(fn ($item) => $item->isVisible() && ! $item->is_cta)
             ->values();
     }
 
@@ -49,7 +49,7 @@ final class MenuRenderer
     {
         return RequestCache::remember(
             "menu.cta.{$location}",
-            fn (): ?\App\Models\MenuItem => Menu::assignedTo($location)?->items()->cta()->first(),
+            fn (): ?\App\Models\MenuItem => Menu::assignedTo($location)?->items()->cta()->get()->first(fn ($item) => $item->isVisible()),
         );
     }
 }

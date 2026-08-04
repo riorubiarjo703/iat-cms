@@ -27,7 +27,7 @@ export function initScbd() {
   splitTargets();
 
   // Bug found in browser testing, present in both the reference and the
-  // brief: textSplit.js bakes `transform:translateY(105%)` into the
+  // brief: textSplit.js bakes `transform:translateY(50%)` into the
   // generated markup as literal CSS text. GSAP resolves that through
   // getComputedStyle() the first time it touches the element, which returns
   // an already-resolved pixel matrix (browsers never report `%` back from
@@ -42,7 +42,7 @@ export function initScbd() {
   // track the offset as a percentage from a zero baseline, matching the
   // exact same visual position, so every subsequent yPercent tween in
   // loader.js and reveal.js resolves correctly instead of silently no-oping.
-  gsap.set('[data-char]', { y: 0, yPercent: 105 });
+  gsap.set('[data-char]', { y: 0, yPercent: 50 });
 
   initCursor(gsap);
   initLanguageSwitcher(ScrollTrigger);

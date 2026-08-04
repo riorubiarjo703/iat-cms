@@ -334,6 +334,12 @@ class EditMenuPage extends Page
      */
     public function saveTree(array $tree): void
     {
+        // The browser has already moved the node, so a re-render would replace
+        // the DOM with markup identical to what is on screen — at the cost of
+        // rebuilding every Sortable and restoring expansion. That round trip
+        // is the lag you feel when reordering.
+        $this->skipRender();
+
         $ownedIds = $this->getRecord()->items()->pluck('id')->map(fn ($id) => (string) $id)->all();
 
         foreach ($tree as $node) {

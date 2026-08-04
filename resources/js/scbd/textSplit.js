@@ -14,13 +14,13 @@ export function splitElement(element) {
         .split('')
         .map(
           (char) =>
-            `<span data-char style="display:inline-block;white-space:pre;transform:translateY(105%);">${
+            `<span data-char style="display:inline-block;white-space:pre;transform:translateY(50%);">${
               char === ' ' ? '&nbsp;' : char
             }</span>`,
         )
         .join('');
 
-      return `<span style="display:block;overflow:hidden;padding-bottom:0.06em;">${chars}</span>`;
+      return `<span style="display:block;overflow:hidden;padding-bottom:0.06em;height:50px;">${chars}</span>`;
     })
     .join('');
 }

@@ -190,10 +190,19 @@
 /* While a drag is in progress every list must be visible and droppable, even
    collapsed or empty ones, or an item can never become the first child. */
 .scbd-dragging .scbd-tree-children { display: block; }
+/* A bigger, clearly-marked target while dragging: nesting means dropping into
+   a list that is empty and therefore invisible at rest. */
 .scbd-dragging .scbd-tree-children-empty {
-    min-height: 1.5rem;
-    border-inline-start: 2px dashed var(--scbd-accent);
-    border-radius: 0.25rem;
+    min-height: 2.5rem;
+    margin-block: 0.25rem;
+    border: 2px dashed var(--scbd-accent);
+    border-radius: 0.375rem;
+    background: rgb(59 130 246 / 0.06);
+}
+.scbd-dragging .scbd-tree-children {
+    min-height: 2.5rem;
+    background: rgb(59 130 246 / 0.04);
+    border-radius: 0.375rem;
 }
 
 .scbd-tree-row {

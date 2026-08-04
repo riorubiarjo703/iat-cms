@@ -154,6 +154,10 @@ class BuildPage extends FilamentPage
     /** @param array<int, string> $order */
     public function saveOrder(array $order): void
     {
+        // Same as the menu tree: the DOM is already correct, so re-rendering
+        // only costs a rebuild of the sortable.
+        $this->skipRender();
+
         $byId = collect($this->blocks)->keyBy('id');
 
         // Only ids this page already owns are honoured, and every existing

@@ -54,6 +54,10 @@ export default function menuTree() {
                         animation: 150,
                         fallbackOnBody: true,
                         swapThreshold: 0.6,
+                        // Default is 5px, which makes dropping onto an empty
+                        // child list a pixel-hunt. This is the difference
+                        // between nesting being fiddly and being easy.
+                        emptyInsertThreshold: 28,
                         ghostClass: 'scbd-tree-ghost',
                         // Collapsed and childless lists are hidden at rest; a
                         // drag has to reveal them or nothing can be nested.

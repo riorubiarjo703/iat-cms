@@ -24,7 +24,7 @@
                     @if ($eyebrow)
                         <div style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#ff563c; margin-bottom:20px;" data-i18n="{{ BlockData::i18nKey($blockId, 'eyebrow') }}">{{ $eyebrow }}</div>
                     @endif
-                    <h2 data-split style="font-size:clamp(34px,4.4vw,68px); line-height:0.95; letter-spacing:-0.035em; margin:0; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+                    <h2 data-split style="font-size:clamp(34px,4.4vw,66px); line-height:0.95; letter-spacing:-0.035em; margin:0; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
                 </div>
                 <p style="font-size:14px; line-height:1.7; max-width:38ch; color:rgba(243,242,242,0.7); margin:0;" data-i18n="{{ BlockData::i18nKey($blockId, 'body') }}">{{ $body }}</p>
             </div>
