@@ -171,6 +171,11 @@ class BuildPage extends FilamentPage
             return;
         }
 
+        // Only write when the order actually changed.
+        if (array_column($reordered->all(), 'id') === array_column($this->blocks, 'id')) {
+            return;
+        }
+
         $this->blocks = $reordered->all();
         $this->persist();
     }

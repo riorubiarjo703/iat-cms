@@ -15,8 +15,17 @@
 export default function menuTree() {
     return {
         lists: [],
+        root: null,
 
         init() {
+            // $el inside an Alpine handler is the element the directive sits
+            // on, not the component root — so a method called from a button's
+            // x-on:click searched inside that button and silently found
+            // nothing. This is why Expand and Collapse did not work while the
+            // same methods worked when called directly. Capture the root once,
+            // here, where $el is the component.
+            this.root = this.$el
+
             this.buildSortables()
             this.restoreExpansion()
 
@@ -42,7 +51,7 @@ export default function menuTree() {
             this.lists = []
 
             const containers = [
-                ...this.$el.querySelectorAll('[data-menu-root], [data-menu-children]'),
+                ...this.root.querySelectorAll('[data-menu-root], [data-menu-children]'),
             ]
 
             containers.forEach((container) => {
@@ -61,16 +70,16 @@ export default function menuTree() {
                         ghostClass: 'scbd-tree-ghost',
                         // Collapsed and childless lists are hidden at rest; a
                         // drag has to reveal them or nothing can be nested.
-                        onStart: () => this.$el.classList.add('scbd-dragging'),
+                        onStart: () => this.root.classList.add('scbd-dragging'),
                         onEnd: () => {
-                            this.$el.classList.remove('scbd-dragging')
+                            this.root.classList.remove('scbd-dragging')
                             this.persist()
                         },
                     }),
                 )
             })
 
-            const rootDrop = this.$el.querySelector('[data-menu-root-drop]')
+            const rootDrop = this.root.querySelector('[data-menu-root-drop]')
 
             if (rootDrop) {
                 this.lists.push(
@@ -78,12 +87,12 @@ export default function menuTree() {
                         group: 'menu-tree',
                         draggable: '[data-menu-item]',
                         animation: 150,
-                        onStart: () => this.$el.classList.add('scbd-dragging'),
-                        onEnd: () => this.$el.classList.remove('scbd-dragging'),
+                        onStart: () => this.root.classList.add('scbd-dragging'),
+                        onEnd: () => this.root.classList.remove('scbd-dragging'),
                         onAdd: (event) => {
                             // The zone is a target, not a container: move the
                             // node to the real root list, then persist.
-                            const root = this.$el.querySelector('[data-menu-root]')
+                            const root = this.root.querySelector('[data-menu-root]')
                             root.appendChild(event.item)
                             this.persist()
                         },
@@ -95,7 +104,7 @@ export default function menuTree() {
         },
 
         bindToggles() {
-            this.$el.querySelectorAll('[data-menu-toggle]').forEach((button) => {
+            this.root.querySelectorAll('[data-menu-toggle]').forEach((button) => {
                 if (button.dataset.bound) return
                 button.dataset.bound = '1'
 
@@ -126,19 +135,19 @@ export default function menuTree() {
                     })
             }
 
-            const root = this.$el.querySelector('[data-menu-root]')
+            const root = this.root.querySelector('[data-menu-root]')
             if (root) walk(root, null)
 
             this.$wire.saveTree(nodes)
         },
 
         expandAll() {
-            this.$el.querySelectorAll('[data-menu-item]').forEach((item) => item.classList.add('scbd-tree-item-open'))
+            this.root.querySelectorAll('[data-menu-item]').forEach((item) => item.classList.add('scbd-tree-item-open'))
             this.rememberExpansion()
         },
 
         collapseAll() {
-            this.$el.querySelectorAll('[data-menu-item]').forEach((item) => item.classList.remove('scbd-tree-item-open'))
+            this.root.querySelectorAll('[data-menu-item]').forEach((item) => item.classList.remove('scbd-tree-item-open'))
             this.rememberExpansion()
         },
 
@@ -152,7 +161,7 @@ export default function menuTree() {
         },
 
         rememberExpansion() {
-            const open = [...this.$el.querySelectorAll('[data-menu-item].scbd-tree-item-open')]
+            const open = [...this.root.querySelectorAll('[data-menu-item].scbd-tree-item-open')]
                 .map((item) => item.dataset.menuItem)
 
             localStorage.setItem(this.storageKey(), JSON.stringify(open))
@@ -176,7 +185,7 @@ export default function menuTree() {
             }
 
             open.forEach((id) => {
-                this.$el.querySelector(`[data-menu-item="${id}"]`)?.classList.add('scbd-tree-item-open')
+                this.root.querySelector(`[data-menu-item="${id}"]`)?.classList.add('scbd-tree-item-open')
             })
         },
     }

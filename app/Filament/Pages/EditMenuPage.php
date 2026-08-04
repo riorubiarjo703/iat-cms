@@ -340,7 +340,14 @@ class EditMenuPage extends Page
         // is the lag you feel when reordering.
         $this->skipRender();
 
-        $ownedIds = $this->getRecord()->items()->pluck('id')->map(fn ($id) => (string) $id)->all();
+        // Loaded once, so the loop can skip rows that are already correct: a
+        // reorder moves one item but previously wrote every row.
+        $owned = $this->getRecord()->items()->get()->keyBy(fn (MenuItem $item): string => (string) $item->getKey());
+
+        // Built from the models rather than from $owned->keys(): PHP coerces
+        // numeric string array keys back to integers, and the strict in_array
+        // checks below would then reject every id.
+        $ownedIds = $owned->map(fn (MenuItem $item): string => (string) $item->getKey())->values()->all();
 
         foreach ($tree as $node) {
             $id = (string) ($node['id'] ?? '');
@@ -363,9 +370,17 @@ class EditMenuPage extends Page
                 continue;
             }
 
+            $sort = (int) ($node['sort'] ?? 0);
+            $current = $owned->get($id);
+
+            // Nothing to write when the row already says this.
+            if ((string) $current->parent_id === (string) $parent && $current->sort === $sort) {
+                continue;
+            }
+
             MenuItem::query()->whereKey($id)->update([
                 'parent_id' => $parent,
-                'sort' => (int) ($node['sort'] ?? 0),
+                'sort' => $sort,
             ]);
         }
     }

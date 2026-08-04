@@ -143,6 +143,15 @@ final class AdminNavigation
     /** Drafts and scheduled posts still needing attention; null when there are none. */
     private static function pendingPostCount(): ?string
     {
+        // Filament builds the navigation more than once per request — sidebar,
+        // breadcrumbs, active-state checks — and each build re-ran this count.
+        return \App\Support\RequestCache::remember('nav.pending_posts', function (): ?string {
+            return self::countPendingPosts();
+        });
+    }
+
+    private static function countPendingPosts(): ?string
+    {
         $count = BlogPost::query()
             ->whereIn('status', [BlogPost::STATUS_DRAFT, BlogPost::STATUS_SCHEDULED])
             ->count();

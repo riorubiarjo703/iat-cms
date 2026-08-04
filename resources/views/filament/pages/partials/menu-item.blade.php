@@ -1,4 +1,9 @@
-{{-- One row of the menu tree, recursing into its children. --}}
+{{-- One row of the menu tree, recursing into its children.
+
+     Reads $children, resolved once at the top, rather than $item->children in
+     five places: getTree() eager-loads childrenRecursive, and touching the
+     plain `children` relation instead issued a query per row. --}}
+@php($children = $item->relationLoaded('childrenRecursive') ? $item->childrenRecursive : $item->children)
 <li class="scbd-tree-item" data-menu-item="{{ $item->id }}" wire:key="item-{{ $item->id }}">
     <div @class([
         'scbd-tree-row',
@@ -9,7 +14,7 @@
             <x-filament::icon icon="heroicon-o-ellipsis-vertical" />
         </span>
 
-        @if ($item->children->isNotEmpty())
+        @if ($children->isNotEmpty())
             <button type="button" class="scbd-tree-chevron" data-menu-toggle aria-label="Toggle children of {{ $item->t('label') }}">
                 <x-filament::icon icon="heroicon-m-chevron-right" />
             </button>
@@ -58,7 +63,7 @@
 
             <button type="button" class="scbd-tree-action scbd-tree-action-danger"
                     wire:click="deleteItem('{{ $item->id }}')"
-                    wire:confirm="Delete “{{ $item->t('label') ?: 'this item' }}”@if ($item->children->isNotEmpty()) and its {{ $item->children->count() }} nested {{ Str::plural('item', $item->children->count()) }}@endif?">
+                    wire:confirm="Delete “{{ $item->t('label') ?: 'this item' }}”@if ($children->isNotEmpty()) and its {{ $item->children->count() }} nested {{ Str::plural('item', $item->children->count()) }}@endif?">
                 <x-filament::icon icon="heroicon-o-trash" />
             </button>
         </span>
@@ -132,8 +137,8 @@
          that makes a childless item able to become a parent. The empty class is
          set here rather than with CSS :empty, which does not match a list
          containing only Blade's whitespace. --}}
-    <ul @class(['scbd-tree-children', 'scbd-tree-children-empty' => $item->children->isEmpty()]) data-menu-children>
-        @foreach ($item->children as $child)
+    <ul @class(['scbd-tree-children', 'scbd-tree-children-empty' => $children->isEmpty()]) data-menu-children>
+        @foreach ($children as $child)
             @include('filament.pages.partials.menu-item', ['item' => $child, 'depth' => $depth + 1])
         @endforeach
     </ul>
