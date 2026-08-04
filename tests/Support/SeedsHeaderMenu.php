@@ -3,6 +3,7 @@
 namespace Tests\Support;
 
 use App\Models\Menu;
+use App\Models\Page;
 use App\Models\MenuItem;
 use App\Support\MenuLocations;
 
@@ -47,5 +48,21 @@ trait SeedsHeaderMenu
         }
 
         return $menu->refresh();
+    }
+
+    /**
+     * "/" is served by a page flagged as the homepage; without one it 404s,
+     * so any test that renders the front page has to seed it.
+     */
+    protected function seedHomepage(array $blocks = []): Page
+    {
+        return Page::create([
+            'title' => ['en' => 'Home'],
+            'slug' => 'home',
+            'type' => Page::TYPE_BUILDER,
+            'builder_payload' => $blocks,
+            'status' => Page::STATUS_PUBLISHED,
+            'is_homepage' => true,
+        ]);
     }
 }

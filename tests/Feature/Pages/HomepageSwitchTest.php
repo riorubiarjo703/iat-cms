@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Pages;
 
-use App\Models\HomepageContent;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use App\Models\Page;
@@ -18,12 +17,6 @@ use Tests\TestCase;
 class HomepageSwitchTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        HomepageContent::singleton()->update(['hero_line' => ['en' => 'Legacy hero']]);
-    }
 
     private function homepage(array $attributes = []): Page
     {
@@ -46,17 +39,19 @@ class HomepageSwitchTest extends TestCase
         $this->get('/')->assertSuccessful()->assertSee('Built hero', false);
     }
 
-    public function test_the_hand_built_homepage_still_serves_while_none_is_flagged(): void
+    public function test_no_flagged_page_is_a_404_not_a_blank_shell(): void
     {
-        // The switch has to be reversible by clearing a flag, not by a deploy.
-        $this->get('/')->assertSuccessful()->assertSee('Legacy hero', false);
+        // The hand-built homepage is retired, so nothing flagged means the
+        // site has not been set up. Saying so plainly beats rendering chrome
+        // around an empty middle.
+        $this->get('/')->assertNotFound();
     }
 
-    public function test_an_unpublished_homepage_falls_back_rather_than_taking_the_site_down(): void
+    public function test_an_unpublished_homepage_does_not_serve(): void
     {
         $this->homepage(['status' => Page::STATUS_DRAFT]);
 
-        $this->get('/')->assertSuccessful()->assertSee('Legacy hero', false);
+        $this->get('/')->assertNotFound();
     }
 
     public function test_the_database_refuses_a_second_homepage(): void

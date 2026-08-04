@@ -50,7 +50,7 @@
         'cursor:none' => $page->usesBuilder(),
     ])>
         @if ($page->is_homepage)
-            @include('partials.home.loader')
+            @include('partials.site.loader')
         @endif
 
         @if ($page->usesBuilder())

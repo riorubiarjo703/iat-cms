@@ -4,7 +4,7 @@ namespace App\Support;
 
 use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Models\Page;
-use App\Models\PublicMenuItem;
+use App\Models\MenuItem;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -62,7 +62,7 @@ class ContentHealth
 
     public function menuItems(): ?int
     {
-        return $this->count(PublicMenuItem::class);
+        return $this->count(MenuItem::class);
     }
 
     /** Locales the site is configured for, not locales that have content. */

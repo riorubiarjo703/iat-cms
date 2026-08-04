@@ -57,7 +57,7 @@ class ContentHealthTest extends TestCase
     public function test_a_missing_table_reports_null_and_logs_once(): void
     {
         Log::spy();
-        Schema::drop('public_menu_items');
+        Schema::drop('menu_items');
 
         $this->assertNull($this->health->menuItems());
         $this->assertNull($this->health->menuItems());

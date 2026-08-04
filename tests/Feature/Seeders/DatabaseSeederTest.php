@@ -39,6 +39,21 @@ class DatabaseSeederTest extends TestCase
     }
 
     /**
+     * db:seed runs DatabaseSeeder, which suppresses model events. Anything the
+     * seeded content relies on a model event for silently breaks only on this
+     * path — the individual seeder's own tests would still pass.
+     */
+    public function test_seeding_through_the_database_seeder_produces_a_working_site(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertNotNull(\App\Models\Menu::assignedTo(\App\Support\MenuLocations::HEADER));
+        $this->assertNotNull(\App\Models\Page::homepage());
+
+        $this->get('/')->assertSuccessful();
+    }
+
+    /**
      * Proves the guard is an environment check, not a permanent removal of
      * the convenience login: local development still gets it.
      */

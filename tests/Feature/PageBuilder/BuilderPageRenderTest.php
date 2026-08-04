@@ -4,7 +4,6 @@ namespace Tests\Feature\PageBuilder;
 
 use App\Models\DistrictPlace;
 use App\Models\Facility;
-use App\Models\HomepageContent;
 use App\Models\Page;
 use App\Models\Stat;
 use App\PageBuilder\BlockRegistry;
@@ -126,7 +125,7 @@ class BuilderPageRenderTest extends TestCase
         DistrictPlace::create(['title' => ['en' => 'Tower'], 'caption' => ['en' => 'Office'], 'sort' => 1, 'is_active' => true]);
         Facility::create(['title' => ['en' => 'Parking'], 'body' => ['en' => 'Body'], 'sort' => 1, 'is_active' => true]);
 
-        HomepageContent::singleton()->update([
+        $payload = HomepagePayload::fromContent([
             'hero_line' => ['en' => 'Hero line'],
             'marquee_text' => ['en' => 'Marquee'],
             'about_heading' => ['en' => 'About heading'],
@@ -135,8 +134,6 @@ class BuilderPageRenderTest extends TestCase
             'news_heading' => ['en' => 'News heading'],
             'contact_heading' => ['en' => 'Contact heading'],
         ]);
-
-        $payload = HomepagePayload::fromContent(HomepageContent::singleton());
         $this->builderPage($payload);
 
         $html = $this->get('/built')->assertSuccessful()->getContent();
@@ -150,10 +147,10 @@ class BuilderPageRenderTest extends TestCase
     {
         // Random ids would change the i18n keys a page publishes on every
         // regeneration, orphaning anything that cached them.
-        HomepageContent::singleton()->update(['hero_line' => ['en' => 'Hero']]);
+        $content = ['hero_line' => ['en' => 'Hero']];
 
-        $first = HomepagePayload::fromContent(HomepageContent::singleton());
-        $second = HomepagePayload::fromContent(HomepageContent::singleton());
+        $first = HomepagePayload::fromContent($content);
+        $second = HomepagePayload::fromContent($content);
 
         $this->assertSame(array_column($first, 'id'), array_column($second, 'id'));
     }

@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Pages\SiteSettingsPage;
-use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
+use App\Filament\Pages\NavigationMenusPage;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Resources\Pages\PageResource;
 use Filament\Widgets\Widget;
@@ -46,7 +46,7 @@ class QuickActions extends Widget
             ['label' => 'New Page', 'icon' => 'heroicon-o-document-plus', 'tint' => 'blue', 'url' => PageResource::getUrl('create')],
             ['label' => 'New Post', 'icon' => 'heroicon-o-pencil-square', 'tint' => 'violet', 'url' => BlogPostResource::getUrl('create')],
             ['label' => 'Media Library', 'icon' => 'heroicon-o-photo', 'tint' => 'emerald', 'url' => MediaManager::getUrl()],
-            ['label' => 'Navigation Menus', 'icon' => 'heroicon-o-bars-3', 'tint' => 'amber', 'url' => PublicMenuItemResource::getUrl('index')],
+            ['label' => 'Navigation Menus', 'icon' => 'heroicon-o-bars-3', 'tint' => 'amber', 'url' => NavigationMenusPage::getUrl()],
             ['label' => 'Site Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'tint' => 'slate', 'url' => SiteSettingsPage::getUrl()],
             ['label' => 'Users', 'icon' => 'heroicon-o-users', 'tint' => 'rose', 'url' => UserResource::getUrl('index')],
         ];

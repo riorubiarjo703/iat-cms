@@ -4,8 +4,9 @@ namespace Tests\Feature\Seeders;
 
 use App\Models\DistrictPlace;
 use App\Models\Facility;
-use App\Models\HomepageContent;
-use App\Models\PublicMenuItem;
+use App\Models\MenuItem;
+use App\Models\Page;
+use App\PageBuilder\BlockData;
 use App\Models\SiteSetting;
 use App\Models\Stat;
 use Database\Seeders\HomepageSeeder;
@@ -29,9 +30,9 @@ class HomepageSeederTest extends TestCase
     {
         $this->seed(HomepageSeeder::class);
 
-        $this->assertSame(1, HomepageContent::query()->count());
         $this->assertSame(1, SiteSetting::query()->count());
-        $this->assertSame(5, PublicMenuItem::query()->count());
+        $this->assertSame(5, MenuItem::query()->count());
+        $this->assertSame(1, Page::query()->where('is_homepage', true)->count());
         $this->assertSame(3, DistrictPlace::query()->count());
         $this->assertSame(4, Facility::query()->count());
         $this->assertSame(3, Stat::query()->count());
@@ -67,26 +68,59 @@ class HomepageSeederTest extends TestCase
         );
     }
 
-    public function test_it_seeds_all_three_locales_for_homepage_copy(): void
+    public function test_it_seeds_all_three_locales_into_the_homepage_blocks(): void
     {
+        // Homepage copy lives in the block payload now, not in a content row.
         $this->seed(HomepageSeeder::class);
-        $content = HomepageContent::singleton();
 
-        $this->assertSame("A district\nthat never\nclocks out", $content->t('hero_line', 'en'));
-        $this->assertSame("Kawasan\nyang tak\npernah tidur", $content->t('hero_line', 'id'));
-        $this->assertSame("永不\n停歇的\n商务区", $content->t('hero_line', 'cn'));
+        $hero = collect(Page::homepage()->blocks())->firstWhere('type', 'scbd_hero');
+
+        $this->assertSame("A district\nthat never\nclocks out", BlockData::t($hero['data'], 'heading', 'en'));
+        $this->assertSame("Kawasan\nyang tak\npernah tidur", BlockData::t($hero['data'], 'heading', 'id'));
+        $this->assertSame("永不\n停歇的\n商务区", BlockData::t($hero['data'], 'heading', 'cn'));
     }
 
-    public function test_it_seeds_four_nav_links_and_one_cta(): void
+    public function test_the_seeded_homepage_actually_renders(): void
+    {
+        // A payload that seeds but does not render would be a broken install.
+        $this->seed(HomepageSeeder::class);
+
+        $this->get('/')->assertSuccessful()->assertSee('id="top"', false);
+    }
+
+    public function test_it_seeds_four_nav_links_and_one_cta_into_the_header_menu(): void
     {
         $this->seed(HomepageSeeder::class);
 
         $this->assertSame(
             ['Company', 'District', 'Facilities', 'News'],
-            PublicMenuItem::query()->links()->get()->map(fn ($i) => $i->t('label', 'en'))->all(),
+            MenuItem::query()->links()->orderBy('sort')->get()->map(fn ($i) => $i->t('label', 'en'))->all(),
         );
-        $this->assertSame('Leasing enquiry', PublicMenuItem::query()->cta()->first()->t('label', 'en'));
-        $this->assertSame('Ajukan sewa', PublicMenuItem::query()->cta()->first()->t('label', 'id'));
+        $this->assertSame('Leasing enquiry', MenuItem::query()->cta()->first()->t('label', 'en'));
+        $this->assertSame('Ajukan sewa', MenuItem::query()->cta()->first()->t('label', 'id'));
+    }
+
+    public function test_re_seeding_does_not_overwrite_edited_contact_details(): void
+    {
+        // These are admin-edited organisation facts; a re-seed replacing a real
+        // address with the reference one would be data loss.
+        $this->seed(HomepageSeeder::class);
+        SiteSetting::singleton()->update(['contact_address' => 'A real address']);
+
+        $this->seed(HomepageSeeder::class);
+
+        $this->assertSame('A real address', SiteSetting::singleton()->contact_address);
+    }
+
+    public function test_re_seeding_leaves_an_edited_homepage_alone(): void
+    {
+        // It may have been rearranged in the builder since.
+        $this->seed(HomepageSeeder::class);
+        Page::homepage()->update(['builder_payload' => []]);
+
+        $this->seed(HomepageSeeder::class);
+
+        $this->assertSame([], Page::homepage()->blocks());
     }
 
     public function test_it_seeds_the_established_stat_as_plain_format(): void
@@ -107,7 +141,9 @@ class HomepageSeederTest extends TestCase
     {
         $this->seed(HomepageSeeder::class);
 
-        $this->assertSame('#contact', HomepageContent::singleton()->about_cta_url);
+        $about = collect(Page::homepage()->blocks())->firstWhere('type', 'scbd_about');
+
+        $this->assertSame('#contact', $about['data']['cta_url']);
         $this->get('/')->assertSee('href="#contact"', false);
     }
 
@@ -115,7 +151,9 @@ class HomepageSeederTest extends TestCase
     {
         $this->seed(HomepageSeeder::class);
 
-        $this->assertSame('uploads/homepage/hero1.jpg', HomepageContent::singleton()->hero_image);
+        $hero = collect(Page::homepage()->blocks())->firstWhere('type', 'scbd_hero');
+
+        $this->assertSame('uploads/homepage/hero1.jpg', $hero['data']['image']);
         Storage::disk('public')->assertExists('uploads/homepage/hero1.jpg');
         $this->assertNotNull(Facility::query()->ordered()->first()->image);
     }
@@ -126,7 +164,9 @@ class HomepageSeederTest extends TestCase
 
         $this->seed(HomepageSeeder::class);
 
-        $this->assertNull(HomepageContent::singleton()->hero_image);
+        $hero = collect(Page::homepage()->blocks())->firstWhere('type', 'scbd_hero');
+
+        $this->assertNull($hero['data']['image']);
         $this->assertSame(3, DistrictPlace::query()->count(), 'Content must still seed without images.');
     }
 
@@ -136,8 +176,8 @@ class HomepageSeederTest extends TestCase
         $this->seed(HomepageSeeder::class);
 
         $this->assertSame(3, DistrictPlace::query()->count());
-        $this->assertSame(5, PublicMenuItem::query()->count());
-        $this->assertSame(1, HomepageContent::query()->count());
+        $this->assertSame(5, MenuItem::query()->count());
+        $this->assertSame(1, Page::query()->where('is_homepage', true)->count());
     }
 
     public function test_it_does_not_overwrite_editor_changes_to_list_content(): void

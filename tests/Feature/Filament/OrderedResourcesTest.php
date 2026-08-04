@@ -7,13 +7,10 @@ use App\Filament\Resources\DistrictPlaces\DistrictPlaceResource;
 use App\Filament\Resources\DistrictPlaces\Pages\CreateDistrictPlace;
 use App\Filament\Resources\Facilities\FacilityResource;
 use App\Filament\Resources\Facilities\Pages\CreateFacility;
-use App\Filament\Resources\PublicMenuItems\Pages\CreatePublicMenuItem;
-use App\Filament\Resources\PublicMenuItems\PublicMenuItemResource;
 use App\Filament\Resources\Stats\Pages\CreateStat;
 use App\Filament\Resources\Stats\StatResource;
 use App\Models\DistrictPlace;
 use App\Models\Facility;
-use App\Models\PublicMenuItem;
 use App\Models\Stat;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,7 +34,6 @@ class OrderedResourcesTest extends TestCase
             'district places' => [DistrictPlaceResource::class],
             'facilities' => [FacilityResource::class],
             'stats' => [StatResource::class],
-            'public menu items' => [PublicMenuItemResource::class],
         ];
     }
 
@@ -125,23 +121,6 @@ class OrderedResourcesTest extends TestCase
 
         $this->assertSame(StatFormat::Thousands, $stat->format);
         $this->assertSame('/7', $stat->suffix);
-    }
-
-    public function test_it_creates_a_cta_menu_item(): void
-    {
-        Livewire::test(CreatePublicMenuItem::class)
-            ->fillForm([
-                'label' => ['en' => 'Leasing enquiry'],
-                'url' => '#contact',
-                'target' => '_self',
-                'sort' => 5,
-                'is_active' => true,
-                'is_cta' => true,
-            ])
-            ->call('create')
-            ->assertHasNoFormErrors();
-
-        $this->assertTrue(PublicMenuItem::query()->sole()->is_cta);
     }
 
     #[DataProvider('resourceProvider')]

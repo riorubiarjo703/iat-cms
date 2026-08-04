@@ -62,7 +62,7 @@ class SiteSettingsPageTest extends TestCase
      * The Select's ->options() only constrains the UI dropdown; without a
      * server-side rule an arbitrary string reaches getState()'s validate()
      * call unchecked and would persist, later blanking all six `{!! !!}`
-     * homepage headings via HomepageData's `?? ''` fallback.
+     * headings via the renderer's `?? ''` fallback.
      */
     public function test_an_invalid_default_locale_is_rejected(): void
     {

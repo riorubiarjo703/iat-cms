@@ -2,28 +2,32 @@
 
 namespace App\PageBuilder;
 
-use App\Models\HomepageContent;
 use App\PageBuilder\Blocks;
 
 /**
- * Builds a block payload from the hand-built homepage's content record.
+ * The starting block payload for the SCBD homepage.
  *
- * This is the bridge that makes the homepage editable: the copy that lived in
- * HomepageContent columns becomes block data, after which the page is edited
- * like any other and HomepageContent can retire.
+ * Takes a plain array of locale maps rather than a model: this outlived the
+ * HomepageContent record it was originally written to convert, and is now what
+ * the seeder uses to build a homepage from scratch.
  */
 final class HomepagePayload
 {
-    /** @return array<int, array<string, mixed>> */
-    public static function fromContent(HomepageContent $content): array
+    /**
+     * @param  array<string, mixed>  $content  column => locale map, plus the
+     *                                         image and URL scalars
+     * @return array<int, array<string, mixed>>
+     */
+    public static function fromContent(array $content): array
     {
-        $t = fn (string $column): array => $content->translations($column);
+        $t = fn (string $key): array => is_array($content[$key] ?? null) ? $content[$key] : [];
+        $v = fn (string $key) => $content[$key] ?? null;
 
         return [
             self::block(Blocks\HeroBlock::type(), 'hero', [
                 'heading' => $t('hero_line'),
                 'subheading' => $t('hero_sub'),
-                'image' => $content->hero_image,
+                'image' => $v('hero_image'),
                 'location_tag' => null,
             ]),
             self::block(Blocks\MarqueeBlock::type(), 'marquee', [
@@ -36,10 +40,10 @@ final class HomepagePayload
                 'heading' => $t('about_heading'),
                 'body' => $t('about_body'),
                 'cta_label' => $t('about_cta_label'),
-                'cta_url' => $content->about_cta_url,
+                'cta_url' => $v('about_cta_url'),
                 'badge_label' => ['en' => 'Certified'],
                 'badge_text' => ['en' => "ISO & SMK3\naccredited operations"],
-                'image' => $content->about_image,
+                'image' => $v('about_image'),
                 'show_stats' => true,
             ]),
             self::block(Blocks\DistrictBlock::type(), 'district', [

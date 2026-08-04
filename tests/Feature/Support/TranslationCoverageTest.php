@@ -2,7 +2,8 @@
 
 namespace Tests\Feature\Support;
 
-use App\Models\PublicMenuItem;
+use App\Models\Menu;
+use App\Models\MenuItem;
 use App\Models\SiteSetting;
 use App\Support\TranslationCoverage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,6 +15,14 @@ class TranslationCoverageTest extends TestCase
 
     private TranslationCoverage $coverage;
 
+    private ?Menu $menu = null;
+
+    /** Menu items need a parent menu; one is enough for coverage counting. */
+    private function menu(): Menu
+    {
+        return $this->menu ??= Menu::create(['name' => 'Test menu']);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -24,7 +33,7 @@ class TranslationCoverageTest extends TestCase
     {
         $models = $this->coverage->translatableModels();
 
-        $this->assertContains(PublicMenuItem::class, $models);
+        $this->assertContains(MenuItem::class, $models);
         $this->assertContains(SiteSetting::class, $models);
     }
 
@@ -36,10 +45,7 @@ class TranslationCoverageTest extends TestCase
 
     public function test_a_fully_translated_field_reads_one_hundred_percent(): void
     {
-        PublicMenuItem::create([
-            'label' => ['en' => 'Home', 'id' => 'Beranda', 'cn' => '首页'],
-            'url' => '/', 'sort' => 1, 'is_active' => true,
-        ]);
+        MenuItem::create(['menu_id' => $this->menu()->id, 'label' => ['en' => 'Home', 'id' => 'Beranda', 'cn' => '首页'], 'url' => '/', 'sort' => 1]);
 
         $coverage = $this->coverage->perLocale();
 
@@ -50,8 +56,8 @@ class TranslationCoverageTest extends TestCase
 
     public function test_a_partially_translated_field_reads_proportionally(): void
     {
-        PublicMenuItem::create(['label' => ['en' => 'Home', 'id' => 'Beranda'], 'url' => '/', 'sort' => 1, 'is_active' => true]);
-        PublicMenuItem::create(['label' => ['en' => 'About'], 'url' => '/about', 'sort' => 2, 'is_active' => true]);
+        MenuItem::create(['menu_id' => $this->menu()->id, 'label' => ['en' => 'Home', 'id' => 'Beranda'], 'url' => '/', 'sort' => 1]);
+        MenuItem::create(['menu_id' => $this->menu()->id, 'label' => ['en' => 'About'], 'url' => '/about', 'sort' => 2]);
 
         $coverage = $this->coverage->perLocale();
 
@@ -62,7 +68,7 @@ class TranslationCoverageTest extends TestCase
 
     public function test_an_empty_string_does_not_count_as_translated(): void
     {
-        PublicMenuItem::create(['label' => ['en' => 'Home', 'id' => ''], 'url' => '/', 'sort' => 1, 'is_active' => true]);
+        MenuItem::create(['menu_id' => $this->menu()->id, 'label' => ['en' => 'Home', 'id' => ''], 'url' => '/', 'sort' => 1]);
 
         $this->assertSame(0, $this->coverage->perLocale()['id']['percent']);
     }

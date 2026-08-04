@@ -2,22 +2,23 @@
 
 namespace Tests\Feature;
 
-use App\Models\HomepageContent;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use App\Models\SiteSetting;
 use App\Support\MenuLocations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\SeedsHeaderMenu;
 use Tests\TestCase;
 
 class FooterRenderTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsHeaderMenu;
 
     protected function setUp(): void
     {
         parent::setUp();
-        HomepageContent::singleton()->update(['hero_line' => ['en' => 'Hero']]);
+        $this->seedHomepage();
     }
 
     private function footerMenu(): Menu
@@ -30,17 +31,18 @@ class FooterRenderTest extends TestCase
     }
 
     /**
-     * The contact section is this design's footer: address, contact, sitemap
-     * and social in one band. There is no separate <footer> element.
+     * The footer band is page chrome now — its own <footer> element rendered
+     * by the page layout, so it appears on every page rather than only inside
+     * the homepage's contact section.
      */
     private function footer(): string
     {
         $html = $this->get('/')->assertSuccessful()->getContent();
-        $start = strpos($html, '<section id="contact"');
+        $start = strpos($html, '<footer');
 
-        $this->assertNotFalse($start, 'No contact/footer section rendered');
+        $this->assertNotFalse($start, 'No footer rendered');
 
-        return substr($html, $start, strpos($html, '</section>', $start) - $start + 10);
+        return substr($html, $start, strpos($html, '</footer>', $start) - $start + 9);
     }
 
     public function test_the_sitemap_column_renders_the_assigned_menu(): void
@@ -136,11 +138,12 @@ class FooterRenderTest extends TestCase
         $this->assertLessThan(strpos($footer, 'LinkedIn'), strpos($footer, 'X / Twitter'));
     }
 
-    public function test_the_contact_section_reads_the_same_source_as_the_footer(): void
+    public function test_the_footer_appears_on_every_page_not_only_the_homepage(): void
     {
-        // Two sources for one fact would drift.
+        // It is chrome, so a standalone page gets it without storing it.
         SiteSetting::singleton()->update(['contact_phone' => '+62 999']);
+        \App\Models\Page::create(['title' => ['en' => 'About'], 'slug' => 'about', 'status' => \App\Models\Page::STATUS_PUBLISHED]);
 
-        $this->get('/')->assertSee('+62 999', false);
+        $this->get('/about')->assertSee('+62 999', false);
     }
 }

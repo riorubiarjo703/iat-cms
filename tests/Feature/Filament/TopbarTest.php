@@ -54,7 +54,6 @@ class TopbarTest extends TestCase
         $resources = [
             \App\Filament\Resources\Users\UserResource::class,
             \App\Filament\Resources\BlogCategories\BlogCategoryResource::class,
-            \App\Filament\Resources\PublicMenuItems\PublicMenuItemResource::class,
         ];
 
         foreach ($resources as $resource) {

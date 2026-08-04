@@ -2,26 +2,25 @@
 
 namespace Tests\Feature;
 
-use App\Models\HomepageContent;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\SeedsHeaderMenu;
 use Tests\TestCase;
 
 class BrandingTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsHeaderMenu;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('public');
 
-        HomepageContent::singleton()->update([
-            'hero_line' => ['en' => 'Hero'],
-            'brand_sub' => ['en' => 'Danayasa Arthatama'],
-        ]);
+        SiteSetting::singleton()->update(['brand_subtitle' => ['en' => 'Danayasa Arthatama']]);
+        $this->seedHomepage();
     }
 
     public function test_the_public_header_renders_the_uploaded_logo(): void

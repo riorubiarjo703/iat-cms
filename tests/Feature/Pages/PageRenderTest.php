@@ -60,9 +60,16 @@ class PageRenderTest extends TestCase
 
     public function test_the_catch_all_does_not_shadow_the_homepage(): void
     {
+        // A page whose slug happens to be "home" is still reached at /home;
+        // "/" belongs to whichever page carries the flag.
         $this->page(['slug' => 'home']);
+        Page::create([
+            'title' => ['en' => 'Front'], 'slug' => 'front', 'type' => Page::TYPE_BUILDER,
+            'is_homepage' => true, 'status' => Page::STATUS_PUBLISHED,
+        ]);
 
         $this->get('/')->assertSuccessful()->assertDontSee('Body copy.', false);
+        $this->get('/home')->assertSuccessful()->assertSee('Body copy.', false);
     }
 
     public function test_the_header_is_added_automatically_from_the_assigned_menu(): void
