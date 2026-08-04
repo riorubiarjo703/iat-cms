@@ -17,6 +17,9 @@ class PageBuilderServiceProvider extends ServiceProvider
             // must not silently become an option in the editor.
             foreach ([
                 Blocks\HeroBlock::class,
+                Blocks\PageHeroBlock::class,
+                Blocks\VisionMissionBlock::class,
+                Blocks\ValuesBlock::class,
                 Blocks\MarqueeBlock::class,
                 Blocks\AboutBlock::class,
                 Blocks\DistrictBlock::class,
