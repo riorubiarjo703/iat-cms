@@ -4,6 +4,7 @@ import ScrollTrigger from 'gsap/ScrollTrigger';
 import { prefersReducedMotion } from './motion';
 import { createSmoothScroll } from './smoothScroll';
 import { splitTargets } from './textSplit';
+import { initCards, settleCards } from './cards';
 import { initNav } from './nav';
 import { runLoader } from './loader';
 import { initHeader } from './header';
@@ -56,6 +57,7 @@ export function initScbd() {
 
     if (!reduced) {
       initReveals(gsap, ScrollTrigger);
+      initCards(gsap, ScrollTrigger);
       initMarquee(gsap, ScrollTrigger);
       initDistrict(gsap, ScrollTrigger);
       initCardStack(gsap);
@@ -63,6 +65,7 @@ export function initScbd() {
       // Resting state for everything the reveals would have animated.
       gsap.set('[data-char]', { yPercent: 0 });
       gsap.set('[data-fade]', { opacity: 1, y: 0 });
+      settleCards(gsap);
       gsap.set('[data-reveal], #district img, #facilities img', {
         clipPath: 'inset(0% 0% 0% 0%)',
         scale: 1,
