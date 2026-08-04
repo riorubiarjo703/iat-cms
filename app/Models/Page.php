@@ -58,6 +58,20 @@ class Page extends Model
             ->where(fn (Builder $q) => $q->whereNull('published_at')->orWhere('published_at', '<=', now()));
     }
 
+    /**
+     * Marked published but dated in the future.
+     *
+     * Worth naming, because such a page is not reachable and the admin
+     * previously reported it as simply "published" — which is how a page can
+     * look live and 404.
+     */
+    public function isScheduled(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED
+            && $this->published_at !== null
+            && $this->published_at->isFuture();
+    }
+
     public function isPublished(): bool
     {
         return $this->status === self::STATUS_PUBLISHED

@@ -65,7 +65,11 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Asia/Jakarta, not UTC. This is a single-region Indonesian site, and the
+    // default made every datetime the admin typed seven hours adrift: a page
+    // published at 10:21 local was stored as 10:21 UTC, i.e. scheduled for the
+    // evening, so it 404'd while the admin still said "published".
+    'timezone' => env('APP_TIMEZONE', 'Asia/Jakarta'),
 
     /*
     |--------------------------------------------------------------------------

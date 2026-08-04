@@ -70,7 +70,8 @@ class PageResource extends Resource
 
                     DateTimePicker::make('published_at')
                         ->label('Publish at')
-                        ->helperText('Leave empty to publish immediately once status is Published.'),
+                        ->seconds(false)
+                        ->helperText('Site time ('.config('app.timezone').'). Leave empty to go live as soon as the status is Published; a future time schedules it and the page stays unreachable until then.'),
                 ])
                 ->columns(2),
 
@@ -119,7 +120,20 @@ class PageResource extends Resource
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => $state === Page::STATUS_PUBLISHED ? 'success' : 'warning'),
+                    // A page dated in the future is not live, and calling that
+                    // "published" is how one ends up looking live and 404ing.
+                    ->state(fn (Page $record): string => match (true) {
+                        $record->isScheduled() => 'scheduled',
+                        default => $record->status,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'scheduled' => 'info',
+                        Page::STATUS_PUBLISHED => 'success',
+                        default => 'warning',
+                    })
+                    ->tooltip(fn (Page $record): ?string => $record->isScheduled()
+                        ? 'Goes live '.$record->published_at->format('j M Y, H:i')
+                        : null),
 
                 TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
