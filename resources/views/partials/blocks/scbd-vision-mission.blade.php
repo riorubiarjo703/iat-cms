@@ -61,13 +61,15 @@
             <h2 data-split class="scbd-h2" style="{{ $headingStyle }}" data-i18n="{{ BlockData::i18nKey($blockId, 'mission_label') }}">{{ $missionLabel }}</h2>
 
             @if ($mission->isNotEmpty())
-                {{-- data-scroll-text is the scrubbed word-by-word reveal: the
-                     commitments light up one at a time as the row passes. --}}
-                <ol style="list-style:none; margin:0; padding:0; counter-reset:mission;">
+                {{-- Each commitment is its own scroll-scrubbed block: the number
+                     leads, its text follows a fraction of the scroll behind.
+                     Blocks stagger against each other because each carries its
+                     own trigger. --}}
+                <ol class="scbd-mission-list">
                     @foreach ($mission as $point)
-                        <li style="counter-increment:mission; display:grid; grid-template-columns:44px 1fr; gap:16px; padding:18px 0; border-top:1px solid rgba(32,30,29,0.25);">
-                            <span style="font-weight:800; font-size:13px; letter-spacing:0.08em; color:#ec3013;">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
-                            <span data-scroll-text style="font-size:16px; line-height:1.7; color:rgba(32,30,29,0.85);">{{ $point }}</span>
+                        <li class="scbd-mission-item" data-scroll-block>
+                            <span class="scbd-mission-index" data-scroll-lead>{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="scbd-mission-text" data-scroll-body>{{ $point }}</span>
                         </li>
                     @endforeach
                 </ol>

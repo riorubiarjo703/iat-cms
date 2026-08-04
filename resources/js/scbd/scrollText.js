@@ -1,54 +1,51 @@
 /**
- * Scroll-scrubbed word reveal — the effect lenis.dev uses on its "why smooth
- * scroll?" copy. Words sit dim and light up one after another as the block
- * travels through the viewport, tied to scroll position rather than to a timer,
- * so scrolling back dims them again.
+ * Scroll-scrubbed block reveal — the effect lenis.dev uses on its "why smooth
+ * scroll?" feature blocks.
  *
- * Not applied to elements the language switcher rewrites: it assigns
- * innerHTML, which would replace the word spans these tweens hold references
- * to, leaving the text stuck at its dim starting opacity.
+ * The distinction that matters: progress is driven by scroll position itself,
+ * not by a timer started when the element crosses a threshold. Scrolling back
+ * up runs it backwards. That is the whole point of the reference section — it
+ * is the library demonstrating its own claim — and an IntersectionObserver
+ * fade would not show it.
+ *
+ * Each block animates opacity and a Y-translate together, and its lead element
+ * (the number) arrives slightly ahead of its body text, so the two are offset
+ * by a fraction of the scroll rather than moving as one rigid unit. Blocks
+ * stagger against each other for free: each has its own trigger, so they enter
+ * in sequence as the row passes.
  */
-const DIM = 0.16;
-
-function wrapWords(element) {
-  // Word spans only — splitting to characters here would multiply the node
-  // count by ~5 for no visible gain, since the reveal steps word by word.
-  const words = element.textContent.trim().split(/(\s+)/);
-
-  element.innerHTML = words
-    .map((part) => (/^\s+$/.test(part) ? part : `<span data-word style="display:inline-block;">${part}</span>`))
-    .join('');
-
-  return Array.from(element.querySelectorAll('[data-word]'));
-}
+const START = 'top 92%';
+const END = 'top 52%';
 
 export function initScrollText(gsap, ScrollTrigger) {
-  document.querySelectorAll('[data-scroll-text]').forEach((element) => {
-    if (element.dataset.i18n) return;
+  document.querySelectorAll('[data-scroll-block]').forEach((block) => {
+    const lead = block.querySelector('[data-scroll-lead]');
+    const body = block.querySelector('[data-scroll-body]');
 
-    const words = wrapWords(element);
-    if (words.length === 0) return;
+    if (!lead && !body) return;
 
-    gsap.fromTo(words,
-      { opacity: DIM },
-      {
-        opacity: 1,
-        ease: 'none',
-        stagger: 1,
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 82%',
-          end: 'bottom 58%',
-          scrub: true,
-        },
-      });
+    const timeline = gsap.timeline({
+      scrollTrigger: { trigger: block, start: START, end: END, scrub: true },
+    });
+
+    // ease:'none' throughout — with scrub the scroll position IS the easing,
+    // and an eased tween on top of it makes the text lag the pointer.
+    if (lead) {
+      timeline.fromTo(lead, { opacity: 0, y: 26 }, { opacity: 1, y: 0, ease: 'none' }, 0);
+    }
+
+    if (body) {
+      // Offset into the same timeline rather than a second trigger: one
+      // scroll range drives both, which is what keeps the gap between them
+      // constant instead of drifting with scroll speed.
+      timeline.fromTo(body, { opacity: 0, y: 40 }, { opacity: 1, y: 0, ease: 'none' }, 0.18);
+    }
   });
 }
 
-/** Resting state for reduced motion: every word at full strength. */
+/** Resting state for reduced motion: everything in place, at full strength. */
 export function settleScrollText(gsap) {
-  document.querySelectorAll('[data-scroll-text]').forEach((element) => {
-    if (element.dataset.i18n) return;
-    gsap.set(wrapWords(element), { opacity: 1 });
-  });
+  const targets = document.querySelectorAll('[data-scroll-lead], [data-scroll-body]');
+
+  if (targets.length > 0) gsap.set(targets, { opacity: 1, y: 0 });
 }

@@ -220,7 +220,15 @@ body {
 }
 h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
 
-.grayscale{filter:grayscale(1) contrast(1.08)}
+.grayscale {
+  filter:grayscale(1) contrast(1.08);
+  transition: transform 100ms;
+}
+.grayscale:hover {
+  filter:none;
+  transform: scale(1.1);
+  transition: transform 150ms;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Components — built with the tokens above. Plain CSS
@@ -763,7 +771,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     grid-template-columns: 1fr 1fr;
     column-gap: 120px;
     align-items: start;
-    padding: 44px 0;
+    padding: 60px 0;
 }
 
 .scbd-tl-marker {
@@ -820,7 +828,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 .scbd-values-list { list-style: none; margin: 0; padding: 0; }
 .scbd-values-item {
-    display: grid; grid-template-columns: 62px 1fr; gap: 24px;
     padding: 34px 0;
     border-top: 1px solid rgba(243, 242, 242, 0.18);
 }
@@ -836,6 +843,29 @@ textarea.input { min-height: 90px; resize: vertical; }
 .scbd-values-desc {
     margin: 12px 0 0; font-size: 15px; line-height: 1.7;
     color: rgba(243, 242, 242, 0.72);
+}
+
+/* ── Mission commitments ─────────────────────────────────────────────────
+   Editorial scale: each commitment is a block with room around it, not a
+   dense list row. The generous spacing is load-bearing for the reveal —
+   items need vertical separation to enter in sequence rather than all at
+   once, which is what makes the stagger read as a stagger. */
+.scbd-mission-list { list-style: none; margin: 0; padding: 0; }
+.scbd-mission-item {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 20px;
+    padding: 30px 0;
+    border-top: 1px solid rgba(32, 30, 29, 0.25);
+}
+.scbd-mission-index {
+    font-weight: 800; font-size: 13px; letter-spacing: 0.08em; color: #ec3013;
+    padding-top: 8px;
+}
+.scbd-mission-text {
+    font-size: clamp(17px, 1.35vw, 21px);
+    line-height: 1.8;
+    color: rgba(32, 30, 29, 0.85);
 }
 
 /* Vision / mission: text beside image, the sides swapping between rows. */
@@ -854,6 +884,7 @@ textarea.input { min-height: 90px; resize: vertical; }
     .scbd-page-hero-inner { padding: 140px 24px 64px; }
 
     .scbd-vm-row { grid-template-columns: 1fr; gap: 32px; margin-bottom: 64px !important; }
+    .scbd-mission-item { grid-template-columns: 40px 1fr; gap: 14px; padding: 22px 0; }
     /* One column: the heading leads regardless of which side its image was on,
        so both rows read the same way down a phone. */
     .scbd-vm-row-flip > *:first-child { order: 2; }

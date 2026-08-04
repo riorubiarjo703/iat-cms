@@ -66,12 +66,20 @@ class ContentBlocksTest extends TestCase
         ])]);
 
         $html = $this->get('/built')->getContent();
-        $alpha = strpos($html, 'Alpha');
-        $bravo = strpos($html, 'Bravo');
 
-        $this->assertLessThan($bravo, $alpha);
-        $this->assertStringContainsString('01', $html);
-        $this->assertStringContainsString('02', $html);
+        preg_match_all('/<li class="scbd-mission-item".*?<\/li>/s', $html, $matches);
+        $items = $matches[0];
+
+        $this->assertCount(2, $items, 'each commitment should render as its own item');
+
+        // Each number is asserted inside the item it belongs to. Searching the
+        // whole document for "01" passed even with the numbering deleted —
+        // that string occurs in colours, class names and the header — which is
+        // how the numbers went missing without a single test failing.
+        $this->assertStringContainsString('01', $items[0]);
+        $this->assertStringContainsString('Alpha', $items[0]);
+        $this->assertStringContainsString('02', $items[1]);
+        $this->assertStringContainsString('Bravo', $items[1]);
     }
 
     public function test_mission_points_fall_back_to_english_for_an_untranslated_locale(): void
