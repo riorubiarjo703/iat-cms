@@ -408,3 +408,106 @@ textarea.input { min-height: 90px; resize: vertical; }
   ::selection { background: rgba(236,48,19,0.28); }
   @keyframes scbd-spin { to { transform: rotate(360deg); } }
   @media (pointer: coarse) { .scbd-cursor { display: none !important; } }
+
+/* ── Header navigation with dropdowns ────────────────────────────────────
+   Opens on hover and on keyboard focus. There is no Alpine on the public
+   site, so this is CSS with a small script only for touch, where hover does
+   not exist. */
+.scbd-nav,
+.scbd-nav-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.scbd-nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
+
+.scbd-nav-item { position: relative; }
+
+.scbd-nav-link {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #201e1d;
+    white-space: nowrap;
+}
+
+/* A parent's arrow marks it as openable. */
+.scbd-nav-has-children > .scbd-nav-link::after {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-left: 7px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 150ms;
+}
+
+.scbd-nav-menu {
+    position: absolute;
+    top: 100%;
+    left: -16px;
+    min-width: 232px;
+    padding: 8px 0;
+    background: #f3f2f2;
+    border: 2px solid rgba(32, 30, 29, 0.4);
+    /* Hidden without display:none so the submenu keeps a measurable box and
+       the transition has something to animate. */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 160ms, transform 160ms, visibility 160ms;
+    z-index: 10;
+}
+
+/* A third level opens sideways: downwards would run off a fixed header. */
+.scbd-nav-menu-sub {
+    top: -10px;
+    left: 100%;
+    margin-left: 2px;
+}
+
+.scbd-nav-item:hover > .scbd-nav-menu,
+.scbd-nav-item:focus-within > .scbd-nav-menu,
+.scbd-nav-item.scbd-nav-open > .scbd-nav-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.scbd-nav-item:hover > .scbd-nav-link::after,
+.scbd-nav-item:focus-within > .scbd-nav-link::after,
+.scbd-nav-item.scbd-nav-open > .scbd-nav-link::after {
+    transform: translateY(0) rotate(225deg);
+}
+
+.scbd-nav-link-sub {
+    display: block;
+    padding: 10px 20px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    white-space: normal;
+    transition: background-color 120ms;
+}
+.scbd-nav-link-sub:hover,
+.scbd-nav-link-sub:focus-visible { background: rgba(32, 30, 29, 0.08); }
+
+/* A sideways submenu's parent needs its arrow pointing right, not down. */
+.scbd-nav-menu .scbd-nav-has-children > .scbd-nav-link::after {
+    float: right;
+    transform: rotate(-45deg);
+}
+/* A sideways submenu keeps its arrow pointing at where the submenu appears.
+   Flipping it to point back at the parent reads as "collapse", which is the
+   opposite of what just happened. */
+.scbd-nav-menu .scbd-nav-has-children:hover > .scbd-nav-link::after,
+.scbd-nav-menu .scbd-nav-has-children:focus-within > .scbd-nav-link::after,
+.scbd-nav-menu .scbd-nav-has-children.scbd-nav-open > .scbd-nav-link::after { transform: rotate(-45deg); }

@@ -41,10 +41,11 @@ final class SiteTranslations
         // cannot answer; the switcher skips empty values anyway.
         $bucket['brandsub'] = self::html($settings->t('brand_subtitle', $locale) ?? '');
 
-        // Keys are positional (nav1, nav2, …) because the header renders the
-        // menu in order; reordering the menu re-renders both sides together.
-        foreach (MenuRenderer::byLocation(MenuLocations::HEADER)->values() as $index => $item) {
-            $bucket['nav'.($index + 1)] = self::html($item->t('label', $locale) ?? '');
+        // The whole tree, not just the top level: a dropdown entry rendered
+        // with a key the dictionary lacks would never translate. Keys come
+        // from MenuRenderer so the markup and this payload share one source.
+        foreach (self::flatten(MenuRenderer::withKeys()) as $key => $item) {
+            $bucket[$key] = self::html($item->t('label', $locale) ?? '');
         }
 
         $cta = MenuRenderer::cta(MenuLocations::HEADER);
@@ -54,6 +55,22 @@ final class SiteTranslations
         }
 
         return $bucket;
+    }
+
+    /**
+     * @param  array<int, array{item: \App\Models\MenuItem, key: string, children: array<int, mixed>}>  $nodes
+     * @return array<string, \App\Models\MenuItem>
+     */
+    private static function flatten(array $nodes): array
+    {
+        $flat = [];
+
+        foreach ($nodes as $node) {
+            $flat[$node['key']] = $node['item'];
+            $flat += self::flatten($node['children']);
+        }
+
+        return $flat;
     }
 
     /** Pre-escaped with <br> for line breaks, which is what the switcher

@@ -12,7 +12,7 @@
 --}}
 @php
     $settings = \App\Models\SiteSetting::singleton();
-    $links = \App\Support\MenuRenderer::byLocation(\App\Support\MenuLocations::HEADER);
+    $tree = \App\Support\MenuRenderer::withKeys();
     $cta = \App\Support\MenuRenderer::cta(\App\Support\MenuLocations::HEADER);
     $brandName = $settings->site_name ?: config('app.name');
     $brandSub = $settings->t('brand_subtitle');
@@ -35,13 +35,11 @@
             <span style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:rgba(32,30,29,0.55);" data-i18n="brandsub">{{ $brandSub }}</span>
         </a>
         <nav style="display:flex; align-items:center; gap:28px;">
-            @foreach ($links as $item)
-                <a href="{{ $item->resolveUrl() }}"
-                   data-navlink
-                   @if ($item->target && $item->target !== '_self') target="{{ $item->target }}" @endif
-                   style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; text-decoration:none; color:#201e1d;"
-                   data-i18n="nav{{ $loop->iteration }}">{{ $item->t('label') }}</a>
-            @endforeach
+            <ul class="scbd-nav">
+                @foreach ($tree as $node)
+                    @include('partials.site.nav-item', ['node' => $node, 'depth' => 0])
+                @endforeach
+            </ul>
             <div style="display:flex; align-items:center; gap:2px; border-left:1px solid rgba(32,30,29,0.3); padding-left:20px;">
                 @foreach ($locales as $code => $label)
                     <button data-lang="{{ $code }}"
