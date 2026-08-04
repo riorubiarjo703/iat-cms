@@ -12,31 +12,32 @@
 @if ($entries->isNotEmpty())
     <section id="milestones" class="scbd-pad">
         @if ($heading)
-            <h2 data-split class="scbd-h2" style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 64px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
+            <h2 data-split class="scbd-h2" style="font-size:clamp(30px,4.6vw,72px); line-height:0.98; letter-spacing:-0.035em; text-transform:uppercase; margin:0 0 80px; max-width:16ch;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
         @endif
 
-        {{-- A single vertical rule the cards hang off, so the eye follows one
-             line down the page rather than a border per card. --}}
-        <div style="position:relative; padding-left:0;">
+        {{-- One rule down the middle with the years pinned to it, and the cards
+             alternating either side: odd rows put the text left, even rows
+             mirror them. The alternation is a class rather than :nth-child so
+             the single-column mobile layout can ignore it wholesale. --}}
+        <div class="scbd-tl">
             @foreach ($entries as $entry)
-                <article data-timeline-card class="scbd-timeline-row" style="display:grid; grid-template-columns:minmax(120px,180px) 1fr; gap:40px; align-items:start; padding:40px 0; border-top:2px solid rgba(32,30,29,0.35);">
-                    <div style="font-weight:800; font-size:clamp(20px,2.4vw,34px); line-height:1; letter-spacing:-0.03em; color:#ec3013;">{{ $entry['year'] }}</div>
+                <article data-timeline-card @class(['scbd-tl-row', 'scbd-tl-row-flip' => $loop->even])>
+                    <div class="scbd-tl-marker">{{ $entry['year'] }}</div>
 
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:32px; align-items:start;">
-                        <div>
-                            <h3 style="font-size:clamp(19px,2vw,28px); line-height:1.15; letter-spacing:-0.02em; text-transform:uppercase; margin:0 0 12px;">{{ $entry['title'] ?? '' }}</h3>
-                            @if (filled($entry['body'] ?? null))
-                                <p style="font-size:15px; line-height:1.75; color:rgba(32,30,29,0.75); margin:0;">{{ $entry['body'] }}</p>
-                            @endif
-                        </div>
+                    <div class="scbd-tl-text">
+                        <h3 class="scbd-tl-title">{{ $entry['title'] ?? '' }}</h3>
+                        @if (filled($entry['body'] ?? null))
+                            <p class="scbd-tl-body">{{ $entry['body'] }}</p>
+                        @endif
+                    </div>
 
+                    <div class="scbd-tl-media">
                         @if (filled($entry['image'] ?? null))
-                            <div style="overflow:hidden; border:2px solid rgba(32,30,29,0.35);">
+                            <div class="scbd-tl-frame">
                                 <img class="grayscale"
                                      src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($entry['image']) }}"
                                      alt="{{ $entry['title'] ?? $entry['year'] }}"
-                                     loading="lazy"
-                                     style="width:100%; height:230px; object-fit:cover; display:block;">
+                                     loading="lazy">
                             </div>
                         @endif
                     </div>

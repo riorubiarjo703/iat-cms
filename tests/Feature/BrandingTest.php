@@ -49,7 +49,15 @@ class BrandingTest extends TestCase
 
         // The brand must never disappear just because no logo was uploaded.
         $response->assertSee('SCBD');
-        $response->assertDontSee('<img', false);
+
+        // Scoped to the brand link rather than the whole document: the header
+        // legitimately carries other images (the locale flags), and asserting
+        // on the page as a whole made this test fail for an unrelated reason.
+        $html = $response->getContent();
+        $start = strpos($html, '<a href="#top"');
+        $brand = substr($html, $start, strpos($html, '</a>', $start) - $start);
+
+        $this->assertStringNotContainsString('<img', $brand);
     }
 
     public function test_the_fallback_uses_the_configured_site_name_not_a_hardcoded_string(): void

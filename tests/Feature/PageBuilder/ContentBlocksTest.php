@@ -108,18 +108,35 @@ class ContentBlocksTest extends TestCase
         $this->assertLessThan(strpos($html, 'Safety'), strpos($html, 'Unity'));
     }
 
-    public function test_the_reveal_target_sits_inside_a_clipping_frame(): void
+    public function test_every_reveal_target_sits_inside_a_clipping_frame(): void
     {
         // data-reveal starts at scale 1.16; unclipped it pushed the page into
-        // a horizontal scrollbar until the animation settled.
-        $this->page([$this->block(Blocks\ValuesBlock::type(), [
-            'values' => ['en' => [['name' => 'Smart']]],
+        // a horizontal scrollbar until the animation settled. The frame has to
+        // be the element wrapping the target, so this walks back from each
+        // data-reveal to the tag that opens it rather than sampling a fixed
+        // window of the section — which passed for whatever happened to sit
+        // within the first 200 characters.
+        $this->page([$this->block(Blocks\VisionMissionBlock::type(), [
+            'vision' => ['en' => 'V'],
+            'vision_image' => 'uploads/v.jpg',
+            'mission_image' => 'uploads/m.jpg',
         ])]);
 
         $html = $this->get('/built')->getContent();
-        $section = substr($html, strpos($html, 'id="values"'), 200);
+        $offsets = [];
 
-        $this->assertStringContainsString('overflow:hidden', $section);
+        for ($at = 0; ($at = strpos($html, 'data-reveal', $at)) !== false; $at++) {
+            $offsets[] = $at;
+        }
+
+        $this->assertCount(2, $offsets, 'both vision and mission images should be reveal targets');
+
+        foreach ($offsets as $offset) {
+            // The wrapper is the last tag opened before the target.
+            $wrapper = substr($html, strrpos(substr($html, 0, $offset), '<div'), 200);
+
+            $this->assertStringContainsString('overflow:hidden', $wrapper);
+        }
     }
 
     public function test_the_profile_seeder_builds_the_page_and_it_renders(): void

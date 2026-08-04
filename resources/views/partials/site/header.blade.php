@@ -17,6 +17,7 @@
     $brandName = $settings->site_name ?: config('app.name');
     $brandSub = $settings->t('brand_subtitle');
     $locales = \App\Models\SiteSetting::LOCALES;
+    $flags = \App\Models\SiteSetting::LOCALE_FLAGS;
     $activeLocale = $settings->default_locale ?? 'en';
 @endphp
 
@@ -49,11 +50,29 @@
                     @include('partials.site.nav-item', ['node' => $node, 'depth' => 0])
                 @endforeach
             </ul>
-            <div class="scbd-locales">
-                @foreach ($locales as $code => $label)
-                    <button data-lang="{{ $code }}"
-                            style="border:0; background:{{ $code === $activeLocale ? '#201e1d' : 'transparent' }}; color:{{ $code === $activeLocale ? '#f3f2f2' : '#201e1d' }}; font-family:inherit; font-weight:800; font-size:11px; letter-spacing:0.1em; padding:6px 9px; cursor:none;">{{ strtoupper($code) }}</button>
-                @endforeach
+            {{-- The trigger's flag and code are rewritten by i18n.js on switch,
+                 so it always shows the language you are actually reading. --}}
+            <div class="scbd-locales" data-locale-switcher>
+                <button type="button" class="scbd-locale-trigger" data-locale-trigger aria-haspopup="true" aria-expanded="false" aria-label="Change language">
+                    @if ($flag = $flags[$activeLocale] ?? null)
+                        <img src="{{ asset($flag) }}" alt="" width="20" height="14" data-locale-trigger-flag>
+                    @endif
+                    <span data-locale-trigger-code>{{ strtoupper($activeLocale) }}</span>
+                    <svg class="scbd-locale-caret" width="9" height="6" viewBox="0 0 9 6" aria-hidden="true"><path d="M1 1l3.5 3.5L8 1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+
+                <ul class="scbd-locale-menu" data-locale-menu hidden>
+                    @foreach ($locales as $code => $label)
+                        <li>
+                            <button type="button" data-lang="{{ $code }}" @if ($code === $activeLocale) aria-current="true" @endif>
+                                @if ($flag = $flags[$code] ?? null)
+                                    <img src="{{ asset($flag) }}" alt="" width="20" height="14">
+                                @endif
+                                <span>{{ $label }}</span>
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
             @if ($cta)
                 <a href="{{ $cta->resolveUrl() }}"

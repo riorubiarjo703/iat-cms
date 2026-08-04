@@ -10,14 +10,21 @@ export function initReveals(gsap, ScrollTrigger) {
     });
   }
 
+  // fromTo, not from: `from` reads the element's current state as the
+  // destination, and a ScrollTrigger refresh partway through the tween (which
+  // the loader and Lenis both provoke) can re-capture a mid-animation opacity
+  // as the resting one, leaving the text permanently half-visible. An explicit
+  // destination cannot be re-derived that way.
   document.querySelectorAll('[data-fade]').forEach((element) => {
-    gsap.from(element, {
-      y: 34,
-      opacity: 0,
-      duration: 0.9,
-      ease: 'expo.out',
-      scrollTrigger: { trigger: element, start: 'top 88%' },
-    });
+    gsap.fromTo(element,
+      { y: 34, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 0.9,
+        ease: 'expo.out',
+        scrollTrigger: { trigger: element, start: 'top 88%' },
+      });
   });
 
   document
@@ -34,26 +41,48 @@ export function initReveals(gsap, ScrollTrigger) {
         });
     });
 
-  // The reference wrote `yPercert` here (page.jsx:95) — a silent no-op that left
-  // the contact heading visible before its own reveal ran.
-  const contactChars = document.querySelectorAll('#contact [data-char]');
-  const contact = document.querySelector('#contact');
+  initSplitHeadings(gsap, ScrollTrigger);
+}
 
-  if (!contact || contactChars.length === 0) return;
+/**
+ * Reveals every `[data-split]` heading as it scrolls into view.
+ *
+ * index.js parks all `[data-char]` at yPercent 105 before anything else runs.
+ * Only two selectors ever put them back: the loader timeline for `#top`, and —
+ * previously — a hardcoded `#contact` block here. Every other split heading on
+ * the site (Vision, Mission, and every interior page's section titles) was left
+ * parked below its own clipping wrapper, so it never appeared at all. The
+ * reference wrote `yPercert` in this spot (page.jsx:95), a silent no-op, which
+ * is why the omission was inherited rather than noticed.
+ *
+ * `#top` is excluded because the loader owns those characters; running both
+ * would fight over the same transform.
+ */
+function initSplitHeadings(gsap, ScrollTrigger) {
+  document.querySelectorAll('[data-split]').forEach((element) => {
+    if (element.closest('#top')) return;
 
-  if (contact.getBoundingClientRect().top < window.innerHeight * 0.7) {
-    gsap.set(contactChars, { yPercent: 0 });
-    return;
-  }
+    const chars = element.querySelectorAll('[data-char]');
+    if (chars.length === 0) return;
 
-  gsap.set(contactChars, { yPercent: 105 });
+    // Already on screen when the page settles: show it now. A trigger whose
+    // start line is above the viewport top never fires, which would leave a
+    // heading near the top of a short page permanently hidden.
+    if (element.getBoundingClientRect().top < window.innerHeight * 0.85) {
+      gsap.set(chars, { yPercent: 0 });
 
-  ScrollTrigger.create({
-    trigger: '#contact',
-    start: 'top 70%',
-    once: true,
-    onEnter: () =>
-      gsap.to(contactChars, { yPercent: 0, duration: 0.8, stagger: 0.01, ease: 'expo.out' }),
+      return;
+    }
+
+    gsap.set(chars, { yPercent: 105 });
+
+    ScrollTrigger.create({
+      trigger: element,
+      start: 'top 85%',
+      once: true,
+      onEnter: () =>
+        gsap.to(chars, { yPercent: 0, duration: 0.8, stagger: 0.012, ease: 'expo.out' }),
+    });
   });
 }
 

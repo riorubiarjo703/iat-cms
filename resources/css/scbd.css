@@ -534,10 +534,46 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 .scbd-header-nav { display: flex; align-items: center; gap: 28px; }
 .scbd-locales {
+    position: relative;
     display: flex; align-items: center; gap: 2px;
     border-left: 1px solid rgba(32, 30, 29, 0.3);
     padding-left: 20px;
 }
+
+.scbd-locale-trigger,
+.scbd-locale-menu button {
+    display: flex; align-items: center; gap: 8px;
+    border: 0; background: transparent; color: #201e1d;
+    font-family: inherit; font-weight: 800; font-size: 11px; letter-spacing: 0.1em;
+    cursor: none;
+}
+
+.scbd-locale-trigger { padding: 6px 8px; }
+.scbd-locale-trigger img,
+.scbd-locale-menu img {
+    /* Fixed box: the source flags are not one aspect ratio, and a row of
+       differently sized flags reads as a rendering fault. */
+    width: 20px; height: 14px; object-fit: cover; display: block;
+    border: 1px solid rgba(32, 30, 29, 0.18);
+}
+
+.scbd-locale-caret { transition: transform 0.2s ease; flex: none; }
+.scbd-locale-trigger[aria-expanded="true"] .scbd-locale-caret { transform: rotate(180deg); }
+
+.scbd-locale-menu {
+    position: absolute; top: calc(100% + 10px); right: 0; z-index: 20;
+    min-width: 168px; margin: 0; padding: 6px; list-style: none;
+    background: #f3f2f2; border: 2px solid #201e1d;
+    box-shadow: 6px 6px 0 rgba(32, 30, 29, 0.14);
+}
+
+.scbd-locale-menu[hidden] { display: none; }
+.scbd-locale-menu button {
+    width: 100%; padding: 9px 10px; text-align: left;
+    letter-spacing: 0.06em; text-transform: none; font-size: 12px;
+}
+.scbd-locale-menu button:hover { background: rgba(32, 30, 29, 0.07); }
+.scbd-locale-menu button[aria-current="true"] { background: #201e1d; color: #f3f2f2; }
 
 .scbd-burger { display: none; }
 .scbd-nav-backdrop { display: none; }
@@ -642,11 +678,19 @@ textarea.input { min-height: 90px; resize: vertical; }
 
     .scbd-locales {
         border-left: 0;
-        border-top: 1px solid rgba(32, 30, 29, 0.18);
         padding: 20px 0 0;
         margin-top: 20px;
+        display: block;
     }
-    .scbd-locales button { padding: 10px 14px; font-size: 12px; cursor: pointer; }
+    .scbd-locale-trigger { padding: 10px 0; font-size: 12px; cursor: pointer; }
+
+    /* In the drawer the panel is placed in flow rather than floated: an
+       absolutely positioned box would overhang a drawer that scrolls. */
+    .scbd-locale-menu {
+        position: static; min-width: 0; margin-top: 10px;
+        box-shadow: none;
+    }
+    .scbd-locale-menu button { font-size: 13px; padding: 11px 12px; cursor: pointer; }
 
     .scbd-header-nav .btn { margin-top: 20px; justify-content: center; cursor: pointer; }
 
@@ -668,12 +712,152 @@ textarea.input { min-height: 90px; resize: vertical; }
 .scbd-pad { padding: 120px 40px; }
 .scbd-pad-top { padding: 150px 40px 0; }
 
+/* Interior page hero. Content is anchored to the bottom of the frame so the
+   heading sits clear of the fixed header rather than under it. */
+.scbd-page-hero { display: flex; min-height: 88vh; }
+.scbd-page-hero-inner {
+    display: flex; flex-direction: column; justify-content: flex-end;
+    width: 100%; padding: 190px 40px 90px; box-sizing: border-box;
+}
+
 /* Two-up content that becomes one column. */
 .scbd-split-2 { display: grid; gap: 64px; }
+
+/* ── Roulette ────────────────────────────────────────────────────────────
+   A continuously drifting row, clipped by its viewport. The track holds its
+   cards twice over so a -50% travel lands on the copy without a seam; the
+   width is left to the content rather than set, so a row of any length
+   loops correctly. */
+.scbd-roulette { overflow: hidden; }
+.scbd-roulette-track { display: flex; gap: 32px; width: max-content; will-change: transform; }
+.scbd-roulette-card { flex: 0 0 260px; }
+.scbd-roulette-frame {
+    overflow: hidden;
+    border: 2px solid rgba(32, 30, 29, 0.35);
+    background: #e8e7e6;
+    aspect-ratio: 4 / 3;
+}
+.scbd-roulette-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.scbd-roulette-name { font-weight: 800; font-size: 16px; letter-spacing: -0.01em; margin-top: 14px; }
+.scbd-roulette-role {
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(32, 30, 29, 0.6); margin-top: 4px;
+}
+
+/* ── Vertical timeline ───────────────────────────────────────────────────
+   A rule down the centre with the year pinned to it, and cards alternating
+   either side. The two content cells are placed by grid-column rather than by
+   source order, so the year marker can stay first in the markup — where a
+   screen reader wants it — no matter which side its card is on. */
+.scbd-tl { position: relative; max-width: 1280px; margin: 0 auto; }
+.scbd-tl::before {
+    content: '';
+    position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 2px; margin-left: -1px;
+    background: rgba(32, 30, 29, 0.28);
+}
+
+.scbd-tl-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 120px;
+    align-items: start;
+    padding: 44px 0;
+}
+
+.scbd-tl-marker {
+    position: absolute; left: 50%; top: 44px;
+    transform: translateX(-50%);
+    z-index: 1;
+    background: #ec3013; color: #f3f2f2;
+    font-weight: 800; font-size: 15px; letter-spacing: 0.04em;
+    padding: 8px 16px;
+    white-space: nowrap;
+}
+
+.scbd-tl-text { grid-column: 1; text-align: right; padding-top: 46px; min-width: 0; }
+.scbd-tl-media { grid-column: 2; padding-top: 46px; min-width: 0; }
+.scbd-tl-row-flip .scbd-tl-text { grid-column: 2; text-align: left; }
+.scbd-tl-row-flip .scbd-tl-media { grid-column: 1; }
+
+.scbd-tl-title {
+    font-size: clamp(19px, 2vw, 30px); line-height: 1.15;
+    letter-spacing: -0.02em; text-transform: uppercase; margin: 0 0 12px;
+}
+.scbd-tl-body { font-size: 15px; line-height: 1.75; color: rgba(32, 30, 29, 0.75); margin: 0; }
+
+.scbd-tl-frame { overflow: hidden; border: 2px solid rgba(32, 30, 29, 0.35); }
+.scbd-tl-frame img { width: 100%; height: 300px; object-fit: cover; display: block; }
+
+/* ── Corporate culture ───────────────────────────────────────────────────
+   A dark frame whose headline holds still while the principles travel past
+   it. The sticky column is offset by the fixed header's height so it never
+   parks underneath it. */
+.scbd-values-section { background: #201e1d; color: #f3f2f2; }
+.scbd-values-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 130px 40px 140px;
+}
+
+.scbd-values-sticky { position: sticky; top: 130px; align-self: start; }
+.scbd-values-title {
+    font-size: clamp(30px, 4.2vw, 66px); line-height: 0.98;
+    letter-spacing: -0.035em; text-transform: uppercase; margin: 0;
+}
+.scbd-values-acronym {
+    font-weight: 800; font-size: clamp(40px, 7vw, 104px); line-height: 0.9;
+    letter-spacing: -0.05em; color: #ec3013; margin-top: 28px;
+}
+.scbd-values-count {
+    margin-top: 28px; font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(243, 242, 242, 0.5);
+}
+
+.scbd-values-list { list-style: none; margin: 0; padding: 0; }
+.scbd-values-item {
+    display: grid; grid-template-columns: 62px 1fr; gap: 24px;
+    padding: 34px 0;
+    border-top: 1px solid rgba(243, 242, 242, 0.18);
+}
+.scbd-values-item:last-child { border-bottom: 1px solid rgba(243, 242, 242, 0.18); }
+.scbd-values-index {
+    font-weight: 800; font-size: 13px; letter-spacing: 0.1em; color: #ec3013;
+    padding-top: 6px;
+}
+.scbd-values-name {
+    font-weight: 800; font-size: clamp(19px, 2vw, 27px); line-height: 1.15;
+    letter-spacing: -0.02em; text-transform: uppercase;
+}
+.scbd-values-desc {
+    margin: 12px 0 0; font-size: 15px; line-height: 1.7;
+    color: rgba(243, 242, 242, 0.72);
+}
+
+/* Vision / mission: text beside image, the sides swapping between rows. */
+.scbd-vm-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+}
+.scbd-vm-row > * { min-width: 0; }
 
 @media (max-width: 900px) {
     .scbd-pad { padding: 80px 24px !important; }
     .scbd-pad-top { padding: 110px 24px 0 !important; }
+    .scbd-page-hero { min-height: 78vh; }
+    .scbd-page-hero-inner { padding: 140px 24px 64px; }
+
+    .scbd-vm-row { grid-template-columns: 1fr; gap: 32px; margin-bottom: 64px !important; }
+    /* One column: the heading leads regardless of which side its image was on,
+       so both rows read the same way down a phone. */
+    .scbd-vm-row-flip > *:first-child { order: 2; }
+    .scbd-vm-row img { min-height: 240px !important; }
     .scbd-split-2 { grid-template-columns: 1fr !important; gap: 40px !important; }
 
     /* Headings: the desktop clamp minimums are larger than a phone can hold. */
@@ -689,14 +873,26 @@ textarea.input { min-height: 90px; resize: vertical; }
     /* News rows: date, headline, excerpt in one column. */
     .scbd-news-row { grid-template-columns: 1fr !important; gap: 8px !important; padding: 22px 0 !important; }
 
-    /* Timeline: the year sits above its entry rather than beside it. */
-    .scbd-timeline-row { grid-template-columns: 1fr !important; gap: 16px !important; }
+    /* Timeline: the rule moves to the left edge and every card hangs off it,
+       because two 50% columns on a phone leave neither side readable. */
+    .scbd-tl::before { left: 9px; }
+    .scbd-tl-row { grid-template-columns: 1fr; column-gap: 0; row-gap: 20px; padding: 34px 0 34px 40px; }
+    .scbd-tl-marker { left: 9px; top: 34px; transform: translateX(-50%) translateY(-4px); font-size: 13px; padding: 6px 12px; }
+    .scbd-tl-text,
+    .scbd-tl-row-flip .scbd-tl-text { grid-column: 1; text-align: left; padding-top: 34px; }
+    .scbd-tl-media,
+    .scbd-tl-row-flip .scbd-tl-media { grid-column: 1; padding-top: 0; }
+    .scbd-tl-frame img { height: 220px; }
 
     /* Portraits and certificates: two per row rather than one huge column. */
-    .scbd-people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 20px !important; }
+    .scbd-roulette-card { flex-basis: 200px; }
+    .scbd-roulette-track { gap: 20px; }
     .scbd-awards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 20px !important; }
-    .scbd-values-grid { grid-template-columns: 1fr !important; gap: 22px !important; }
-    .scbd-values-panel { padding: 32px 22px !important; }
+    /* The sticky headline stops being sticky: on one column it would pin
+       above the values and eat most of a phone screen. */
+    .scbd-values-inner { grid-template-columns: 1fr !important; gap: 32px !important; padding: 72px 24px !important; }
+    .scbd-values-sticky { position: static !important; }
+    .scbd-values-item { grid-template-columns: 40px 1fr !important; }
 
     /* The footer band's four columns become one. */
     .scbd-footer-grid { grid-template-columns: 1fr !important; }
@@ -704,8 +900,8 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 
 @media (max-width: 560px) {
-    .scbd-people-grid,
     .scbd-awards-grid { grid-template-columns: 1fr !important; }
+    .scbd-roulette-card { flex-basis: 160px; }
 }
 
 /* The district section is a pinned horizontal scroll on desktop. A phone has
@@ -737,10 +933,9 @@ textarea.input { min-height: 90px; resize: vertical; }
 .scbd-hero-grid > *,
 .scbd-card-split > *,
 .scbd-news-row > *,
-.scbd-timeline-row > *,
-.scbd-people-grid > *,
+.scbd-tl-row > *,
 .scbd-awards-grid > *,
-.scbd-values-grid > *,
+.scbd-values-list > *,
 .scbd-footer-grid > * {
     min-width: 0;
 }

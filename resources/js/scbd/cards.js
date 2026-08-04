@@ -11,7 +11,6 @@ export function initCards(gsap, ScrollTrigger) {
     // Milestones rise as the eye travels down the timeline.
     { selector: '[data-timeline-card]', from: { opacity: 0, y: 48 }, stagger: 0.08 },
     // Board portraits settle in a light stagger across the grid.
-    { selector: '[data-org-card]', from: { opacity: 0, y: 32, scale: 0.98 }, stagger: 0.06 },
     { selector: '[data-award]', from: { opacity: 0, y: 32 }, stagger: 0.05 },
   ];
 
@@ -40,5 +39,5 @@ export function initCards(gsap, ScrollTrigger) {
  * Without this they would keep whatever the fromTo would have started from.
  */
 export function settleCards(gsap) {
-  gsap.set('[data-timeline-card], [data-org-card], [data-award]', { opacity: 1, y: 0, scale: 1 });
+  gsap.set('[data-timeline-card], [data-award]', { opacity: 1, y: 0, scale: 1 });
 }

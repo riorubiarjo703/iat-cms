@@ -23,30 +23,54 @@
         @endif
 
         @foreach ($groups as $group)
+            @php
+                // The track travels -50%, so it holds the run twice over and
+                // lands seamlessly on the copy. A short group is repeated first
+                // until the run is wide enough to overflow a desktop viewport —
+                // otherwise the loop shows empty space instead of a cycle.
+                //
+                // Below the threshold there is nothing to cycle through: a
+                // one-person group repeated to fill the width reads as a
+                // rendering fault, not as a roulette. Those groups stay a
+                // static row.
+                $people = $group['people'];
+                $loops = $people->count() >= 3;
+                $repeat = $loops ? (int) ceil(8 / $people->count()) : 1;
+                $run = collect()->times($repeat, fn () => $people)->flatten(1);
+                $passes = $loops ? [false, true] : [false];
+            @endphp
+
             <div style="margin-bottom:72px;">
                 <div style="display:flex; align-items:center; gap:16px; margin-bottom:32px;">
                     <span style="font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#ec3013; white-space:nowrap;">{{ $group['title'] }}</span>
                     <span style="flex:1; height:2px; background:rgba(32,30,29,0.35);"></span>
                 </div>
 
-                <div class="scbd-people-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:32px;">
-                    @foreach ($group['people'] as $person)
-                        <article data-org-card>
-                            <div style="overflow:hidden; border:2px solid rgba(32,30,29,0.35); background:#e8e7e6; aspect-ratio:4/3;">
-                                @if (filled($person['photo'] ?? null))
-                                    <img class="grayscale"
-                                         src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($person['photo']) }}"
-                                         alt="{{ $person['name'] }}"
-                                         loading="lazy"
-                                         style="width:100%; height:100%; object-fit:contain; display:block;">
-                                @endif
-                            </div>
-                            <div style="font-weight:800; font-size:16px; letter-spacing:-0.01em; margin-top:14px;">{{ $person['name'] }}</div>
-                            @if (filled($person['role'] ?? null))
-                                <div style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(32,30,29,0.6); margin-top:4px;">{{ $person['role'] }}</div>
-                            @endif
-                        </article>
-                    @endforeach
+                {{-- The viewport clips; the track inside it is what moves. --}}
+                <div class="scbd-roulette">
+                    <div class="scbd-roulette-track" @if ($loops) data-roulette @endif>
+                        @foreach ($passes as $isCopy)
+                            @foreach ($run as $person)
+                                {{-- The second run is the seam filler, not content:
+                                     hiding it from assistive tech stops every name
+                                     being announced twice. --}}
+                                <article class="scbd-roulette-card" @if ($isCopy) aria-hidden="true" @endif>
+                                    <div class="scbd-roulette-frame">
+                                        @if (filled($person['photo'] ?? null))
+                                            <img class="grayscale"
+                                                 src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($person['photo']) }}"
+                                                 alt="{{ $isCopy ? '' : $person['name'] }}"
+                                                 loading="lazy">
+                                        @endif
+                                    </div>
+                                    <div class="scbd-roulette-name">{{ $person['name'] }}</div>
+                                    @if (filled($person['role'] ?? null))
+                                        <div class="scbd-roulette-role">{{ $person['role'] }}</div>
+                                    @endif
+                                </article>
+                            @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
         @endforeach

@@ -10,6 +10,8 @@ import { runLoader } from './loader';
 import { initHeader } from './header';
 import { initReveals, initNewsHover } from './reveal';
 import { initMarquee } from './marquee';
+import { initRoulette } from './roulette';
+import { initScrollText, settleScrollText } from './scrollText';
 import { initDistrict } from './district';
 import { initCardStack } from './stack';
 import { initCounters } from './counters';
@@ -59,6 +61,8 @@ export function initScbd() {
       initReveals(gsap, ScrollTrigger);
       initCards(gsap, ScrollTrigger);
       initMarquee(gsap, ScrollTrigger);
+      initRoulette(gsap, ScrollTrigger);
+      initScrollText(gsap, ScrollTrigger);
       initDistrict(gsap, ScrollTrigger);
       initCardStack(gsap);
     } else {
@@ -66,6 +70,7 @@ export function initScbd() {
       gsap.set('[data-char]', { yPercent: 0 });
       gsap.set('[data-fade]', { opacity: 1, y: 0 });
       settleCards(gsap);
+      settleScrollText(gsap);
       gsap.set('[data-reveal], #district img, #facilities img', {
         clipPath: 'inset(0% 0% 0% 0%)',
         scale: 1,

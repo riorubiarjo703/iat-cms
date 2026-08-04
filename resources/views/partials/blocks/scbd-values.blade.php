@@ -12,29 +12,35 @@
 @endphp
 
 @if ($values->isNotEmpty())
-    {{-- The reveal starts the panel at scale 1.16, so it needs a frame to
-         grow into. Without one it extended past the viewport and gave the
-         whole page a horizontal scrollbar until the animation settled. --}}
-    <section id="values" class="scbd-pad" style="padding-top:0 !important; overflow:hidden;">
-        <div data-reveal class="scbd-values-panel" style="background:#ec3013; color:#f3f2f2; padding:56px 48px; border:2px solid #ec3013;">
-            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:32px; flex-wrap:wrap; margin-bottom:40px;">
-                <h2 class="scbd-h2" style="font-size:clamp(26px,3vw,40px); line-height:1; letter-spacing:-0.03em; text-transform:uppercase; margin:0;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{{ $heading }}</h2>
+    {{-- The headline stays put while the values pass it: the section is one
+         tall dark frame, with a sticky left column and a scrolling right one.
+         position:sticky needs the section itself to be the scroll context, so
+         nothing here may set overflow on an ancestor of the sticky element. --}}
+    <section id="values" class="scbd-values-section">
+        <div class="scbd-values-inner">
+            <div class="scbd-values-sticky">
+                <h2 class="scbd-h2 scbd-values-title" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{{ $heading }}</h2>
 
                 @if ($acronym)
-                    <div style="font-weight:800; font-size:clamp(30px,5vw,72px); line-height:0.9; letter-spacing:-0.05em; opacity:0.35;" data-i18n="{{ BlockData::i18nKey($blockId, 'acronym') }}">{{ $acronym }}</div>
+                    <div class="scbd-values-acronym" data-i18n="{{ BlockData::i18nKey($blockId, 'acronym') }}">{{ $acronym }}</div>
                 @endif
+
+                <div class="scbd-values-count">{{ str_pad((string) $values->count(), 2, '0', STR_PAD_LEFT) }} principles</div>
             </div>
 
-            <div class="scbd-values-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:32px;">
+            <ol class="scbd-values-list">
                 @foreach ($values as $value)
-                    <div data-fade style="border-left:2px solid rgba(243,242,242,0.4); padding-left:16px;">
-                        <div style="font-weight:800; font-size:14px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">{{ $value['name'] }}</div>
-                        @if (filled($value['description'] ?? null))
-                            <p style="font-size:13px; line-height:1.65; margin:0; opacity:0.9;">{{ $value['description'] }}</p>
-                        @endif
-                    </div>
+                    <li data-fade class="scbd-values-item">
+                        <span class="scbd-values-index">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                        <div>
+                            <div class="scbd-values-name">{{ $value['name'] }}</div>
+                            @if (filled($value['description'] ?? null))
+                                <p class="scbd-values-desc">{{ $value['description'] }}</p>
+                            @endif
+                        </div>
+                    </li>
                 @endforeach
-            </div>
+            </ol>
         </div>
     </section>
 @endif

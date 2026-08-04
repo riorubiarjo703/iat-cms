@@ -140,7 +140,7 @@ class ResponsiveMarkupTest extends TestCase
 
         $html = $this->get('/p')->assertSuccessful()->getContent();
 
-        foreach (['scbd-pad-top', 'scbd-timeline-row', 'scbd-people-grid', 'scbd-awards-grid'] as $hook) {
+        foreach (['scbd-pad-top', 'scbd-tl-row', 'scbd-roulette-track', 'scbd-awards-grid'] as $hook) {
             $this->assertHasClass($html, $hook);
         }
     }

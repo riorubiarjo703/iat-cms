@@ -39,16 +39,57 @@ export function initLanguageSwitcher(ScrollTrigger) {
     });
 
     buttons.forEach((button) => {
-      const active = button.dataset.lang === locale;
-      button.style.background = active ? '#201e1d' : 'transparent';
-      button.style.color = active ? '#f3f2f2' : '#201e1d';
+      // aria-current is what the stylesheet marks the active row with, so the
+      // highlight and the accessible state cannot drift apart.
+      if (button.dataset.lang === locale) button.setAttribute('aria-current', 'true');
+      else button.removeAttribute('aria-current');
     });
+
+    // The trigger shows the language you are reading, which means copying the
+    // chosen row's flag rather than reloading a server-rendered one.
+    const chosen = buttons.find((button) => button.dataset.lang === locale);
+    const triggerFlag = document.querySelector('[data-locale-trigger-flag]');
+    const triggerCode = document.querySelector('[data-locale-trigger-code]');
+    const chosenFlag = chosen?.querySelector('img');
+
+    if (triggerFlag && chosenFlag) triggerFlag.src = chosenFlag.src;
+    if (triggerCode) triggerCode.textContent = locale.toUpperCase();
 
     document.documentElement.lang = locale;
     ScrollTrigger.refresh();
   };
 
+  const trigger = document.querySelector('[data-locale-trigger]');
+  const menu = document.querySelector('[data-locale-menu]');
+
+  const close = () => {
+    if (!menu || !trigger) return;
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  if (trigger && menu) {
+    trigger.addEventListener('click', (event) => {
+      event.stopPropagation();
+      menu.hidden = !menu.hidden;
+      trigger.setAttribute('aria-expanded', String(!menu.hidden));
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!menu.hidden && !event.target.closest('[data-locale-switcher]')) close();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || menu.hidden) return;
+      close();
+      trigger.focus();
+    });
+  }
+
   buttons.forEach((button) => {
-    button.addEventListener('click', () => apply(button.dataset.lang));
+    button.addEventListener('click', () => {
+      apply(button.dataset.lang);
+      close();
+    });
   });
 }

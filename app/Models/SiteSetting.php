@@ -21,6 +21,21 @@ class SiteSetting extends Model
         'cn' => '中文',
     ];
 
+    /**
+     * The flag image for each locale, relative to the public root.
+     *
+     * Kept as an explicit map rather than derived from the code, so adding a
+     * locale without adding its flag renders the code on its own instead of a
+     * broken image.
+     *
+     * @var array<string, string>
+     */
+    public const LOCALE_FLAGS = [
+        'en' => 'images/flags/en.png',
+        'id' => 'images/flags/id.png',
+        'cn' => 'images/flags/cn.png',
+    ];
+
     /** @var array<int, string> */
     public const TRANSLATABLE = ['meta_title', 'meta_description', 'brand_subtitle'];
 
