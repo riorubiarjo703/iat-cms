@@ -6,7 +6,7 @@
 <x-layouts.page :page="$page">
     @include('partials.site.header')
 
-    <main class="scbd-shade" style="position:relative; min-height:50vh;">
+    <main class="scbd-shade" style="min-height:50vh;">
         @if ($page->usesBuilder())
             @include('partials.site.blocks', ['blocks' => $page->blocks()])
         @else

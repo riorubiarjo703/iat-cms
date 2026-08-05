@@ -1480,11 +1480,16 @@ img { max-width: 100%; }
    descendants would then resolve against it instead of the viewport — which
    is exactly what would break those cards. clip is not a scroll container.
 
-   [data-horizontal] is excluded because GSAP replaces that block with a
-   pin-spacer positioned `fixed`; clipping it is the one combination likely to
-   break the pin. It is full-bleed #201e1d with its own overflow:hidden, so it
-   forfeits the rounded corner and keeps its pinning. */
-.scbd-shade > :last-child:not([data-horizontal]) {
+   Both [data-horizontal] and .pin-spacer are excluded, and both are needed.
+   GSAP replaces the pinned block with a pin-spacer positioned `fixed`, and
+   moves the original section — attribute and all — inside that spacer. So
+   once pinning kicks in, .scbd-shade's last child is the spacer, which
+   carries no [data-horizontal] of its own; matching on the attribute alone
+   would miss it and clip the spacer instead. Clipping it is the one
+   combination likely to break the pin. The section itself is full-bleed
+   #201e1d with its own overflow:hidden, so it forfeits the rounded corner
+   and keeps its pinning either way. */
+.scbd-shade > :last-child:not([data-horizontal]):not(.pin-spacer) {
     border-radius: inherit;
     overflow: clip;
 }

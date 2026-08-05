@@ -1,8 +1,8 @@
 {{--
     The site's footer band: address, contact, sitemap and social.
 
-    Shared by the homepage's contact section and by standalone pages, so the
-    footer has one source. Takes $settings only — everything else it needs is
+    Included solely by the site footer, so every page renders it the same way
+    from one source. Takes $settings only — everything else it needs is
     read from the menus and Site Settings, which is what makes it identical on
     every page without being stored per page.
 --}}
