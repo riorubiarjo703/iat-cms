@@ -23,6 +23,40 @@ class BrandingTest extends TestCase
         $this->seedHomepage();
     }
 
+    /** The brand link's markup, located by the header bar rather than by its
+     *  own href — which is the thing under test. */
+    private function brandLink(string $html): string
+    {
+        $bar = strpos($html, 'scbd-header-bar');
+
+        $this->assertNotFalse($bar, 'the header bar should be present');
+
+        $start = strpos($html, '<a ', $bar);
+
+        return substr($html, $start, strpos($html, '</a>', $start) - $start);
+    }
+
+    public function test_the_logo_links_to_the_site_root_from_an_interior_page(): void
+    {
+        // This link has been wrong three ways: "#top", which only scrolls the
+        // page you are already on and is dead everywhere else; the admin panel
+        // URL, which sent visitors to a login screen and published the admin
+        // path on every page; and an empty href, which reloads wherever you
+        // are. It is the way back to the homepage, so it points at the root.
+        \App\Models\Page::create([
+            'title' => ['en' => 'Interior'], 'slug' => 'interior',
+            'type' => \App\Models\Page::TYPE_BUILDER,
+            'status' => \App\Models\Page::STATUS_PUBLISHED,
+            'builder_payload' => [],
+        ]);
+
+        $brand = $this->brandLink($this->get('/interior')->assertSuccessful()->getContent());
+
+        $this->assertStringContainsString('href="'.route('home').'"', $brand);
+        $this->assertStringNotContainsString('#top', $brand);
+        $this->assertStringNotContainsString(rtrim(\Filament\Facades\Filament::getUrl(), '/'), $brand);
+    }
+
     public function test_the_public_header_renders_the_uploaded_logo(): void
     {
         Storage::disk('public')->put('uploads/branding/logo.png', 'png-bytes');
@@ -54,18 +88,12 @@ class BrandingTest extends TestCase
         // legitimately carries other images (the locale flags), and asserting
         // on the page as a whole made this test fail for an unrelated reason.
         //
-        // Anchored on the header bar, not on the link's href. Keying off
+        // Located by the header bar, not by the link's href. Keying off
         // '<a href="#top"' meant that changing where the brand points made
         // strpos return false, substr read from offset 0, and the assertion
         // quietly examine the document head — which has no <img> in it, so the
         // test passed while checking nothing.
-        $html = $response->getContent();
-        $bar = strpos($html, 'scbd-header-bar');
-
-        $this->assertNotFalse($bar, 'the header bar should be present');
-
-        $start = strpos($html, '<a ', $bar);
-        $brand = substr($html, $start, strpos($html, '</a>', $start) - $start);
+        $brand = $this->brandLink($response->getContent());
 
         $this->assertStringContainsString('SCBD', $brand, 'the brand link should carry the site name');
         $this->assertStringNotContainsString('<img', $brand);

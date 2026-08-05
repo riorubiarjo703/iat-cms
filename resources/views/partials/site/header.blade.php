@@ -26,7 +26,12 @@
      block for its position:fixed drawer. --}}
 <header data-header class="scbd-header" style="position:fixed; top:0; left:0; right:0; z-index:900; background:rgba(243,242,242,0.92); border-bottom:2px solid rgba(32,30,29,0.4);">
     <div class="scbd-header-bar">
-        <a href="" data-magnetic style="display:flex; align-items:baseline; gap:10px; text-decoration:none; color:#201e1d;">
+        {{-- The site root, on every page, so the logo is always the way back to
+             the homepage. Not "#top": that only scrolls the page you are
+             already on, and leaves the logo dead on every interior page. Not an
+             empty href either — that resolves to the current URL and reloads
+             wherever you happen to be. --}}
+        <a href="{{ route('home') }}" data-magnetic style="display:flex; align-items:baseline; gap:10px; text-decoration:none; color:#201e1d;">
             @if ($logoUrl = \App\Support\MediaUrl::resolve($settings->logo))
                 <img src="{{ $logoUrl }}"
                      alt="{{ $brandName }}"
