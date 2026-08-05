@@ -1448,3 +1448,44 @@ img { max-width: 100%; }
 
     .scbd-cta { padding: 64px 24px !important; }
 }
+
+/* ── Reveal footer ───────────────────────────────────────────────────────
+   The footer sits last in normal flow with position:sticky; bottom:0 and a
+   lower z-index, so it is pinned to the viewport bottom from the first paint
+   and spends the whole page hidden behind .scbd-shade, which carries a solid
+   background and a higher z-index. When the shade's last pixel clears the top
+   of the viewport the footer stands uncovered, like a window shade lifting.
+
+   The reference demo needs position:fixed, a JS-measured spacer and a resize
+   listener only because GSAP ScrollSmoother transforms its scroll container,
+   and a transformed ancestor kills position:sticky. We scroll natively under
+   Lenis, so sticky works and none of that machinery is required. */
+.scbd-shade {
+    position: relative;
+    z-index: 1;
+    background: #f3f2f2;
+    border-radius: 0 0 24px 24px;
+}
+
+/* Only the final section can square off the curve with its own full-bleed
+   colour, so only it is clipped. Clipping the whole shade would enclose the
+   sticky cards in About and Facilities and the pinned district block.
+
+   `clip` rather than `hidden`: hidden is a scroll container, and sticky
+   descendants would then resolve against it instead of the viewport — which
+   is exactly what would break those cards. clip is not a scroll container.
+
+   [data-horizontal] is excluded because GSAP replaces that block with a
+   pin-spacer positioned `fixed`; clipping it is the one combination likely to
+   break the pin. It is full-bleed #201e1d with its own overflow:hidden, so it
+   forfeits the rounded corner and keeps its pinning. */
+.scbd-shade > :last-child:not([data-horizontal]) {
+    border-radius: inherit;
+    overflow: clip;
+}
+
+.scbd-reveal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 0;
+}
