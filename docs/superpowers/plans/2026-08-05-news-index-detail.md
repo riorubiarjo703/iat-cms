@@ -324,8 +324,7 @@ Expected: FAIL on `test_a_real_page_still_gets_its_suffixed_title`. If it passes
 - [ ] **Step 8: Commit**
 
 ```bash
-git add resources/views/components/layouts/page.blade.php resources/views/page.blade.php tests/Feature/Pages/LayoutPropsTest.php
-git rm --cached resources/views/components/layouts/public.blade.php 2>/dev/null; true
+git add -A resources/views tests/Feature/Pages/LayoutPropsTest.php
 git commit -m "refactor: the page layout takes explicit props instead of a Page"
 ```
 
@@ -621,14 +620,16 @@ class NewsPostNeighboursTest extends TestCase
     {
         $this->seedFive();
 
-        $this->get('/news/oldest-post')->assertViewHas('previous', null);
+        // A closure, not null: assertViewHas($key, null) only asserts the key
+        // exists, so it would pass with a populated neighbour.
+        $this->get('/news/oldest-post')->assertViewHas('previous', fn ($p) => $p === null);
     }
 
     public function test_the_newest_post_has_no_next(): void
     {
         $this->seedFive();
 
-        $this->get('/news/newest-post')->assertViewHas('next', null);
+        $this->get('/news/newest-post')->assertViewHas('next', fn ($n) => $n === null);
     }
 
     public function test_neighbours_skip_unpublished_posts(): void
