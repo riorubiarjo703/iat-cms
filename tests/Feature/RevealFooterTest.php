@@ -95,4 +95,42 @@ class RevealFooterTest extends TestCase
             'the shade must stack above the footer',
         );
     }
+
+    /**
+     * A footer taller than the viewport can never show its own top: pinned
+     * bottom-anchored, its head overflows above the top edge at every scroll
+     * position. 100svh — the *small* viewport height, measured with mobile
+     * toolbars shown — is the sizing that cannot exceed the visible area.
+     * 100vh resolves to the large viewport height on iOS and would.
+     */
+    public function test_the_footer_is_sized_to_the_small_viewport_height(): void
+    {
+        $css = file_get_contents(resource_path('css/scbd.css'));
+
+        $this->assertMatchesRegularExpression(
+            '/\.scbd-reveal-footer\s*\{[^}]*min-height:\s*100svh/',
+            $css,
+            'the footer must be sized in svh, not vh',
+        );
+    }
+
+    /**
+     * The footer grid stacks one-up below 900px, which measures roughly 860px
+     * against an 844px iPhone viewport — over budget, and the top of the
+     * footer would be unreachable. Two-up halves the grid's contribution.
+     */
+    public function test_the_footer_grid_is_two_up_on_mobile(): void
+    {
+        $css = file_get_contents(resource_path('css/scbd.css'));
+
+        $this->assertStringNotContainsString(
+            '.scbd-footer-grid { grid-template-columns: 1fr !important; }',
+            $css,
+            'a one-up footer grid overflows the viewport and hides the footer top',
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.scbd-footer-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*1fr\)/',
+            $css,
+        );
+    }
 }

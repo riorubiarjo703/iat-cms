@@ -1189,8 +1189,13 @@ textarea.input { min-height: 90px; resize: vertical; }
     .scbd-values-sticky { position: static !important; }
     .scbd-values-item { grid-template-columns: 40px 1fr !important; }
 
-    /* The footer band's four columns become one. */
-    .scbd-footer-grid { grid-template-columns: 1fr !important; }
+    /* Two-up, not stacked, and pinned rather than left to the inline
+       auto-fit — which collapses to one column below ~460px. Four cells
+       stacked at the mobile 80px padding measure ~860px against an 844px
+       iPhone viewport, and a footer over one viewport tall can never show its
+       own top. !important because the grid carries an inline style. */
+    .scbd-footer-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .scbd-footer-grid > div { padding: 20px !important; }
     .scbd-footer-meta { flex-direction: column !important; gap: 10px !important; }
 }
 
@@ -1484,8 +1489,33 @@ img { max-width: 100%; }
     overflow: clip;
 }
 
+/* min-height rather than height so a long address or sitemap grows the footer
+   instead of overflowing it.
+
+   svh, not vh: svh is the *small* viewport height, the measurement taken with
+   mobile browser toolbars shown. Sized to that, the footer fits exactly when
+   the toolbars are out and has room to spare when they retract. 100vh resolves
+   to the *large* viewport height on iOS, which would leave the footer taller
+   than the visible area — and a footer taller than the viewport can never show
+   its own top. */
 .scbd-reveal-footer {
     position: sticky;
     bottom: 0;
     z-index: 0;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+}
+
+.scbd-reveal-footer-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    transform-origin: center bottom;
+}
+
+/* Auto margins on the grid take up all the free space above and below it, which
+   centres the grid and drops the legal meta line onto the bottom edge. */
+.scbd-reveal-footer-inner .scbd-footer-grid {
+    margin: auto 0;
 }
