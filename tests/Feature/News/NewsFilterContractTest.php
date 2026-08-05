@@ -20,8 +20,27 @@ class NewsFilterContractTest extends TestCase
         $markup = $view.$card;
 
         foreach (['data-news-filter', 'data-news-grid', 'data-news-filter-chip', 'data-news-category'] as $hook) {
-            $this->assertStringContainsString($hook, $module, "newsFilter.js does not reference {$hook}");
-            $this->assertStringContainsString($hook, $markup, "No view emits {$hook}");
+            // Bracketed form, not bare substring: `data-news-filter` is a
+            // substring of `data-news-filter-chip`, so a bare
+            // assertStringContainsString would stay green even if the
+            // module's actual `[data-news-filter]` selector were renamed —
+            // the still-present `[data-news-filter-chip]` selector elsewhere
+            // in the file would satisfy it. The module always uses hooks as
+            // CSS attribute selectors, so the literal `[hook]` — including
+            // the closing bracket — only matches the exact hook.
+            $this->assertStringContainsString("[{$hook}]", $module, "newsFilter.js does not select [{$hook}]");
+
+            // Markup emits hooks as bare HTML attributes, not bracketed
+            // selectors, so the discriminator there is a negative lookahead:
+            // the hook name not immediately followed by a hyphen. That is
+            // false for `data-news-filter` when only `data-news-filter-chip`
+            // is present, and true once the section's own `data-news-filter`
+            // attribute exists.
+            $this->assertMatchesRegularExpression(
+                '/'.preg_quote($hook, '/').'(?!-)/',
+                $markup,
+                "No view emits {$hook}"
+            );
         }
 
         $this->assertStringContainsString('is-hidden', $module);

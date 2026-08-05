@@ -1411,6 +1411,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 
 .scbd-news-index-grid {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px 32px;
