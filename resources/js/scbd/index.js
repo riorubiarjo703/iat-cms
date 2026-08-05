@@ -19,6 +19,7 @@ import { initDistrict } from './district';
 import { initCardStack } from './stack';
 import { initCounters } from './counters';
 import { initCursor } from './cursor';
+import { initRevealFooter } from './revealFooter';
 import { initLanguageSwitcher } from './i18n';
 
 // Flip is registered here rather than inside the module that uses it: the
@@ -81,6 +82,7 @@ export function initScbd() {
       initScrollText(gsap, ScrollTrigger);
       initDistrict(gsap, ScrollTrigger);
       initCardStack(gsap);
+      initRevealFooter(gsap, ScrollTrigger);
     } else {
       // Resting state for everything the reveals would have animated.
       gsap.set('[data-char]', { yPercent: 0 });
