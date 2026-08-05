@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NewsPostController;
 use App\Http\Controllers\PageController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,15 @@ Route::get('/', HomeController::class)->name('home');
 Route::post('/contact', ContactMessageController::class)
     ->middleware('throttle:15,60')
     ->name('contact.store');
+
+/*
+ * Declared before the page catch-all, whose slug pattern excludes anything
+ * containing a slash — so a post URL could never reach this controller if the
+ * two were the other way round.
+ */
+Route::get('/news/{slug}', NewsPostController::class)
+    ->where('slug', '[A-Za-z0-9_-]+')
+    ->name('news.show');
 
 /*
  * Pages are matched last, so a real route always wins. The slug pattern
