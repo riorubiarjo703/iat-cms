@@ -127,9 +127,15 @@ adjacent.
 
 `DistrictFacilitiesPageSeeder`, mirroring `CompanyPagesSeeder`: writes the
 page's `builder_payload` and fills the new columns on the three places and four
-facilities with the design's copy. Registered in `DatabaseSeeder`. English only,
-for the same reason the company pages are — inventing translations is worse than
-falling back.
+facilities with the design's copy. Run on demand rather than from
+`DatabaseSeeder`, which is where every other page seeder here sits. English
+only, for the same reason the company pages are — inventing translations is
+worse than falling back.
+
+It fills only the new columns, leaving each record's existing title, caption,
+body and image untouched: those are the site's own wording and rewriting them
+would change the homepage as a side effect. Records are matched on image
+filename, which is what ties a record to a row of the design.
 
 The photographs the design references are already in the database
 (`offices.jpg`, `hospitality.jpg`, `publicrealm.png`, `fireservice.jpg`,

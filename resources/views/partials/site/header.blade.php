@@ -26,9 +26,9 @@
      block for its position:fixed drawer. --}}
 <header data-header class="scbd-header" style="position:fixed; top:0; left:0; right:0; z-index:900; background:rgba(243,242,242,0.92); border-bottom:2px solid rgba(32,30,29,0.4);">
     <div class="scbd-header-bar">
-        <a href="#top" data-magnetic style="display:flex; align-items:baseline; gap:10px; text-decoration:none; color:#201e1d;">
-            @if ($settings->logo)
-                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($settings->logo) }}"
+        <a href="" data-magnetic style="display:flex; align-items:baseline; gap:10px; text-decoration:none; color:#201e1d;">
+            @if ($logoUrl = \App\Support\MediaUrl::resolve($settings->logo))
+                <img src="{{ $logoUrl }}"
                      alt="{{ $brandName }}"
                      style="height:26px; width:auto; display:block;">
             @else

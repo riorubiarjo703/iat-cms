@@ -4,10 +4,10 @@ namespace App\Filament\Pages;
 
 use App\Concerns\EditsSingletonRecord;
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\Models\SiteSetting;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -55,12 +55,8 @@ class SiteSettingsPage extends Page
                             // blank all six `{!! !!}` headings on the public
                             // homepage via the `?? ''` fallback.
                             ->in(array_keys(SiteSetting::LOCALES)),
-                        FileUpload::make('logo')
-                            ->image()->disk('public')->directory('uploads/branding')
-                            ->visibility('public')->maxSize(2048),
-                        FileUpload::make('favicon')
-                            ->image()->disk('public')->directory('uploads/branding')
-                            ->visibility('public')->maxSize(512),
+                        MediaField::image('logo', 'Logo', 'branding'),
+                        MediaField::image('favicon', 'Favicon', 'branding'),
                     ])
                     ->columns(2),
 

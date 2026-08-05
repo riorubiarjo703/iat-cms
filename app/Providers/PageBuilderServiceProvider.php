@@ -27,8 +27,13 @@ class PageBuilderServiceProvider extends ServiceProvider
                 Blocks\AboutBlock::class,
                 Blocks\DistrictBlock::class,
                 Blocks\FacilitiesBlock::class,
+                Blocks\PlacesBlock::class,
+                Blocks\LocationBlock::class,
+                Blocks\OperationsBlock::class,
+                Blocks\CtaBlock::class,
                 Blocks\NewsBlock::class,
                 Blocks\ContactHeadingBlock::class,
+                Blocks\ContactFormBlock::class,
             ] as $block) {
                 $registry->register($block);
             }

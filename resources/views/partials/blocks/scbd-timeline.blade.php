@@ -32,10 +32,10 @@
                     </div>
 
                     <div class="scbd-tl-media">
-                        @if (filled($entry['image'] ?? null))
+                        @if ($imageUrl = \App\Support\MediaUrl::resolve($entry['image'] ?? null))
                             <div class="scbd-tl-frame">
                                 <img class="grayscale"
-                                     src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($entry['image']) }}"
+                                     src="{{ $imageUrl }}"
                                      alt="{{ $entry['title'] ?? $entry['year'] }}"
                                      loading="lazy">
                             </div>

@@ -32,8 +32,8 @@
             @foreach ($places as $place)
                 <div style="flex:0 0 34vw; min-width:320px; border-right:2px solid rgba(243,242,242,0.25); display:flex; flex-direction:column;">
                     <div style="flex:1; overflow:hidden;">
-                        @if ($place->image)
-                            <img class="grayscale" src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($place->image) }}" alt="{{ $place->t('title') }}" style="width:100%; height:100%; object-fit:cover;">
+                        @if ($imageUrl = \App\Support\MediaUrl::resolve($place->image))
+                            <img class="grayscale" src="{{ $imageUrl }}" alt="{{ $place->t('title') }}" style="width:100%; height:100%; object-fit:cover;">
                         @else
                             <div style="width:100%; height:100%; background:#f3f2f2; opacity:0.08;"></div>
                         @endif

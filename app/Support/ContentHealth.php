@@ -3,13 +3,15 @@
 namespace App\Support;
 
 use AjayDhakal\FilamentStory\Models\BlogPost;
-use App\Models\Page;
 use App\Models\MenuItem;
+use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Slimani\MediaManager\Models\File;
 use Throwable;
 
 /**
@@ -48,11 +50,11 @@ class ContentHealth
     {
         // The media manager is a third-party package; if it is uninstalled or
         // its migrations are unrun, the tile says so instead of throwing.
-        if (! class_exists(\Slimani\MediaManager\Models\File::class)) {
+        if (! class_exists(File::class)) {
             return null;
         }
 
-        return $this->count(\Slimani\MediaManager\Models\File::class);
+        return $this->count(File::class);
     }
 
     public function users(): ?int
@@ -73,7 +75,7 @@ class ContentHealth
 
     /**
      * @param  class-string<Model>  $model
-     * @param  (callable(\Illuminate\Database\Eloquent\Builder): \Illuminate\Database\Eloquent\Builder)|null  $scope
+     * @param  (callable(Builder): Builder)|null  $scope
      */
     private function count(string $model, ?callable $scope = null): ?int
     {

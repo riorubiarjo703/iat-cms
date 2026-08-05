@@ -24,10 +24,10 @@
     </div>
 
     <div style="position:relative; margin-top:48px; height:56vh; min-height:340px; overflow:hidden;" data-parallax-wrap>
-        @if ($image)
+        @if ($imageUrl = \App\Support\MediaUrl::resolve($image))
             <img data-parallax
                  class="grayscale"
-                 src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($image) }}"
+                 src="{{ $imageUrl }}"
                  alt="{{ $heading }}"
                  style="position:absolute; inset:-12% 0; width:100%; height:124%; object-fit:cover;">
         @else

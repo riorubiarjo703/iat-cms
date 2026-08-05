@@ -3,10 +3,10 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 
 class AboutBlock extends BaseBlock
@@ -38,7 +38,7 @@ class AboutBlock extends BaseBlock
                 Textarea::make("badge_text.{$locale}")->label('Badge text')->rows(2),
             ]),
             TextInput::make('cta_url')->label('Button URL')->maxLength(255),
-            FileUpload::make('image')->label('Image')->image()->directory('uploads/blocks')->disk('public'),
+            MediaField::image('image', 'Image', 'blocks'),
             Toggle::make('show_stats')
                 ->label('Show the stats grid')
                 ->default(true)

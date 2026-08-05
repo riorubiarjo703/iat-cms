@@ -3,10 +3,10 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 
 class HeroBlock extends BaseBlock
 {
@@ -36,11 +36,7 @@ class HeroBlock extends BaseBlock
                     ->required(LocaleTabs::isFallback($locale)),
                 Textarea::make("subheading.{$locale}")->label('Subheading')->rows(3),
             ]),
-            FileUpload::make('image')
-                ->label('Background image')
-                ->image()
-                ->directory('uploads/blocks')
-                ->disk('public'),
+            MediaField::image('image', 'Background image', 'blocks'),
             TextInput::make('location_tag')
                 ->label('Location tag')
                 ->helperText('Small label over the image. Leave blank to use the address from Site Settings.')

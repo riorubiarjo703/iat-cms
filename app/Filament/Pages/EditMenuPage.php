@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use AjayDhakal\FilamentStory\Models\BlogCategory;
 use App\Models\Menu;
 use App\Models\MenuItem;
+use App\Models\SiteSetting;
 use App\Support\MenuLocations;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -221,7 +222,7 @@ class EditMenuPage extends Page
     /** @return array<string, string> */
     public function getLocales(): array
     {
-        return \App\Models\SiteSetting::LOCALES;
+        return SiteSetting::LOCALES;
     }
 
     public function startEditing(string $itemId): void
@@ -352,7 +353,7 @@ class EditMenuPage extends Page
         foreach ($tree as $node) {
             $id = (string) ($node['id'] ?? '');
             $parent = $node['parent'] ?? null;
-            $parent = ($parent === null || $parent === '' ) ? null : (string) $parent;
+            $parent = ($parent === null || $parent === '') ? null : (string) $parent;
 
             // Ignore anything not belonging to this menu, and any parent that
             // is not either — a crafted payload must not be able to reparent

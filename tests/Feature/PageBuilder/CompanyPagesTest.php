@@ -123,6 +123,65 @@ class CompanyPagesTest extends TestCase
         $this->assertStringContainsString('ISO 9001', $html);
     }
 
+    public function test_awards_group_by_year_newest_first_with_undated_last(): void
+    {
+        // Deliberately out of order in the payload: the grouping is what puts
+        // them right, so a payload that is already sorted would prove nothing.
+        $this->page([$this->block(Blocks\AwardsBlock::type(), [
+            'items' => [
+                ['title' => 'Older award', 'year' => '2017'],
+                ['title' => 'No year award'],
+                ['title' => 'Newest award', 'year' => '2023'],
+                ['title' => 'Middle award', 'year' => '2022'],
+            ],
+        ])]);
+
+        $html = $this->get('/built')->getContent();
+
+        preg_match_all('/class="scbd-awards-year">([^<]+)</', $html, $matches);
+
+        $this->assertSame(['2023', '2022', '2017', 'Undated'], $matches[1]);
+    }
+
+    public function test_an_award_without_a_scan_is_not_offered_as_openable(): void
+    {
+        // The row opens a reader. With no image there is nothing to read, so
+        // the button must not invite a click that would do nothing.
+        $this->page([$this->block(Blocks\AwardsBlock::type(), [
+            'items' => [['title' => 'Paperless award', 'year' => '2024']],
+        ])]);
+
+        $html = $this->get('/built')->getContent();
+
+        // Anchored on data-award-row and walked back to the tag that opens it.
+        // Taking the document's first <button> instead picks up the header
+        // burger, which is never disabled and has no award attributes — so the
+        // assertions would have described the wrong element entirely.
+        $at = strpos($html, 'data-award-row');
+        $row = substr($html, strrpos(substr($html, 0, $at), '<button'), 400);
+
+        $this->assertStringContainsString('disabled', $row);
+        $this->assertStringNotContainsString('data-award-src', $row);
+    }
+
+    public function test_the_certificate_reader_sits_outside_the_awards_section(): void
+    {
+        // The reader is position:fixed. A transformed or clipping ancestor
+        // makes itself the containing block and traps it — the failure that
+        // caught the sidebar flyout and the mobile drawer. Keeping it outside
+        // the animated section is what prevents a third repeat.
+        $this->page([$this->block(Blocks\AwardsBlock::type(), [
+            'items' => [['title' => 'Water Hero', 'year' => '2023', 'image' => 'uploads/w.jpg']],
+        ])]);
+
+        $html = $this->get('/built')->getContent();
+
+        $this->assertGreaterThan(
+            strpos($html, '</section>', strpos($html, 'id="awards"')),
+            strpos($html, 'data-award-reader'),
+        );
+    }
+
     public function test_an_empty_awards_block_is_omitted(): void
     {
         $this->page([$this->block(Blocks\AwardsBlock::type(), ['items' => []])]);

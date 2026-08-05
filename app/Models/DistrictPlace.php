@@ -14,7 +14,7 @@ class DistrictPlace extends Model
     use Orderable;
 
     /** @var array<int, string> */
-    public const TRANSLATABLE = ['title', 'caption'];
+    public const TRANSLATABLE = ['title', 'caption', 'body', 'tags', 'stat_label'];
 
     protected $guarded = [];
 
@@ -24,4 +24,24 @@ class DistrictPlace extends Model
         'is_active' => 'boolean',
         'sort' => 'integer',
     ];
+
+    /**
+     * The tag chips, from the comma-separated line stored for the locale.
+     *
+     * Blanks are dropped rather than rendered as empty chips, so a trailing
+     * comma — which is what an editor leaves behind after deleting the last
+     * tag — costs nothing.
+     *
+     * @return array<int, string>
+     */
+    public function tagList(?string $locale = null): array
+    {
+        $line = $this->t('tags', $locale);
+
+        if (blank($line)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $line)), 'filled'));
+    }
 }

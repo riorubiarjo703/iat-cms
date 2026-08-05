@@ -3,8 +3,8 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 
@@ -41,7 +41,14 @@ class AwardsBlock extends BaseBlock
                 ->schema([
                     TextInput::make('title')->label('Title')->required()->maxLength(160),
                     TextInput::make('year')->label('Year')->maxLength(20),
-                    FileUpload::make('image')->label('Certificate')->image()->directory('uploads/pages/awards')->disk('public'),
+                    // The index lists who awarded or certified each item, which
+                    // is what distinguishes five ISO certificates from one
+                    // another as text rather than as five near-identical scans.
+                    // Optional: the row reads correctly without it, and no
+                    // issuer is invented for existing entries.
+                    TextInput::make('issuer')->label('Issued by')->maxLength(120)
+                        ->helperText('Certification body or awarding organisation. Shown beside the title.'),
+                    MediaField::image('image', 'Certificate', 'pages/awards'),
                 ])
                 ->addActionLabel('Add an award')
                 ->reorderable()

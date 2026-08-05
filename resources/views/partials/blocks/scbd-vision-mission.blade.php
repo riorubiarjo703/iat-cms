@@ -35,10 +35,10 @@
             @endif
         </div>
 
-        @if ($visionImage)
+        @if ($visionImageUrl = \App\Support\MediaUrl::resolve($visionImage))
             <div style="{{ $frameStyle }}">
                 <img data-reveal class="grayscale"
-                     src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($visionImage) }}"
+                     src="{{ $visionImageUrl }}"
                      alt="{{ $visionLabel }}"
                      loading="lazy"
                      style="{{ $imageStyle }}">
@@ -47,10 +47,10 @@
     </div>
 
     <div class="scbd-vm-row scbd-vm-row-flip" style="max-width:1400px; margin:0 auto;">
-        @if ($missionImage)
+        @if ($missionImageUrl = \App\Support\MediaUrl::resolve($missionImage))
             <div style="{{ $frameStyle }}">
                 <img data-reveal class="grayscale"
-                     src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($missionImage) }}"
+                     src="{{ $missionImageUrl }}"
                      alt="{{ $missionLabel }}"
                      loading="lazy"
                      style="{{ $imageStyle }}">

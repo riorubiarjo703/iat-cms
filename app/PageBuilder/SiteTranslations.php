@@ -2,6 +2,7 @@
 
 namespace App\PageBuilder;
 
+use App\Models\MenuItem;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Support\MenuLocations;
@@ -58,8 +59,8 @@ final class SiteTranslations
     }
 
     /**
-     * @param  array<int, array{item: \App\Models\MenuItem, key: string, children: array<int, mixed>}>  $nodes
-     * @return array<string, \App\Models\MenuItem>
+     * @param  array<int, array{item: MenuItem, key: string, children: array<int, mixed>}>  $nodes
+     * @return array<string, MenuItem>
      */
     private static function flatten(array $nodes): array
     {

@@ -3,10 +3,10 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 
 /**
  * The opening band of an interior page: eyebrow, split heading, intro copy and
@@ -53,11 +53,7 @@ class PageHeroBlock extends BaseBlock
                     ->rows(8)
                     ->helperText('Blank lines separate paragraphs.'),
             ]),
-            FileUpload::make('image')
-                ->label('Image')
-                ->image()
-                ->directory('uploads/pages')
-                ->disk('public'),
+            MediaField::image('image', 'Image', 'pages'),
             TextInput::make('image_caption')->label('Image caption')->maxLength(120),
         ];
     }

@@ -26,8 +26,8 @@
         <meta name="description" content="{{ $description }}">
     @endif
 
-    @if ($settings->favicon)
-        <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($settings->favicon) }}">
+    @if ($faviconUrl = \App\Support\MediaUrl::resolve($settings->favicon))
+        <link rel="icon" href="{{ $faviconUrl }}">
     @endif
 
     {{-- Builder pages get the animation bundle: every registered block depends

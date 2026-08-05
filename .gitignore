@@ -20,6 +20,9 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# Scratch space for in-progress media uploads: transient by nature, and the
+# per-upload directory names change on every run.
+/storage/media-library/temp
 /vendor
 _ide_helper.php
 Homestead.json

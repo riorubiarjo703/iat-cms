@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
-use App\Support\ContentHealth;
 use App\Filament\Resources\Pages\PageResource;
+use App\Support\ContentHealth;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -15,7 +15,6 @@ class WelcomeBanner extends Widget
     protected int|string|array $columnSpan = 'full';
 
     protected static ?int $sort = 1;
-
 
     /**
      * Rendered with the page rather than lazily. These are a few COUNT queries

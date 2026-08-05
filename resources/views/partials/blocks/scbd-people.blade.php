@@ -56,9 +56,9 @@
                                      being announced twice. --}}
                                 <article class="scbd-roulette-card" @if ($isCopy) aria-hidden="true" @endif>
                                     <div class="scbd-roulette-frame">
-                                        @if (filled($person['photo'] ?? null))
+                                        @if ($photoUrl = \App\Support\MediaUrl::resolve($person['photo'] ?? null))
                                             <img class="grayscale"
-                                                 src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($person['photo']) }}"
+                                                 src="{{ $photoUrl }}"
                                                  alt="{{ $isCopy ? '' : $person['name'] }}"
                                                  loading="lazy">
                                         @endif

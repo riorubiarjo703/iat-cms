@@ -29,7 +29,7 @@
         <div data-parallax-wrap style="position:absolute; inset:0; overflow:hidden; z-index:0;">
             <img data-parallax
                  class="grayscale"
-                 src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($image) }}"
+                 src="{{ \App\Support\MediaUrl::resolve($image) }}"
                  alt="{{ $caption ?: $heading }}"
                  style="position:absolute; inset:-12% 0; width:100%; height:124%; object-fit:cover;">
             {{-- A scrim, not an opacity on the image: the heading has to stay

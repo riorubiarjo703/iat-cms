@@ -32,8 +32,8 @@
                         <p style="font-size:14px; line-height:1.7; color:rgba(32,30,29,0.72); margin:0;">{{ $facility->t('body') }}</p>
                     </div>
                     <div style="overflow:hidden; border-left:2px solid rgba(32,30,29,0.4);">
-                        @if ($facility->image)
-                            <img class="grayscale" src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($facility->image) }}" alt="{{ $facility->t('title') }}" style="width:100%; height:100%; min-height:280px; object-fit:cover;">
+                        @if ($imageUrl = \App\Support\MediaUrl::resolve($facility->image))
+                            <img class="grayscale" src="{{ $imageUrl }}" alt="{{ $facility->t('title') }}" style="width:100%; height:100%; min-height:280px; object-fit:cover;">
                         @else
                             <div style="width:100%; height:100%; min-height:280px; background:#201e1d; opacity:0.08;"></div>
                         @endif

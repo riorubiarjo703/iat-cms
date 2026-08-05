@@ -16,13 +16,13 @@ export function splitElement(element) {
 
   const charSpan = (char) =>
     `<span data-char style="display:inline-block;white-space:pre;transform:translateY(105%);">${
-      char === ' ' ? '&nbsp;' : char
+      char === ' ' ? '&nbsp;' : escapeChar(char)
     }</span>`;
 
   element.innerHTML = element._origHTML
     .split(/<br[^>]*>/i)
     .map((line) => {
-      const words = line
+      const words = decodeEntities(line)
         .trim()
         // Keep the separators so spacing survives the round trip.
         .split(/(\s+)/)
@@ -41,6 +41,32 @@ export function splitElement(element) {
       return `<span style="display:block;overflow:hidden;padding-bottom:0.08em;">${words}</span>`;
     })
     .join('');
+}
+
+/**
+ * A line of the heading's markup as the text it stands for.
+ *
+ * The split runs over characters, so it has to see decoded text. Blade renders
+ * headings through `e()`, which makes "Location & access" arrive as
+ * "Location &amp; access" — splitting that raw gives one span each for '&',
+ * 'a', 'm', 'p', ';', and the heading reads "LOCATION &AMP; ACCESS" on screen.
+ * Every heading holding an ampersand, a quote or an angle bracket hits this.
+ */
+function decodeEntities(html) {
+  const element = document.createElement('div');
+  element.innerHTML = html;
+
+  return element.textContent ?? '';
+}
+
+/** Back to markup, since each character is written into innerHTML. */
+function escapeChar(char) {
+  switch (char) {
+    case '&': return '&amp;';
+    case '<': return '&lt;';
+    case '>': return '&gt;';
+    default: return char;
+  }
 }
 
 export function splitTargets(root = document) {

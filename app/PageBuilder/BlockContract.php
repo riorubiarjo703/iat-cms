@@ -2,8 +2,6 @@
 
 namespace App\PageBuilder;
 
-use Filament\Schemas\Schema;
-
 /**
  * A page-builder block: a type string, a Filament form, default data and a
  * Blade view.

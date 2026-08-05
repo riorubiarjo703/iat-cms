@@ -4,8 +4,8 @@ namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 
 class FacilitiesBlock extends BaseBlock
 {

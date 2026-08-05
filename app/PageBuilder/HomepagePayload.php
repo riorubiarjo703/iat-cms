@@ -2,8 +2,6 @@
 
 namespace App\PageBuilder;
 
-use App\PageBuilder\Blocks;
-
 /**
  * The starting block payload for the SCBD homepage.
  *

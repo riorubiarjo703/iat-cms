@@ -14,7 +14,7 @@ class Facility extends Model
     use Orderable;
 
     /** @var array<int, string> */
-    public const TRANSLATABLE = ['title', 'body'];
+    public const TRANSLATABLE = ['title', 'eyebrow', 'body', 'stat_label'];
 
     protected $guarded = [];
 

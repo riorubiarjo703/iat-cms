@@ -3,13 +3,13 @@
 namespace App\Filament\Resources\Facilities;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\Models\Facility;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -37,15 +37,28 @@ class FacilityResource extends Resource
                     ->label('Title')
                     ->required(LocaleTabs::isFallback($locale))
                     ->maxLength(255),
+                TextInput::make("eyebrow.$locale")
+                    ->label('Eyebrow')
+                    ->helperText('The kicker above the title, e.g. “24/7 Operations”.')
+                    ->maxLength(60),
                 Textarea::make("body.$locale")
                     ->label('Body')
                     ->rows(4)
                     ->maxLength(1000),
+                TextInput::make("stat_label.$locale")
+                    ->label('Statistic label')
+                    ->helperText('e.g. “Team strength”.')
+                    ->maxLength(120),
+            ]),
+            Section::make('Statistic')->schema([
+                // Outside the locale tabs: see DistrictPlaceResource.
+                TextInput::make('stat_value')
+                    ->label('Statistic value')
+                    ->helperText('e.g. “32 personnel”. Shown with the label above it.')
+                    ->maxLength(60),
             ]),
             Section::make('Image & Position')->schema([
-                FileUpload::make('image')
-                    ->image()->disk('public')->directory('uploads/facilities')
-                    ->visibility('public')->maxSize(5120),
+                MediaField::image('image', 'Image', 'facilities'),
                 TextInput::make('sort')->label('Sort order')->numeric()->default(0),
                 Toggle::make('is_active')->label('Visible on the homepage')->default(true),
             ])->columns(2),

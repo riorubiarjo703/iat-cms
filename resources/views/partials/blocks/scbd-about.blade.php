@@ -51,9 +51,9 @@
             </div>
         @endif
         <div style="background:#f3f2f2; overflow:hidden;">
-            @if ($image)
+            @if ($imageUrl = \App\Support\MediaUrl::resolve($image))
                 <img data-reveal class="grayscale"
-                     src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($image) }}"
+                     src="{{ $imageUrl }}"
                      alt="{{ $heading }}"
                      style="width:100%; height:300px; object-fit:cover;">
             @else

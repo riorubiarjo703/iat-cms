@@ -13,7 +13,6 @@ class ContentStats extends Widget
 
     protected static ?int $sort = 2;
 
-
     /**
      * Rendered with the page rather than lazily. These are a few COUNT queries
      * on a company-profile-sized dataset, so the extra round trip buys nothing

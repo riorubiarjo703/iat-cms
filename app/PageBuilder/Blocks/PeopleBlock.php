@@ -3,8 +3,8 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 
@@ -51,7 +51,7 @@ class PeopleBlock extends BaseBlock
                         ->schema([
                             TextInput::make('name')->label('Name')->required()->maxLength(120),
                             TextInput::make('role')->label('Role')->maxLength(120),
-                            FileUpload::make('photo')->label('Photo')->image()->directory('uploads/pages/people')->disk('public'),
+                            MediaField::image('photo', 'Photo', 'pages/people'),
                         ])
                         ->addActionLabel('Add a person')
                         ->reorderable()

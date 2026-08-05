@@ -7,8 +7,8 @@
     <title>{{ $data->settings->t('meta_title') ?? ($data->settings->site_name ?? config('app.name')) }}</title>
     <meta name="description" content="{{ $data->settings->t('meta_description') }}">
 
-    @if ($data->settings->favicon)
-        <link rel="icon" href="{{ Storage::disk('public')->url($data->settings->favicon) }}">
+    @if ($faviconUrl = \App\Support\MediaUrl::resolve($data->settings->favicon))
+        <link rel="icon" href="{{ $faviconUrl }}">
     @endif
 
     @vite(['resources/css/scbd.css', 'resources/js/scbd/index.js'])

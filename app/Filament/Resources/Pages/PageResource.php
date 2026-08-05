@@ -2,22 +2,23 @@
 
 namespace App\Filament\Resources\Pages;
 
+use App\Filament\Pages\BuildPage;
 use App\Filament\Resources\Pages\Pages\CreatePage;
 use App\Filament\Resources\Pages\Pages\EditPage;
 use App\Filament\Resources\Pages\Pages\ListPages;
 use App\Filament\Support\LocaleTabs;
 use App\Models\Page;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -151,7 +152,7 @@ class PageResource extends Resource
                     ->label('Build')
                     ->icon('heroicon-o-squares-2x2')
                     ->visible(fn (Page $record): bool => $record->usesBuilder())
-                    ->url(fn (Page $record): string => \App\Filament\Pages\BuildPage::getUrl(['record' => $record])),
+                    ->url(fn (Page $record): string => BuildPage::getUrl(['record' => $record])),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

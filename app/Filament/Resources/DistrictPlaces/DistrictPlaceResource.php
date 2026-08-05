@@ -3,13 +3,13 @@
 namespace App\Filament\Resources\DistrictPlaces;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\Models\DistrictPlace;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -39,13 +39,34 @@ class DistrictPlaceResource extends Resource
                     ->maxLength(255),
                 Textarea::make("caption.$locale")
                     ->label('Caption')
+                    ->helperText('The short label under the homepage strip, e.g. “Grade A office”.')
                     ->rows(2)
                     ->maxLength(255),
+                Textarea::make("body.$locale")
+                    ->label('Body')
+                    ->helperText('The paragraph shown on the District Facilities page.')
+                    ->rows(4)
+                    ->maxLength(1000),
+                TextInput::make("tags.$locale")
+                    ->label('Tags')
+                    ->helperText('Separate with commas, e.g. “Artha Graha, Plaza Sudirman, Landmark Tower”.')
+                    ->maxLength(255),
+                TextInput::make("stat_label.$locale")
+                    ->label('Statistic label')
+                    ->helperText('e.g. “Visitors per day”.')
+                    ->maxLength(120),
+            ]),
+            Section::make('Statistic')->schema([
+                // Outside the locale tabs on purpose: a figure reads the same
+                // in every language, and duplicating it per locale is three
+                // chances to leave two of them stale.
+                TextInput::make('stat_value')
+                    ->label('Statistic value')
+                    ->helperText('e.g. “18K+”. Shown with the label above it.')
+                    ->maxLength(60),
             ]),
             Section::make('Image & Position')->schema([
-                FileUpload::make('image')
-                    ->image()->disk('public')->directory('uploads/district')
-                    ->visibility('public')->maxSize(5120),
+                MediaField::image('image', 'Image', 'district'),
                 TextInput::make('sort')->label('Sort order')->numeric()->default(0),
                 Toggle::make('is_active')->label('Visible on the homepage')->default(true),
             ])->columns(2),

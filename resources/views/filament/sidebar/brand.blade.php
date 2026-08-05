@@ -6,8 +6,8 @@
 @php($settings = \App\Models\SiteSetting::singleton())
 
 <a href="{{ \Filament\Facades\Filament::getUrl() }}" class="fi-sidebar-brand">
-    @if ($settings->logo)
-        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($settings->logo) }}"
+    @if ($logoUrl = \App\Support\MediaUrl::resolve($settings->logo))
+        <img src="{{ $logoUrl }}"
              alt="{{ $settings->site_name ?: config('app.name') }}"
              class="fi-sidebar-brand-logo">
     @else

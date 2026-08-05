@@ -53,10 +53,21 @@ class BrandingTest extends TestCase
         // Scoped to the brand link rather than the whole document: the header
         // legitimately carries other images (the locale flags), and asserting
         // on the page as a whole made this test fail for an unrelated reason.
+        //
+        // Anchored on the header bar, not on the link's href. Keying off
+        // '<a href="#top"' meant that changing where the brand points made
+        // strpos return false, substr read from offset 0, and the assertion
+        // quietly examine the document head — which has no <img> in it, so the
+        // test passed while checking nothing.
         $html = $response->getContent();
-        $start = strpos($html, '<a href="#top"');
+        $bar = strpos($html, 'scbd-header-bar');
+
+        $this->assertNotFalse($bar, 'the header bar should be present');
+
+        $start = strpos($html, '<a ', $bar);
         $brand = substr($html, $start, strpos($html, '</a>', $start) - $start);
 
+        $this->assertStringContainsString('SCBD', $brand, 'the brand link should carry the site name');
         $this->assertStringNotContainsString('<img', $brand);
     }
 

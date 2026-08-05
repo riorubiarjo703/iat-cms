@@ -3,8 +3,8 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -49,7 +49,7 @@ class TimelineBlock extends BaseBlock
                     TextInput::make('year')->label('Year or period')->required()->maxLength(40),
                     TextInput::make('title')->label('Title')->required()->maxLength(160),
                     Textarea::make('body')->label('Description')->rows(3),
-                    FileUpload::make('image')->label('Image')->image()->directory('uploads/pages/milestone')->disk('public'),
+                    MediaField::image('image', 'Image', 'pages/milestone'),
                 ])
                 ->addActionLabel('Add a milestone')
                 ->reorderable()

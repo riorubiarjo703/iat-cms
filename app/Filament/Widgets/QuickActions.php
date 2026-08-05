@@ -3,10 +3,10 @@
 namespace App\Filament\Widgets;
 
 use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Pages\NavigationMenusPage;
-use App\Filament\Resources\Users\UserResource;
+use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\Pages\PageResource;
+use App\Filament\Resources\Users\UserResource;
 use Filament\Widgets\Widget;
 use Slimani\MediaManager\Pages\MediaManager;
 
@@ -17,7 +17,6 @@ class QuickActions extends Widget
     protected int|string|array $columnSpan = 'full';
 
     protected static ?int $sort = 4;
-
 
     /**
      * Rendered with the page rather than lazily. These are a few COUNT queries

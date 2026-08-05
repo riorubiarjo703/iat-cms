@@ -3,8 +3,8 @@
 namespace App\PageBuilder\Blocks;
 
 use App\Filament\Support\LocaleTabs;
+use App\Filament\Support\MediaField;
 use App\PageBuilder\BaseBlock;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -47,8 +47,8 @@ class VisionMissionBlock extends BaseBlock
                     ->reorderable()
                     ->default([]),
             ]),
-            FileUpload::make('vision_image')->label('Vision image')->image()->directory('uploads/pages')->disk('public'),
-            FileUpload::make('mission_image')->label('Mission image')->image()->directory('uploads/pages')->disk('public'),
+            MediaField::image('vision_image', 'Vision image', 'pages'),
+            MediaField::image('mission_image', 'Mission image', 'pages'),
         ];
     }
 

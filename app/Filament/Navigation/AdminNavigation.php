@@ -4,12 +4,14 @@ namespace App\Filament\Navigation;
 
 use AjayDhakal\FilamentStory\Filament\Resources\BlogPosts\BlogPostResource;
 use AjayDhakal\FilamentStory\Models\BlogPost;
-use App\Filament\Pages\Placeholders as P;
 use App\Filament\Pages\NavigationMenusPage;
+use App\Filament\Pages\Placeholders as P;
 use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\BlogCategories\BlogCategoryResource;
+use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Resources\Pages\PageResource;
 use App\Filament\Resources\Users\UserResource;
+use App\Support\RequestCache;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
@@ -47,7 +49,9 @@ final class AdminNavigation
                     // unlisted resource would be reachable only by URL.
                     self::pageUrl('Media Library', 'heroicon-o-photo', MediaManager::getUrl(), 6),
                 ]),
-                self::page(P\ContactsPlaceholder::class, 'Contacts', 'heroicon-o-inbox', 3),
+                // Was a placeholder until the contact page had somewhere to
+                // deliver to. The badge is the unread count.
+                self::resource(ContactMessageResource::class, 'Contacts', 'heroicon-o-inbox', 3, ContactMessageResource::getNavigationBadge()),
                 self::parent('Marketing', 'heroicon-o-megaphone', 4, [
                     self::page(P\NewsletterPlaceholder::class, 'Newsletter', 'heroicon-o-envelope', 1),
                     self::page(P\AnnouncementsPlaceholder::class, 'Announcements', 'heroicon-o-megaphone', 2),
@@ -145,7 +149,7 @@ final class AdminNavigation
     {
         // Filament builds the navigation more than once per request — sidebar,
         // breadcrumbs, active-state checks — and each build re-ran this count.
-        return \App\Support\RequestCache::remember('nav.pending_posts', function (): ?string {
+        return RequestCache::remember('nav.pending_posts', function (): ?string {
             return self::countPendingPosts();
         });
     }

@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
+import { Flip } from 'gsap/Flip';
 
 import { prefersReducedMotion } from './motion';
 import { createSmoothScroll } from './smoothScroll';
@@ -11,6 +12,8 @@ import { initHeader } from './header';
 import { initReveals, initNewsHover } from './reveal';
 import { initMarquee } from './marquee';
 import { initRoulette } from './roulette';
+import { initAwards } from './awards';
+import { initContact } from './contact';
 import { initScrollText, settleScrollText } from './scrollText';
 import { initDistrict } from './district';
 import { initCardStack } from './stack';
@@ -18,7 +21,11 @@ import { initCounters } from './counters';
 import { initCursor } from './cursor';
 import { initLanguageSwitcher } from './i18n';
 
-gsap.registerPlugin(ScrollTrigger);
+// Flip is registered here rather than inside the module that uses it: the
+// awards module returns early when its section is absent, which left Flip
+// unregistered on every other page — including the contact page, which also
+// uses it.
+gsap.registerPlugin(ScrollTrigger, Flip);
 
 export function initScbd() {
   // The reference polled `window.gsap && window.ScrollTrigger && window.Lenis`
@@ -52,6 +59,15 @@ export function initScbd() {
   initCursor(gsap);
   initLanguageSwitcher(ScrollTrigger);
   initNewsHover(gsap);
+
+  // Outside the reduced-motion branch: the reader is how the certificates are
+  // read at all, not decoration. Its transitions are short enough to stay
+  // tolerable, and losing it would leave the page with no way to view a scan.
+  initAwards(gsap, lenis);
+
+  // Also outside the reduced-motion branch: this is a working form, not an
+  // effect. Its animations are incidental to submitting an enquiry.
+  initContact(gsap);
 
   gsap.context(() => {
     runLoader(gsap, ScrollTrigger, lenis, reduced);
