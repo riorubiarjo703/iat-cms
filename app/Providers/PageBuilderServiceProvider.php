@@ -32,6 +32,7 @@ class PageBuilderServiceProvider extends ServiceProvider
                 Blocks\OperationsBlock::class,
                 Blocks\CtaBlock::class,
                 Blocks\NewsBlock::class,
+                Blocks\NewsIndexBlock::class,
                 Blocks\ContactHeadingBlock::class,
                 Blocks\ContactFormBlock::class,
             ] as $block) {
