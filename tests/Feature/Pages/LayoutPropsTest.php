@@ -47,7 +47,11 @@ class LayoutPropsTest extends TestCase
             'slot' => '',
         ])->render();
 
-        $this->assertStringNotContainsString('resources/js/scbd/index.js', $rendered);
+        // @vite() resolves through the manifest to a hashed filename, so the
+        // literal source path never appears either way. The real discriminator
+        // between a CSS-only @vite call and a CSS+JS one is whether a module
+        // script tag is emitted at all.
+        $this->assertStringNotContainsString('<script type="module"', $rendered);
         $this->assertStringNotContainsString('scbd-i18n', $rendered);
         $this->assertStringNotContainsString('cursor:none', $rendered);
     }
@@ -63,6 +67,7 @@ class LayoutPropsTest extends TestCase
             'slot' => '',
         ])->render();
 
+        $this->assertStringContainsString('<script type="module"', $rendered);
         $this->assertStringContainsString('data-cursor', $rendered);
         $this->assertStringContainsString('scbd-i18n', $rendered);
     }
