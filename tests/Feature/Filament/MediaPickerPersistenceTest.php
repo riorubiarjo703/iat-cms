@@ -181,6 +181,20 @@ class MediaPickerPersistenceTest extends TestCase
     }
 
     /**
+     * The listing thumbnail. The column holds an id now, so reading it off the
+     * public disk would ask for /storage/9 and render a broken image.
+     */
+    public function test_the_listing_thumbnail_resolves_through_the_library(): void
+    {
+        $file = $this->mediaFile('towers');
+        DistrictPlace::create(['title' => ['en' => 'The towers'], 'image' => (string) $file->id]);
+
+        Livewire::test(\App\Filament\Resources\DistrictPlaces\Pages\ListDistrictPlaces::class)
+            ->assertSee($file->getUrl(), false)
+            ->assertDontSee('storage/'.$file->id.'"', false);
+    }
+
+    /**
      * The hazard itself, named so the reason for the arrangement survives:
      * pages has no image column, and writing one is fatal rather than ignored.
      */

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Facilities;
 use App\Filament\Support\LocaleTabs;
 use App\Filament\Support\MediaField;
 use App\Models\Facility;
+use App\Support\MediaUrl;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -69,7 +70,19 @@ class FacilityResource extends Resource
     {
         return $table
             ->columns([
-                ImageColumn::make('image')->disk('public')->imageHeight(56)->label('Image'),
+                ImageColumn::make('image')
+                    ->label('Image')
+                    ->imageHeight(56)
+                    // The column holds a media id, not a path, so the
+                    // thumbnail is resolved rather than read off a disk.
+                    // Forced absolute: ImageColumn only passes a state straight
+                    // through when it validates as a URL, and treats a relative
+                    // one as a disk path it then fails to find.
+                    ->getStateUsing(function (Facility $record): ?string {
+                        $url = MediaUrl::resolve($record->image);
+
+                        return $url === null ? null : url($url);
+                    }),
                 TextColumn::make('title')
                     ->label('Title')
                     ->getStateUsing(fn (Facility $record) => $record->t('title', 'en')),
