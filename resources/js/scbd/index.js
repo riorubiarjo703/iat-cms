@@ -10,6 +10,7 @@ import { initNav } from './nav';
 import { runLoader } from './loader';
 import { initHeader } from './header';
 import { initReveals, initNewsHover } from './reveal';
+import { initNewsFilter } from './newsFilter';
 import { initMarquee } from './marquee';
 import { initRoulette } from './roulette';
 import { initAwards } from './awards';
@@ -60,6 +61,10 @@ export function initScbd() {
   initCursor(gsap);
   initLanguageSwitcher(ScrollTrigger);
   initNewsHover(gsap);
+
+  // Outside the reduced-motion branch: the chips are how the archive is
+  // browsed, not an effect. Only the Flip tween is motion.
+  initNewsFilter(gsap, Flip, ScrollTrigger);
 
   // Outside the reduced-motion branch: the reader is how the certificates are
   // read at all, not decoration. Its transitions are short enough to stay
