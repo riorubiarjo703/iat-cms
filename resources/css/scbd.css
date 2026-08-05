@@ -1351,6 +1351,97 @@ textarea.input { min-height: 90px; resize: vertical; }
   font-size: 18px;
 }
 
+/* News index --------------------------------------------------------------
+   The 8/4 split of the reference layout, as a two-column grid. The sidebar is
+   sticky because the left column is much the taller of the two. */
+.scbd-news-index-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 2px solid rgba(32, 30, 29, 0.4);
+}
+
+.scbd-news-index-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #ec3013;
+  margin-bottom: 16px;
+}
+
+.scbd-news-index-heading {
+  font-size: clamp(34px, 4.4vw, 66px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.scbd-news-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.scbd-news-chip {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  background: transparent;
+  color: #201e1d;
+  border: 1px solid rgba(32, 30, 29, 0.4);
+  cursor: none;
+  transition: background 240ms ease, color 240ms ease, border-color 240ms ease;
+}
+
+.scbd-news-chip:hover { border-color: #201e1d; }
+
+.scbd-news-chip[aria-pressed='true'] {
+  background: #ec3013;
+  border-color: #ec3013;
+  color: #f3f2f2;
+}
+
+.scbd-news-index-body {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 56px;
+  padding-top: 48px;
+}
+
+.scbd-news-index-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px 32px;
+  align-content: start;
+}
+
+.scbd-news-index-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 15px;
+  color: rgba(32, 30, 29, 0.65);
+}
+
+.scbd-news-index-side {
+  position: sticky;
+  top: 120px;
+  align-self: start;
+}
+
+.scbd-news-index-side-heading {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(32, 30, 29, 0.55);
+  margin: 0 0 8px;
+}
+
+/* The filter's only rule. Everything else is Flip reading and replaying
+   positions. */
+.is-hidden { display: none; }
+
 @media (max-width: 900px) {
     .scbd-pad { padding: 80px 24px !important; }
     .scbd-pad-top { padding: 110px 24px 0 !important; }
@@ -1444,6 +1535,10 @@ textarea.input { min-height: 90px; resize: vertical; }
     .scbd-news-nav-next { margin-left: 0 !important; text-align: left !important; }
     .scbd-news-nav a { max-width: 100% !important; }
     .scbd-news-detail-meta { align-items: flex-start !important; }
+
+    .scbd-news-index-body { grid-template-columns: 1fr !important; gap: 48px !important; }
+    .scbd-news-index-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .scbd-news-index-side { position: static !important; }
 }
 
 @media (max-width: 560px) {
