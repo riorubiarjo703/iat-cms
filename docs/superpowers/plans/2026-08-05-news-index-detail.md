@@ -366,7 +366,7 @@ class NewsPostRouteTest extends TestCase
     }
 
     /** Every field the view needs, so a test can vary one thing at a time. */
-    private function post(array $overrides = []): BlogPost
+    private function makePost(array $overrides = []): BlogPost
     {
         return BlogPost::create(array_merge([
             'title' => 'A Community Service Programme',
@@ -380,7 +380,7 @@ class NewsPostRouteTest extends TestCase
 
     public function test_a_published_post_is_reachable(): void
     {
-        $this->post();
+        $this->makePost();
 
         $this->get('/news/a-community-service-programme')
             ->assertSuccessful()
@@ -390,7 +390,7 @@ class NewsPostRouteTest extends TestCase
     public function test_a_draft_post_is_not_found(): void
     {
         // 404 rather than 403: an unlisted URL must not confirm a post exists.
-        $this->post(['status' => BlogPost::STATUS_DRAFT, 'published_at' => null]);
+        $this->makePost(['status' => BlogPost::STATUS_DRAFT, 'published_at' => null]);
 
         $this->get('/news/a-community-service-programme')->assertNotFound();
     }
@@ -399,14 +399,14 @@ class NewsPostRouteTest extends TestCase
     {
         // Marked published but scheduled. It looks live in the admin and must
         // not be reachable by URL yet.
-        $this->post(['published_at' => now()->addWeek()]);
+        $this->makePost(['published_at' => now()->addWeek()]);
 
         $this->get('/news/a-community-service-programme')->assertNotFound();
     }
 
     public function test_a_post_with_the_scheduled_status_is_not_found(): void
     {
-        $this->post([
+        $this->makePost([
             'status' => BlogPost::STATUS_SCHEDULED,
             'published_at' => now()->addWeek(),
         ]);
@@ -423,7 +423,7 @@ class NewsPostRouteTest extends TestCase
     {
         // The catch-all only matches slugs without a slash, but the ordering is
         // load-bearing and worth pinning.
-        $this->post();
+        $this->makePost();
 
         $this->assertSame(
             url('/news/a-community-service-programme'),
@@ -577,7 +577,7 @@ class NewsPostNeighboursTest extends TestCase
         $this->seedHeaderMenu();
     }
 
-    private function post(string $title, string $date): BlogPost
+    private function makePost(string $title, string $date): BlogPost
     {
         return BlogPost::create([
             'title' => $title,
@@ -592,11 +592,11 @@ class NewsPostNeighboursTest extends TestCase
     /** Oldest to newest. */
     private function seedFive(): void
     {
-        $this->post('Oldest Post', '2024-05-14');
-        $this->post('Second Post', '2024-06-26');
-        $this->post('Middle Post', '2025-02-11');
-        $this->post('Fourth Post', '2025-08-17');
-        $this->post('Newest Post', '2026-07-23');
+        $this->makePost('Oldest Post', '2024-05-14');
+        $this->makePost('Second Post', '2024-06-26');
+        $this->makePost('Middle Post', '2025-02-11');
+        $this->makePost('Fourth Post', '2025-08-17');
+        $this->makePost('Newest Post', '2026-07-23');
     }
 
     public function test_previous_is_the_newest_older_post(): void
@@ -792,7 +792,7 @@ class NewsCardTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function post(array $overrides = []): BlogPost
+    private function makePost(array $overrides = []): BlogPost
     {
         return BlogPost::create(array_merge([
             'title' => 'Earth Hour 2026',
@@ -811,7 +811,7 @@ class NewsCardTest extends TestCase
 
     public function test_the_grid_card_links_to_the_post_and_shows_its_date(): void
     {
-        $html = $this->render($this->post(), 'grid');
+        $html = $this->render($this->makePost(), 'grid');
 
         $this->assertStringContainsString(route('news.show', 'earth-hour-2026'), $html);
         $this->assertStringContainsString('Earth Hour 2026', $html);
@@ -821,7 +821,7 @@ class NewsCardTest extends TestCase
     public function test_a_card_carries_its_category_slug_for_the_filter(): void
     {
         $category = BlogCategory::create(['name' => 'Environment']);
-        $post = $this->post(['blog_category_id' => $category->id]);
+        $post = $this->makePost(['blog_category_id' => $category->id]);
 
         $html = $this->render($post->fresh(), 'grid');
 
@@ -834,7 +834,7 @@ class NewsCardTest extends TestCase
         // Still present, still empty: the filter reads the attribute on every
         // card, and a missing attribute would make an uncategorised post
         // invisible to "All" rather than merely unfiltered.
-        $html = $this->render($this->post(), 'grid');
+        $html = $this->render($this->makePost(), 'grid');
 
         $this->assertStringContainsString('data-news-category=""', $html);
     }
@@ -842,7 +842,7 @@ class NewsCardTest extends TestCase
     public function test_a_post_without_an_image_renders_no_img_tag(): void
     {
         // An empty src resolves against the current page and re-requests it.
-        $html = $this->render($this->post(), 'grid');
+        $html = $this->render($this->makePost(), 'grid');
 
         $this->assertStringNotContainsString('<img', $html);
         $this->assertStringNotContainsString('src=""', $html);
@@ -851,7 +851,7 @@ class NewsCardTest extends TestCase
     public function test_the_compact_card_omits_the_category(): void
     {
         $category = BlogCategory::create(['name' => 'Environment']);
-        $post = $this->post(['blog_category_id' => $category->id]);
+        $post = $this->makePost(['blog_category_id' => $category->id]);
 
         $html = $this->render($post->fresh(), 'compact');
 
@@ -863,7 +863,7 @@ class NewsCardTest extends TestCase
     public function test_thumbnails_are_lazy(): void
     {
         // Every published post renders at once, with no pagination.
-        $post = $this->post(['featured_image' => 'uploads/news/earth-hour.jpg']);
+        $post = $this->makePost(['featured_image' => 'uploads/news/earth-hour.jpg']);
 
         $html = $this->render($post, 'grid');
 
@@ -1065,7 +1065,7 @@ class NewsDetailPageTest extends TestCase
         $this->seedHeaderMenu();
     }
 
-    private function post(array $overrides = []): BlogPost
+    private function makePost(array $overrides = []): BlogPost
     {
         return BlogPost::create(array_merge([
             'title' => 'Earth Hour 2026',
@@ -1080,7 +1080,7 @@ class NewsDetailPageTest extends TestCase
 
     public function test_the_breadcrumb_leads_back_to_the_index(): void
     {
-        $this->post();
+        $this->makePost();
 
         $this->get('/news/earth-hour-2026')
             ->assertSuccessful()
@@ -1090,21 +1090,21 @@ class NewsDetailPageTest extends TestCase
     public function test_the_heading_carries_the_split_hook(): void
     {
         // Without data-split the heading renders and never becomes visible.
-        $this->post();
+        $this->makePost();
 
         $this->get('/news/earth-hour-2026')->assertSee('data-split', false);
     }
 
     public function test_the_hero_image_carries_the_reveal_hook(): void
     {
-        $this->post();
+        $this->makePost();
 
         $this->get('/news/earth-hour-2026')->assertSee('data-reveal', false);
     }
 
     public function test_the_share_links_point_at_the_canonical_post_url(): void
     {
-        $this->post();
+        $this->makePost();
         $encoded = urlencode(route('news.show', 'earth-hour-2026'));
 
         $response = $this->get('/news/earth-hour-2026')->assertSuccessful();
@@ -1116,7 +1116,7 @@ class NewsDetailPageTest extends TestCase
 
     public function test_the_body_renders_as_html_inside_the_prose_wrapper(): void
     {
-        $this->post(['content' => '<p>First paragraph.</p><p>Second paragraph.</p>']);
+        $this->makePost(['content' => '<p>First paragraph.</p><p>Second paragraph.</p>']);
 
         $this->get('/news/earth-hour-2026')
             ->assertSee('scbd-prose', false)
@@ -1126,7 +1126,7 @@ class NewsDetailPageTest extends TestCase
     public function test_the_category_shows_beside_the_date(): void
     {
         $category = BlogCategory::create(['name' => 'Environment']);
-        $this->post(['blog_category_id' => $category->id]);
+        $this->makePost(['blog_category_id' => $category->id]);
 
         $this->get('/news/earth-hour-2026')
             ->assertSee('28.03.26', false)
@@ -1135,7 +1135,7 @@ class NewsDetailPageTest extends TestCase
 
     public function test_prev_and_next_render_their_neighbours_titles(): void
     {
-        $this->post();
+        $this->makePost();
         BlogPost::create([
             'title' => 'Older Story', 'slug' => 'older-story', 'content' => '<p>x</p>',
             'status' => BlogPost::STATUS_PUBLISHED, 'published_at' => '2025-01-01',
@@ -1152,7 +1152,7 @@ class NewsDetailPageTest extends TestCase
 
     public function test_a_lone_post_renders_no_prev_or_next_affordance(): void
     {
-        $this->post();
+        $this->makePost();
 
         $this->get('/news/earth-hour-2026')
             ->assertDontSee('scbd-news-nav-prev', false)
@@ -1162,14 +1162,14 @@ class NewsDetailPageTest extends TestCase
     public function test_the_latest_row_is_omitted_when_there_are_no_other_posts(): void
     {
         // A heading over an empty row reads as a rendering fault.
-        $this->post();
+        $this->makePost();
 
         $this->get('/news/earth-hour-2026')->assertDontSee('LATEST NEWS', false);
     }
 
     public function test_the_latest_row_appears_when_other_posts_exist(): void
     {
-        $this->post();
+        $this->makePost();
         BlogPost::create([
             'title' => 'Another Story', 'slug' => 'another-story', 'content' => '<p>x</p>',
             'status' => BlogPost::STATUS_PUBLISHED, 'published_at' => '2025-01-01',
@@ -1748,7 +1748,7 @@ class NewsIndexRenderTest extends TestCase
         ]);
     }
 
-    private function post(string $title, string $date, array $overrides = []): BlogPost
+    private function makePost(string $title, string $date, array $overrides = []): BlogPost
     {
         return BlogPost::create(array_merge([
             'title' => $title,
@@ -1763,8 +1763,8 @@ class NewsIndexRenderTest extends TestCase
     public function test_published_posts_are_listed_newest_first(): void
     {
         $this->indexPage();
-        $this->post('Older Story', '2025-01-01');
-        $this->post('Newer Story', '2026-07-23');
+        $this->makePost('Older Story', '2025-01-01');
+        $this->makePost('Newer Story', '2026-07-23');
 
         $html = $this->get('/news')->assertSuccessful()->getContent();
 
@@ -1778,7 +1778,7 @@ class NewsIndexRenderTest extends TestCase
     public function test_a_draft_post_is_not_listed(): void
     {
         $this->indexPage();
-        $this->post('Hidden Story', '2026-01-01', ['status' => BlogPost::STATUS_DRAFT]);
+        $this->makePost('Hidden Story', '2026-01-01', ['status' => BlogPost::STATUS_DRAFT]);
 
         $this->get('/news')->assertDontSee('Hidden Story', false);
     }
@@ -1786,7 +1786,7 @@ class NewsIndexRenderTest extends TestCase
     public function test_a_post_dated_in_the_future_is_not_listed(): void
     {
         $this->indexPage();
-        $this->post('Scheduled Story', now()->addWeek()->toDateString());
+        $this->makePost('Scheduled Story', now()->addWeek()->toDateString());
 
         $this->get('/news')->assertDontSee('Scheduled Story', false);
     }
@@ -1804,9 +1804,9 @@ class NewsIndexRenderTest extends TestCase
     public function test_the_sidebar_honours_its_limit(): void
     {
         $this->indexPage(['sidebar_limit' => 2]);
-        $this->post('One Story', '2026-01-01');
-        $this->post('Two Story', '2026-02-01');
-        $this->post('Three Story', '2026-03-01');
+        $this->makePost('One Story', '2026-01-01');
+        $this->makePost('Two Story', '2026-02-01');
+        $this->makePost('Three Story', '2026-03-01');
 
         $html = $this->get('/news')->getContent();
 
@@ -1820,7 +1820,7 @@ class NewsIndexRenderTest extends TestCase
         $this->indexPage();
         $used = BlogCategory::create(['name' => 'Environment']);
         BlogCategory::create(['name' => 'Unused Category']);
-        $this->post('Earth Hour', '2026-03-28', ['blog_category_id' => $used->id]);
+        $this->makePost('Earth Hour', '2026-03-28', ['blog_category_id' => $used->id]);
 
         $response = $this->get('/news')->assertSuccessful();
 
@@ -1833,7 +1833,7 @@ class NewsIndexRenderTest extends TestCase
     {
         $this->indexPage();
         $category = BlogCategory::create(['name' => 'Environment']);
-        $this->post('Earth Hour', '2026-03-28', ['blog_category_id' => $category->id]);
+        $this->makePost('Earth Hour', '2026-03-28', ['blog_category_id' => $category->id]);
 
         $this->get('/news')->assertSee('data-news-filter-chip=""', false);
     }
@@ -1842,7 +1842,7 @@ class NewsIndexRenderTest extends TestCase
     {
         $this->indexPage(['show_filters' => false]);
         $category = BlogCategory::create(['name' => 'Environment']);
-        $this->post('Earth Hour', '2026-03-28', ['blog_category_id' => $category->id]);
+        $this->makePost('Earth Hour', '2026-03-28', ['blog_category_id' => $category->id]);
 
         $this->get('/news')->assertDontSee('data-news-filter-chip', false);
     }
