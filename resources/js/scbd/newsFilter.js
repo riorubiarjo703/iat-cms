@@ -34,6 +34,19 @@ export function initNewsFilter(gsap, Flip, ScrollTrigger) {
   const apply = (slug) => {
     // Captured before anything moves: Flip needs the old geometry to animate
     // from, and reading it after the class toggle would capture the new one.
+    //
+    // This ternary is the ONLY thing the motion preference decides here. The
+    // two loops below must stay unconditional: reduced motion means no tween,
+    // not no filtering, and a reader who cannot use the chips cannot browse the
+    // archive at all.
+    //
+    // In particular, `state` is not a stand-in for "motion is on". It is null
+    // exactly under reduced motion, so `if (!state) return;` or
+    // `state === null || card.classList.toggle(…)` reads like a tween guard
+    // while quietly disabling the filtering for the very people it should still
+    // work for — without ever naming the preference, which is how three
+    // successive source-text contracts missed it. The behaviour is pinned
+    // properly in tests/js/newsFilter.test.js; break it and that suite goes red.
     const state = reduced ? null : Flip.getState(cards);
 
     cards.forEach((card) => {
