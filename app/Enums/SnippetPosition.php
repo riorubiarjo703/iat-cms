@@ -40,4 +40,23 @@ enum SnippetPosition: string
     {
         return 'Head: analytics, meta, CSS. Body Start: tracking pixels. Body End: chat widgets.';
     }
+
+    /**
+     * A SQL `CASE` expression, for `orderByRaw()`, that ranks the `position`
+     * column by the declaration order above. Built from `cases()` so a case
+     * added or reordered here changes the sort automatically instead of
+     * requiring a second, hand-kept map — which is the promise the class
+     * docblock makes.
+     *
+     * The interpolated values are enum cases, not user input, so this is not
+     * an injection risk; each is also a plain snake_case identifier.
+     */
+    public static function orderByCaseSql(): string
+    {
+        $whens = collect(self::cases())
+            ->map(fn (self $case, int $rank): string => "WHEN '{$case->value}' THEN {$rank}")
+            ->implode(' ');
+
+        return "CASE position {$whens} END";
+    }
 }

@@ -7,6 +7,7 @@ use App\Enums\SnippetType;
 use App\Filament\Resources\CodeSnippets\CodeSnippetResource;
 use App\Filament\Resources\CodeSnippets\Pages\CreateCodeSnippet;
 use App\Filament\Resources\CodeSnippets\Pages\EditCodeSnippet;
+use App\Filament\Resources\CodeSnippets\Pages\ListCodeSnippets;
 use App\Models\CodeSnippet;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,6 +81,20 @@ class CodeSnippetResourceTest extends TestCase
             ])
             ->call('create')
             ->assertHasFormErrors(['priority']);
+    }
+
+    public function test_the_list_orders_by_position_then_priority(): void
+    {
+        // Deliberately inserted out of order and out of ID order, so passing
+        // requires the query to actually sort rather than happening to
+        // return rows in insertion or primary-key order.
+        $bodyEnd = CodeSnippet::factory()->create(['position' => SnippetPosition::BodyEnd, 'priority' => 5]);
+        $headLate = CodeSnippet::factory()->create(['position' => SnippetPosition::Head, 'priority' => 20]);
+        $bodyStart = CodeSnippet::factory()->create(['position' => SnippetPosition::BodyStart, 'priority' => 1]);
+        $headEarly = CodeSnippet::factory()->create(['position' => SnippetPosition::Head, 'priority' => 1]);
+
+        Livewire::test(ListCodeSnippets::class)
+            ->assertCanSeeTableRecords([$headEarly, $headLate, $bodyStart, $bodyEnd], inOrder: true);
     }
 
     public function test_it_edits_an_existing_snippet(): void

@@ -125,9 +125,10 @@ class CodeSnippetResource extends Resource
             ])
             // Position then priority is the order snippets actually fire, which
             // is the question this list exists to answer. Newest-first would
-            // tell an editor nothing useful.
+            // tell an editor nothing useful. The CASE expression comes from
+            // SnippetPosition so document order has one source of truth.
             ->defaultSort(fn ($query) => $query->orderByRaw(
-                "CASE position WHEN 'head' THEN 1 WHEN 'body_start' THEN 2 ELSE 3 END"
+                SnippetPosition::orderByCaseSql()
             )->orderBy('priority'))
             ->emptyStateIcon('heroicon-o-code-bracket')
             ->emptyStateHeading('No snippets yet')
