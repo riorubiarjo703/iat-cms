@@ -105,4 +105,24 @@ class AuthorizationPolicyTest extends TestCase
         $this->assertFalse($this->editor->can('deleteAny', Page::class));
         $this->assertTrue($this->superAdmin->can('deleteAny', Page::class));
     }
+
+    /**
+     * The assertion above goes through Laravel's Gate, which *denies* when a
+     * policy method is missing. Filament does the opposite: its authorization
+     * helper falls through to Response::allow(). The hole lived in that fork,
+     * so a Gate-based assertion cannot prove it is closed — remove
+     * PagePolicy::deleteAny() and the Gate test fails on the super admin's
+     * assertion, never on the editor's.
+     *
+     * This asserts through PageResource::canDeleteAny(), which is the call
+     * Filament's bulk action actually makes.
+     */
+    public function test_the_pages_resource_refuses_bulk_delete_to_an_editor(): void
+    {
+        $this->actingAs($this->editor);
+        $this->assertFalse(\App\Filament\Resources\Pages\PageResource::canDeleteAny());
+
+        $this->actingAs($this->superAdmin);
+        $this->assertTrue(\App\Filament\Resources\Pages\PageResource::canDeleteAny());
+    }
 }
