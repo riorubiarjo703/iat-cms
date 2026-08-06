@@ -11,6 +11,7 @@ use App\Filament\Resources\BlogCategories\BlogCategoryResource;
 use App\Filament\Resources\CodeSnippets\CodeSnippetResource;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Resources\Pages\PageResource;
+use App\Filament\Resources\Permissions\PermissionResource;
 use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Support\RequestCache;
@@ -27,7 +28,7 @@ use Slimani\MediaManager\Pages\MediaManager;
  * (NavigationManager::get() early-returns at line 49), which is how the three
  * plugins' hardcoded placement gets overridden without touching vendor code.
  *
- * Consequence: anything not listed here is reachable only by URL. Eighteen of
+ * Consequence: anything not listed here is reachable only by URL. Sixteen of
  * these destinations are deliberate placeholders — the sidebar shows the
  * product's full intended shape, and each unbuilt screen says so plainly.
  *
@@ -90,7 +91,7 @@ final class AdminNavigation
                 self::parent('Users Management', 'heroicon-o-users', 5, [
                     self::resource(UserResource::class, 'Users', 'heroicon-o-users', 1, 'users.view'),
                     self::resource(RoleResource::class, 'Roles', 'heroicon-o-shield-check', 2, 'roles.manage'),
-                    self::page(P\PermissionsPlaceholder::class, 'Permissions', 'heroicon-o-key', 3, 'permissions.manage'),
+                    self::resource(PermissionResource::class, 'Permissions', 'heroicon-o-key', 3, 'permissions.manage'),
                 ]),
             ]),
 
