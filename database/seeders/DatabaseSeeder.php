@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
         // in, and each one warns and returns if its page is missing — so
         // running them before the tree produces a silent no-op, not an error.
         $this->call([
+            RolesAndPermissionsSeeder::class,
             HomepageSeeder::class,
             NavigationTreeSeeder::class,
             ProfilePageSeeder::class,
