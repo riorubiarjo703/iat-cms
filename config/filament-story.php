@@ -7,7 +7,10 @@ return [
     'ai_model' => env('FILAMENT_STORY_AI_MODEL', 'openai/gpt-4o'),
     'ai_api_key' => env('FILAMENT_STORY_AI_API_KEY'),
     'ai_generation_timeout' => env('FILAMENT_STORY_AI_GENERATION_TIMEOUT', 180),
-    'frontend_enabled' => true,
+    // The public blog pages are served by this application instead — see
+    // routes/web.php and the scbd_news_index block. The package's own views
+    // are Tailwind-CDN and share nothing with this site's design.
+    'frontend_enabled' => false,
     'api_enabled' => true,
     'routes_prefix' => 'blogs',
     'pagination' => 10,

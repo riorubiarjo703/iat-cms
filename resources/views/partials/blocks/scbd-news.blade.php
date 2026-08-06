@@ -24,12 +24,12 @@
             <h2 data-split class="scbd-h2" style="font-size:clamp(34px,4.4vw,66px); line-height:0.98; letter-spacing:-0.035em; margin:0; text-transform:uppercase;" data-i18n="{{ BlockData::i18nKey($blockId, 'heading') }}">{!! nl2br(e($heading)) !!}</h2>
         </div>
         @if ($ctaLabel)
-            <a href="{{ route('filament-story.index') }}" class="btn btn-secondary" data-magnetic style="justify-content:flex-start; cursor:none;" data-i18n="{{ BlockData::i18nKey($blockId, 'cta_label') }}">{{ $ctaLabel }}</a>
+            <a href="{{ route('page', 'news') }}" class="btn btn-secondary" data-magnetic style="justify-content:flex-start; cursor:none;" data-i18n="{{ BlockData::i18nKey($blockId, 'cta_label') }}">{{ $ctaLabel }}</a>
         @endif
     </div>
 
     @forelse ($posts as $post)
-        <a data-news class="scbd-news-row" href="{{ route('filament-story.show', $post->slug) }}" style="display:grid; grid-template-columns:100px 1fr 320px; gap:32px; align-items:start; padding:32px 0; border-bottom:2px solid rgba(32,30,29,0.4); text-decoration:none; color:#201e1d;">
+        <a data-news class="scbd-news-row" href="{{ route('news.show', $post->slug) }}" style="display:grid; grid-template-columns:100px 1fr 320px; gap:32px; align-items:start; padding:32px 0; border-bottom:2px solid rgba(32,30,29,0.4); text-decoration:none; color:#201e1d;">
             <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(32,30,29,0.55);">{{ $post->published_at?->format('d.m.y') }}</div>
             <h3 style="font-size:clamp(20px,2.2vw,34px); line-height:1.08; letter-spacing:-0.025em; margin:0; text-transform:uppercase;">{{ $post->title }}</h3>
             <p style="font-size:13px; line-height:1.65; margin:0; color:rgba(32,30,29,0.65);">{{ $post->excerpt }}</p>
