@@ -392,6 +392,14 @@ class ImportScbdNews extends Command
      * The returned path cannot escape uploads/news/: the filename is the
      * basename of the URL path, re-slugged, so no directory separator and no
      * "../" survives, and the extension comes from a fixed allowlist.
+     *
+     * It is also bounded. blog_posts.featured_image is a varchar(255), and the
+     * insert that stores this path is not inside download()'s try/catch, so an
+     * over-long name would take the whole run down with a QueryException on
+     * PostgreSQL — the one thing every guard here exists to prevent. Shorter
+     * overflows fail more quietly still: the filesystem refuses a path
+     * component over 255 bytes, the public disk has 'throw' => false, and the
+     * row is written pointing at a file that was never created.
      */
     private function storagePathFor(string $url): ?string
     {
@@ -426,7 +434,13 @@ class ImportScbdNews extends Command
             return null;
         }
 
-        $name = Str::slug(pathinfo(basename($urlPath), PATHINFO_FILENAME)) ?: 'image';
+        // Truncated before the hash is appended, not after: the hash is what
+        // keeps two source images sharing an 80-character prefix apart, and it
+        // is only doing that job if it survives the cut. 80 + the 13-character
+        // prefix + the 9-character hash + at most 5 for the extension leaves
+        // the stored path around 107 — far inside both the column and the
+        // filesystem's 255-byte limit on a single path component.
+        $name = Str::limit(Str::slug(pathinfo(basename($urlPath), PATHINFO_FILENAME)), 80, '') ?: 'image';
 
         return 'uploads/news/'.$name.'-'.substr(md5($url), 0, 8).'.'.$extension;
     }

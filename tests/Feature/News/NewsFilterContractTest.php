@@ -59,29 +59,121 @@ class NewsFilterContractTest extends TestCase
     public function test_reduced_motion_still_filters(): void
     {
         // The chips are function, not decoration. Under reduced motion the
-        // class toggle must still run — only the tween is skipped.
+        // class toggle and the aria-pressed updates must still run — only the
+        // Flip tween is skipped.
         //
-        // There is no JS runner here, so this is a source contract. Asserting
-        // that "prefersReducedMotion" merely appears would be satisfied by the
-        // import line alone — wrapping the whole of apply() in
-        // `if (reduced) return;` would leave it green. What actually has to
-        // hold is an ordering: the class toggle that does the filtering comes
-        // BEFORE the `if (state)` guard that gates the tween, so the guard can
-        // only ever skip the animation, never the filtering.
+        // There is no JS runner here and this file stays a source contract, so
+        // the assertion has to be chosen carefully. Two earlier attempts were
+        // not:
+        //
+        //   1. Asserting that "prefersReducedMotion" appears at all. The import
+        //      line alone satisfied that.
+        //   2. Asserting the class toggle appears textually BEFORE the
+        //      `if (state)` tween guard. Inserting `if (reduced) return;` as
+        //      the first statement of apply() — the exact regression this test
+        //      names — leaves that ordering untouched, so it stayed green.
+        //
+        // What actually distinguishes "reduced motion skips only the tween"
+        // from "reduced motion skips the filtering" is not ordering but reach:
+        // how much of apply() the motion preference is allowed to touch. So the
+        // contract is a counting one. Inside apply(), the identifier `reduced`
+        // may be read exactly ONCE, and that one read must be the ternary that
+        // decides whether to capture Flip state. Any second mention — an early
+        // return, a conditional wrapped round the toggle loop, a guard on the
+        // aria-pressed loop — means the preference is gating more than the
+        // animation, and fails here regardless of where in the function it sits.
         $module = file_get_contents(base_path('resources/js/scbd/newsFilter.js'));
 
         $this->assertStringContainsString('prefersReducedMotion', $module);
 
-        $toggle = strpos($module, "classList.toggle('is-hidden'");
-        $guard = strpos($module, 'if (state)');
+        $body = $this->applyBody($module);
 
-        $this->assertNotFalse($toggle, "newsFilter.js does not toggle 'is-hidden' on the cards");
-        $this->assertNotFalse($guard, 'newsFilter.js no longer gates the tween on `if (state)`');
+        // Proof that the extraction above really did capture the filtering
+        // function, so the count below cannot pass by scanning nothing.
+        $this->assertStringContainsString(
+            "classList.toggle('is-hidden'",
+            $body,
+            "apply() no longer toggles 'is-hidden' on the cards",
+        );
+        $this->assertStringContainsString(
+            'aria-pressed',
+            $body,
+            'apply() no longer updates aria-pressed on the chips',
+        );
+        $this->assertStringContainsString(
+            'if (state)',
+            $body,
+            'apply() no longer gates the tween on `if (state)`',
+        );
 
+        // Comments are not code: a comment that happens to say "reduced" must
+        // not fail this, and must not be able to satisfy it either.
+        $code = $this->withoutComments($body);
+
+        preg_match_all('/(?<![\w$])reduced(?![\w$])/', $code, $matches);
+
+        $this->assertCount(
+            1,
+            $matches[0],
+            'apply() reads `reduced` '.count($matches[0]).' times. It may read it exactly once, '
+                ."to decide whether to capture Flip state. A second read means the motion preference \n"
+                ."is gating the filtering itself, not just the animation. apply() body was:\n".$code,
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/const\s+state\s*=\s*reduced\s*\?\s*null\s*:/',
+            $code,
+            'The single use of `reduced` in apply() must be the `const state = reduced ? null : …` '
+                .'ternary that gates the Flip capture, and nothing else.',
+        );
+
+        // Belt and braces on top of the count: the filtering still has to come
+        // before the tween gate, not merely be ungated by `reduced`.
         $this->assertLessThan(
-            $guard,
-            $toggle,
+            strpos($body, 'if (state)'),
+            strpos($body, "classList.toggle('is-hidden'"),
             'The is-hidden toggle must run before the motion guard, or reduced motion would skip the filtering itself.',
         );
+    }
+
+    /**
+     * The source of apply()'s body, brace-matched from its opening `{`.
+     *
+     * Textual, because there is no JS runtime here to ask. The caller asserts
+     * that the result contains the statements it expects, so a mis-extraction
+     * shows up as a failure rather than as an empty string that trivially
+     * satisfies every check made of it.
+     */
+    private function applyBody(string $module): string
+    {
+        $at = strpos($module, 'const apply = ');
+
+        $this->assertNotFalse($at, 'newsFilter.js no longer defines `const apply = …`');
+
+        $open = strpos($module, '{', $at);
+
+        $this->assertNotFalse($open, 'The apply() definition in newsFilter.js has no body');
+
+        $depth = 0;
+        $length = strlen($module);
+
+        for ($i = $open; $i < $length; $i++) {
+            if ($module[$i] === '{') {
+                $depth++;
+
+                continue;
+            }
+
+            if ($module[$i] === '}' && --$depth === 0) {
+                return substr($module, $open + 1, $i - $open - 1);
+            }
+        }
+
+        $this->fail('The apply() body in newsFilter.js has unbalanced braces');
+    }
+
+    private function withoutComments(string $source): string
+    {
+        return (string) preg_replace('#//[^\n]*#', '', (string) preg_replace('#/\*.*?\*/#s', '', $source));
     }
 }

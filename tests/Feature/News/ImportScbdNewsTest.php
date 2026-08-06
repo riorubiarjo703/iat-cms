@@ -398,6 +398,44 @@ class ImportScbdNewsTest extends TestCase
         }
     }
 
+    public function test_an_absurdly_long_image_name_neither_aborts_the_run_nor_stores_a_broken_path(): void
+    {
+        // blog_posts.featured_image is a varchar(255). Built from the full
+        // slugged basename, a ~300-character source image name produces a path
+        // longer than the column, and the insert that follows is NOT inside the
+        // downloader's try/catch — so on PostgreSQL the QueryException takes
+        // the entire run down. Shorter-but-still-long names fail differently
+        // and more quietly: the filesystem refuses a path component over 255
+        // bytes, the public disk has 'throw' => false, and the record is
+        // written anyway — a row pointing at a file that does not exist.
+        //
+        // SQLite does not enforce the varchar width, so the length assertion
+        // below is what stands in for the PostgreSQL abort here; the existence
+        // assertion catches the silent-write half directly.
+        $name = str_repeat('a', 300);
+
+        $this->fakeSourceWithCover("https://scbd.com/news/images/{$name}.jpg");
+
+        $this->artisan('news:import-scbd')->assertSuccessful();
+
+        $stored = BlogPost::firstOrFail()->featured_image;
+
+        $this->assertNotNull($stored, 'A legitimate JPEG should still import, however long its name.');
+        $this->assertStringStartsWith('uploads/news/', $stored);
+
+        // Comfortably inside the column, not merely equal to it: the margin is
+        // what stops the next slightly longer prefix reintroducing this.
+        $this->assertLessThanOrEqual(
+            200,
+            strlen($stored),
+            "The stored path is {$stored} — long enough to overflow featured_image and abort the run.",
+        );
+
+        // The path is only worth storing if the bytes actually landed there.
+        // Without the bound this is where the silent write failure shows up.
+        Storage::disk('public')->assertExists($stored);
+    }
+
     public function test_a_rejected_image_does_not_abort_the_run(): void
     {
         // The post still imports; it just has no picture.
