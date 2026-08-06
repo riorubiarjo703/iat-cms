@@ -11,6 +11,7 @@ use App\Filament\Resources\BlogCategories\BlogCategoryResource;
 use App\Filament\Resources\CodeSnippets\CodeSnippetResource;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Resources\Pages\PageResource;
+use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Support\RequestCache;
 use Filament\Navigation\NavigationBuilder;
@@ -88,7 +89,7 @@ final class AdminNavigation
                 ]),
                 self::parent('Users Management', 'heroicon-o-users', 5, [
                     self::resource(UserResource::class, 'Users', 'heroicon-o-users', 1, 'users.view'),
-                    self::page(P\RolesPlaceholder::class, 'Roles', 'heroicon-o-shield-check', 2, 'roles.manage'),
+                    self::resource(RoleResource::class, 'Roles', 'heroicon-o-shield-check', 2, 'roles.manage'),
                     self::page(P\PermissionsPlaceholder::class, 'Permissions', 'heroicon-o-key', 3, 'permissions.manage'),
                 ]),
             ]),

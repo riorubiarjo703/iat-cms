@@ -245,9 +245,9 @@ class AdminNavigationTest extends TestCase
         $this->assertFalse($class::canGloballySearch());
     }
 
-    public function test_eighteen_placeholders_are_registered(): void
+    public function test_seventeen_placeholders_are_registered(): void
     {
-        // Pages and Code Snippets graduated from placeholder to a real resource.
-        $this->assertCount(18, static::placeholderClasses());
+        // Pages, Code Snippets and Roles graduated from placeholder to a real resource.
+        $this->assertCount(17, static::placeholderClasses());
     }
 }
