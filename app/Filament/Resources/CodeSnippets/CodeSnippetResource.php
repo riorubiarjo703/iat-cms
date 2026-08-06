@@ -133,6 +133,9 @@ class CodeSnippetResource extends Resource
             ->emptyStateIcon('heroicon-o-code-bracket')
             ->emptyStateHeading('No snippets yet')
             ->emptyStateDescription('Add tracking codes, analytics, or custom scripts to your site.')
+            ->emptyStateActions([
+                \Filament\Actions\CreateAction::make()->label('Add Snippet'),
+            ])
             ->recordActions([EditAction::make(), DeleteAction::make()])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }
