@@ -37,20 +37,33 @@ class ListCodeSnippets extends ListRecords
                 ->modalSubmitAction(false)
                 ->modalCancelActionLabel('Close'),
 
-            Action::make('template')
-                ->label('Template')
-                ->icon('heroicon-o-squares-2x2')
-                ->color('gray')
-                ->modalHeading('Use Template')
-                ->modalDescription('Choose a template to quickly add tracking codes or custom snippets.')
-                ->modalContent(view('filament.modals.snippet-templates', [
-                    'templates' => SnippetTemplates::all(),
-                ]))
-                ->modalSubmitAction(false)
-                ->modalCancelAction(false),
+            static::templateAction(),
 
             CreateAction::make()->label('Add Snippet'),
         ];
+    }
+
+    /**
+     * The "Use Template" action, shared by the header and the table's empty
+     * state. `ListRecords` implements `Tables\Contracts\HasTable`, so the
+     * table is the same Livewire component as the page — an empty-state
+     * action's modal reaches `applyTemplate()` exactly as the header one
+     * does, which is why this is one action definition rather than two
+     * copies of the template grid markup.
+     */
+    public static function templateAction(): Action
+    {
+        return Action::make('template')
+            ->label('Template')
+            ->icon('heroicon-o-squares-2x2')
+            ->color('gray')
+            ->modalHeading('Use Template')
+            ->modalDescription('Choose a template to quickly add tracking codes or custom snippets.')
+            ->modalContent(view('filament.modals.snippet-templates', [
+                'templates' => SnippetTemplates::all(),
+            ]))
+            ->modalSubmitAction(false)
+            ->modalCancelAction(false);
     }
 
     /**
@@ -64,6 +77,12 @@ class ListCodeSnippets extends ListRecords
      */
     public function applyTemplate(string $key): void
     {
+        // Every panel account is a full administrator today, so this changes
+        // nothing yet — but it is the one write path this feature adds that a
+        // future resource policy would not automatically cover once Roles and
+        // Permissions exist, so the gate is here ahead of that landing.
+        abort_unless(static::getResource()::canCreate(), 403);
+
         $template = SnippetTemplates::find($key);
 
         if ($template === null) {

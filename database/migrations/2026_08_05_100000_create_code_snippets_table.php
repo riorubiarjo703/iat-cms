@@ -27,7 +27,13 @@ return new class extends Migration
             $table->boolean('skip_for_admins')->default(true);
             $table->timestamps();
 
-            // The exact shape of the renderer's one query per request.
+            // Covers the renderer's actual query: `where is_active = ? order
+            // by priority, id`. `position` is not a predicate there — the
+            // renderer fetches the whole active set and groups it by position
+            // in PHP (see SnippetRenderer::grouped()) rather than filtering
+            // by it per call, so this column rides along in the index without
+            // being used by that query. Left in place rather than reshaped,
+            // since this migration has already run against the dev database.
             $table->index(['is_active', 'position', 'priority']);
         });
     }

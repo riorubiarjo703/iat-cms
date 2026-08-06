@@ -1,5 +1,8 @@
 @props(['position'])
-
+@php
+    $snippets = app(\App\Support\SnippetRenderer::class)->for(\App\Enums\SnippetPosition::from($position));
+@endphp
+@if ($snippets->isNotEmpty())
 {{--
     Injection point for operator-supplied markup.
 
@@ -9,6 +12,7 @@
     has no self-registration: accounts exist only when an administrator makes
     one. Do not "fix" this to {{ '{{ }}' }}.
 --}}
-@foreach (app(\App\Support\SnippetRenderer::class)->for(\App\Enums\SnippetPosition::from($position)) as $snippet)
+@foreach ($snippets as $snippet)
 {!! $snippet->code !!}
 @endforeach
+@endif

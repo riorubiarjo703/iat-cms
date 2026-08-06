@@ -63,4 +63,39 @@ class SnippetTemplatesTest extends TestCase
 
         $this->assertSame(0, CodeSnippet::query()->count());
     }
+
+    /**
+     * `applyTemplate` is proven above via `Livewire::test()->call()`, which
+     * invokes the method directly and bypasses the modal entirely — the view
+     * path, the `$templates` binding, `<x-filament::icon>`, and the
+     * `wire:click="applyTemplate(...)"` calls that make the button clickable
+     * are never exercised by that. Mounting the action is what actually
+     * renders `resources/views/filament/modals/snippet-templates.blade.php`,
+     * so this is the only test that proves the wiring, not just the method.
+     */
+    public function test_the_template_action_modal_renders_all_six_templates(): void
+    {
+        Livewire::test(ListCodeSnippets::class)
+            ->mountAction('template')
+            ->assertMountedActionModalSee([
+                'Google Tag Manager',
+                'Google Analytics 4',
+                'Meta / Facebook Pixel',
+                'Crisp Chat',
+                'Custom CSS',
+                'Custom JavaScript',
+            ])
+            ->assertMountedActionModalSee("applyTemplate('gtm')", false);
+    }
+
+    /**
+     * Same reasoning as above: nothing else mounts the help action, so
+     * nothing else proves its modal actually renders.
+     */
+    public function test_the_help_action_modal_renders(): void
+    {
+        Livewire::test(ListCodeSnippets::class)
+            ->mountAction('help')
+            ->assertMountedActionModalSee(SnippetPosition::helperText());
+    }
 }

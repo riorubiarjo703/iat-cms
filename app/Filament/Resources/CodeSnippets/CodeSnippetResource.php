@@ -107,6 +107,7 @@ class CodeSnippetResource extends Resource
 
                 TextColumn::make('type')
                     ->badge()
+                    ->icon(fn (SnippetType $state): string => $state->icon())
                     ->formatStateUsing(fn (SnippetType $state): string => $state->label()),
 
                 TextColumn::make('position')
@@ -135,6 +136,8 @@ class CodeSnippetResource extends Resource
             ->emptyStateDescription('Add tracking codes, analytics, or custom scripts to your site.')
             ->emptyStateActions([
                 \Filament\Actions\CreateAction::make()->label('Add Snippet'),
+                // Same action the header uses — see ListCodeSnippets::templateAction().
+                Pages\ListCodeSnippets::templateAction(),
             ])
             ->recordActions([EditAction::make(), DeleteAction::make()])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);

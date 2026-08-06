@@ -66,7 +66,7 @@ class CodeSnippetInjectionTest extends TestCase
      * the injection is a shared `<x-code-snippets>` component rather than
      * two hand-written blocks.
      */
-    public function test_snippets_render_on_cms_pages_too(): void
+    public function test_the_public_layout_also_injects_snippets(): void
     {
         CodeSnippet::factory()->create([
             'position' => SnippetPosition::Head,
@@ -103,6 +103,16 @@ class CodeSnippetInjectionTest extends TestCase
 
         $this->assertStringContainsString('<script>var x = 1 && 2;</script>', $html);
         $this->assertStringNotContainsString('&lt;script&gt;', $html);
+    }
+
+    /**
+     * The spec says the component "outputs nothing at all — not even
+     * whitespace" when a position has no snippets, so a page with none
+     * configured never carries a stray blank line in its markup.
+     */
+    public function test_the_component_emits_nothing_when_no_snippets_match(): void
+    {
+        $this->assertSame('', view('components.code-snippets', ['position' => 'head'])->render());
     }
 
     public function test_inactive_snippets_do_not_reach_the_page(): void
