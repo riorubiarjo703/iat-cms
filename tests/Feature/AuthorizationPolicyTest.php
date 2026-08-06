@@ -90,4 +90,19 @@ class AuthorizationPolicyTest extends TestCase
             ->get(\App\Filament\Resources\Users\UserResource::getUrl('index'))
             ->assertSuccessful();
     }
+
+    /**
+     * Filament's bulk "Delete selected" authorizes against deleteAny(), not
+     * delete() — a distinct ability with its own policy method. A
+     * content_editor holds pages.view and pages.update but deliberately not
+     * pages.delete; without deleteAny() defined, Filament's non-strict
+     * fallback allows the action anyway, which would let an editor bulk
+     * delete every page despite lacking pages.delete. This is the check
+     * that would have caught that hole.
+     */
+    public function test_an_editor_is_denied_bulk_delete_on_pages_but_a_super_admin_is_allowed(): void
+    {
+        $this->assertFalse($this->editor->can('deleteAny', Page::class));
+        $this->assertTrue($this->superAdmin->can('deleteAny', Page::class));
+    }
 }
