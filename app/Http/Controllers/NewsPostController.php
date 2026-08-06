@@ -20,14 +20,8 @@ class NewsPostController extends Controller
             // Reading order: "previous" is the post you would have read before
             // this one. Both walk the published set, so a draft between two
             // posts is stepped over rather than linked to a URL that 404s.
-            'previous' => self::published()
-                ->where('published_at', '<', $post->published_at)
-                ->orderByDesc('published_at')
-                ->first(),
-            'next' => self::published()
-                ->where('published_at', '>', $post->published_at)
-                ->orderBy('published_at')
-                ->first(),
+            'previous' => self::neighbour($post, 'desc'),
+            'next' => self::neighbour($post, 'asc'),
             // Excludes the post being viewed: a reader must never be offered a
             // link back to the page they are already on.
             'latest' => self::published()
@@ -36,6 +30,42 @@ class NewsPostController extends Controller
                 ->limit(4)
                 ->get(),
         ]);
+    }
+
+    /**
+     * The published post immediately either side of $post in reading order.
+     *
+     * `published_at` alone is not a total order: the importer stores date-only
+     * values, so every post published on the same day shares a timestamp. With
+     * a bare `<` / `>` comparison those posts are mutually invisible — each is
+     * excluded from the other's query — and prev/next silently steps over them.
+     *
+     * So the order is (published_at, id): ties are broken on the primary key,
+     * which is unique, giving every post exactly one predecessor and one
+     * successor. The two directions are mirror images of the same comparator,
+     * which is what makes next(previous(X)) === X hold.
+     *
+     * @param  'asc'|'desc'  $direction  'desc' walks backwards for the previous
+     *                                   post, 'asc' forwards for the next one.
+     */
+    private static function neighbour(BlogPost $post, string $direction): ?BlogPost
+    {
+        // 'desc' looks for the greatest row below $post, so it compares with
+        // '<'; 'asc' looks for the least row above, so it compares with '>'.
+        $before = $direction === 'desc';
+        $operator = $before ? '<' : '>';
+        $key = $post->getKeyName();
+
+        return self::published()
+            ->where(fn (Builder $query) => $query
+                ->where('published_at', $operator, $post->published_at)
+                // The tie: same instant, so the primary key decides.
+                ->orWhere(fn (Builder $tied) => $tied
+                    ->where('published_at', '=', $post->published_at)
+                    ->where($key, $operator, $post->getKey())))
+            ->orderBy('published_at', $direction)
+            ->orderBy($key, $direction)
+            ->first();
     }
 
     /**

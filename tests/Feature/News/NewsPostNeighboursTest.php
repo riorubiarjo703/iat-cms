@@ -84,6 +84,86 @@ class NewsPostNeighboursTest extends TestCase
             ->assertViewHas('next', fn ($n) => $n?->title === 'Newest Post');
     }
 
+    /**
+     * Three posts sharing one timestamp, plus a distinct one either side.
+     *
+     * The importer stores date-only values — every time is 00:00:00 — so any
+     * two posts published on the same day collide. Ordered by published_at
+     * alone that is not a total order, and a `<` / `>` comparison makes the
+     * colliding posts mutually invisible: each is excluded from the other's
+     * neighbour query, so prev/next steps straight over them.
+     *
+     * @return array{BlogPost, BlogPost, BlogPost}
+     */
+    private function seedSameDayRun(): array
+    {
+        $this->makePost('Day Before', '2025-03-09');
+        $first = $this->makePost('Same Day One', '2025-03-10');
+        $second = $this->makePost('Same Day Two', '2025-03-10');
+        $third = $this->makePost('Same Day Three', '2025-03-10');
+        $this->makePost('Day After', '2025-03-11');
+
+        return [$first, $second, $third];
+    }
+
+    public function test_previous_finds_the_sibling_sharing_a_published_at(): void
+    {
+        $this->seedSameDayRun();
+
+        // Not 'Day Before': the post immediately behind the middle of the run
+        // is its own same-day sibling, reachable only once the ordering breaks
+        // the tie on the primary key.
+        $this->get('/news/same-day-two')
+            ->assertSuccessful()
+            ->assertViewHas('previous', fn ($p) => $p?->title === 'Same Day One');
+    }
+
+    public function test_next_finds_the_sibling_sharing_a_published_at(): void
+    {
+        $this->seedSameDayRun();
+
+        $this->get('/news/same-day-two')
+            ->assertViewHas('next', fn ($n) => $n?->title === 'Same Day Three');
+    }
+
+    public function test_the_first_of_a_same_day_run_still_reaches_the_previous_day(): void
+    {
+        $this->seedSameDayRun();
+
+        // The tie-break must not strand the ends of the run: the earliest
+        // same-day post still has to fall through to the day before.
+        $this->get('/news/same-day-one')
+            ->assertViewHas('previous', fn ($p) => $p?->title === 'Day Before');
+    }
+
+    public function test_the_last_of_a_same_day_run_still_reaches_the_next_day(): void
+    {
+        $this->seedSameDayRun();
+
+        $this->get('/news/same-day-three')
+            ->assertViewHas('next', fn ($n) => $n?->title === 'Day After');
+    }
+
+    public function test_walking_next_then_previous_returns_to_the_same_post(): void
+    {
+        $this->seedSameDayRun();
+
+        // next() and previous() must be inverses of one and the same ordering.
+        // Two orderings that disagree would each answer plausibly on their own
+        // while the round trip landed somewhere else.
+        foreach (['day-before', 'same-day-one', 'same-day-two', 'same-day-three'] as $slug) {
+            $next = $this->get("/news/{$slug}")->viewData('next');
+
+            $this->assertNotNull($next, "'{$slug}' has no next post to walk to");
+
+            $this->get("/news/{$next->slug}")
+                ->assertViewHas(
+                    'previous',
+                    fn ($p) => $p?->slug === $slug,
+                );
+        }
+    }
+
     public function test_latest_excludes_the_post_being_viewed(): void
     {
         $this->seedFive();
