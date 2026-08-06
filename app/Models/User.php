@@ -38,8 +38,10 @@ class User extends Authenticatable implements FilamentUser
      *
      * This returned `true` for every authenticated account until roles
      * existed. The migration that shipped alongside this granted super_admin
-     * to everyone who already had a login, so nobody's access changed on
-     * deploy — demotion is a deliberate act on the Users screen.
+     * to the three named operator accounts, so their access was unchanged on
+     * deploy. The local test login and factory accounts were deliberately
+     * left out — they keep their logins but lose panel access; demotion or
+     * restoration from here is a deliberate act on the Users screen.
      */
     public function canAccessPanel(Panel $panel): bool
     {

@@ -24,9 +24,11 @@ class PanelAccessTest extends TestCase
     }
 
     /**
-     * The lockout migration grants super_admin to everyone who existed before
-     * this shipped, which means every user in a normal test also has access.
-     * That would make a gate stuck at `true` indistinguishable from a working
+     * The lockout migration grants super_admin only to three named operator
+     * accounts, not to every user — the local test login and factory
+     * accounts keep their logins but lose panel access. A factory-made user
+     * in a normal test therefore has no role and no access either way, which
+     * would make a gate stuck at `true` indistinguishable from a working
      * one. This asserts the refusal directly.
      */
     public function test_a_user_with_no_roles_cannot_access_the_panel(): void
