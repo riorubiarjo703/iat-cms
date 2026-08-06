@@ -63,33 +63,48 @@ class NewsFilterContractTest extends TestCase
         // Flip tween is skipped.
         //
         // There is no JS runner here and this file stays a source contract, so
-        // the assertion has to be chosen carefully. Two earlier attempts were
-        // not:
+        // the assertions have to be chosen carefully. Three earlier attempts
+        // were not:
         //
         //   1. Asserting that "prefersReducedMotion" appears at all. The import
         //      line alone satisfied that.
         //   2. Asserting the class toggle appears textually BEFORE the
         //      `if (state)` tween guard. Inserting `if (reduced) return;` as
-        //      the first statement of apply() — the exact regression this test
-        //      names — leaves that ordering untouched, so it stayed green.
+        //      the first statement of apply() leaves that ordering untouched.
+        //   3. Counting reads of the identifier `reduced` inside apply() and
+        //      requiring exactly one. Defeated by `if (!state) return;` (which
+        //      never names the preference at all, yet `state` is already null
+        //      under reduced motion), and by hoisting `const noMotion = reduced`
+        //      outside apply() and guarding on `noMotion` inside it.
         //
-        // What actually distinguishes "reduced motion skips only the tween"
-        // from "reduced motion skips the filtering" is not ordering but reach:
-        // how much of apply() the motion preference is allowed to touch. So the
-        // contract is a counting one. Inside apply(), the identifier `reduced`
-        // may be read exactly ONCE, and that one read must be the ternary that
-        // decides whether to capture Flip state. Any second mention — an early
-        // return, a conditional wrapped round the toggle loop, a guard on the
-        // aria-pressed loop — means the preference is gating more than the
-        // animation, and fails here regardless of where in the function it sits.
-        $module = file_get_contents(base_path('resources/js/scbd/newsFilter.js'));
+        // Counting tokens keeps losing because the property is not about how
+        // often a name appears. It is about CONTROL FLOW. Under reduced motion,
+        // apply() takes exactly the same path through the filtering as it does
+        // under full motion, and only diverges at the tween. So the contract is
+        // structural:
+        //
+        //   * Everything in apply() before the `if (state)` tween gate is
+        //     straight-line: exactly three statements, in order — capture Flip
+        //     state, toggle `is-hidden` on the cards, update `aria-pressed` on
+        //     the chips. No early return, no branch, nothing wrapped in an
+        //     `if`, whatever the condition is named or derived from.
+        //   * The preference itself is read once, at module scope, and never
+        //     inside apply().
+        //   * The click listener does nothing but call apply(), so a guard
+        //     cannot be smuggled up into the caller either.
+        //
+        // Anything that stops the toggle or the aria update from running under
+        // reduced motion has to break one of those three, because there is
+        // nowhere else for such a guard to live.
+        $module = $this->withoutComments(file_get_contents(base_path('resources/js/scbd/newsFilter.js')));
 
         $this->assertStringContainsString('prefersReducedMotion', $module);
 
         $body = $this->applyBody($module);
 
         // Proof that the extraction above really did capture the filtering
-        // function, so the count below cannot pass by scanning nothing.
+        // function, so the structural checks below cannot pass by scanning
+        // nothing.
         $this->assertStringContainsString(
             "classList.toggle('is-hidden'",
             $body,
@@ -100,39 +115,98 @@ class NewsFilterContractTest extends TestCase
             $body,
             'apply() no longer updates aria-pressed on the chips',
         );
-        $this->assertStringContainsString(
-            'if (state)',
+
+        $gate = strpos($body, 'if (state)');
+
+        $this->assertNotFalse($gate, 'apply() no longer gates the tween on `if (state)`');
+
+        // The preference is a module-scope constant. Reading it again inside
+        // apply() — under any name — is how a guard gets in.
+        $this->assertDoesNotMatchRegularExpression(
+            '/(?<![\w$])prefersReducedMotion(?![\w$])/',
             $body,
-            'apply() no longer gates the tween on `if (state)`',
+            'apply() calls prefersReducedMotion() itself. The preference is read once at module scope; '
+                .'re-reading it inside apply() is how a guard on the filtering gets smuggled in.',
         );
 
-        // Comments are not code: a comment that happens to say "reduced" must
-        // not fail this, and must not be able to satisfy it either.
-        $code = $this->withoutComments($body);
+        // ------------------------------------------------------------------
+        // The straight-line prelude.
+        // ------------------------------------------------------------------
+        $prelude = substr($body, 0, $gate);
 
-        preg_match_all('/(?<![\w$])reduced(?![\w$])/', $code, $matches);
+        // Nothing before the tween gate may branch or bail out — not at
+        // statement level and not inside the two forEach callbacks either.
+        $this->assertDoesNotMatchRegularExpression(
+            '/(?<![\w$])(if|else|return|switch|matchMedia)(?![\w$])/',
+            $prelude,
+            "Everything in apply() before the `if (state)` tween gate must run unconditionally, so that \n"
+                ."reduced motion skips the tween and nothing else. Found a branch or an early return in:\n"
+                .$prelude,
+        );
+
+        preg_match_all('/(?<![\w$])reduced(?![\w$])/', $prelude, $reads);
 
         $this->assertCount(
             1,
-            $matches[0],
-            'apply() reads `reduced` '.count($matches[0]).' times. It may read it exactly once, '
-                ."to decide whether to capture Flip state. A second read means the motion preference \n"
-                ."is gating the filtering itself, not just the animation. apply() body was:\n".$code,
+            $reads[0],
+            'The motion preference may be read exactly once before the tween gate — to decide whether to '
+                .'capture Flip state. Found '.count($reads[0])." reads in:\n".$prelude,
         );
 
-        $this->assertMatchesRegularExpression(
-            '/const\s+state\s*=\s*reduced\s*\?\s*null\s*:/',
-            $code,
-            'The single use of `reduced` in apply() must be the `const state = reduced ? null : …` '
-                .'ternary that gates the Flip capture, and nothing else.',
+        $statements = $this->topLevelStatements($prelude);
+
+        $expected = [
+            // The ONE thing the motion preference is allowed to decide.
+            '/^const\s+state\s*=\s*reduced\s*\?\s*null\s*:\s*Flip\.getState\(/',
+            // The filtering itself: unconditional.
+            '/^cards\.forEach\(.*classList\.toggle\(\'is-hidden\'/s',
+            // The accessible state of the chips: also unconditional.
+            '/^chips\.forEach\(.*aria-pressed/s',
+        ];
+
+        $rendered = implode("\n---\n", array_map(
+            static fn (int $i, string $s): string => ($i + 1).': '.$s,
+            array_keys($statements),
+            $statements,
+        ));
+
+        $this->assertCount(
+            count($expected),
+            $statements,
+            'Everything in apply() before the `if (state)` tween gate must be three straight-line '
+                ."statements — capture Flip state, toggle is-hidden, update aria-pressed. Found "
+                .count($statements).", which means a branch or an early return was added. Statements were:\n"
+                .$rendered,
         );
 
-        // Belt and braces on top of the count: the filtering still has to come
-        // before the tween gate, not merely be ungated by `reduced`.
-        $this->assertLessThan(
-            strpos($body, 'if (state)'),
-            strpos($body, "classList.toggle('is-hidden'"),
-            'The is-hidden toggle must run before the motion guard, or reduced motion would skip the filtering itself.',
+        foreach ($expected as $i => $pattern) {
+            $this->assertMatchesRegularExpression(
+                $pattern,
+                $statements[$i],
+                'Statement '.($i + 1).' before the tween gate in apply() is no longer the plain, unguarded '
+                    ."statement it must be. Under reduced motion the filtering still has to run; only the \n"
+                    ."tween may be skipped. Statements were:\n".$rendered,
+            );
+        }
+
+        // ------------------------------------------------------------------
+        // The caller.
+        // ------------------------------------------------------------------
+        // A straight-line apply() is worth nothing if the chip's click handler
+        // decides not to call it.
+        $handler = $this->clickHandler($module);
+
+        $this->assertStringContainsString(
+            'apply(',
+            $handler,
+            'The chip click listener no longer calls apply()',
+        );
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/(?<![\w$])(if|return|reduced|prefersReducedMotion|matchMedia)(?![\w$])/',
+            $handler,
+            "The chip click listener must do nothing but call apply(). A guard there skips the filtering \n"
+                ."just as surely as one inside apply(). Listener was:\n".$handler,
         );
     }
 
@@ -170,6 +244,100 @@ class NewsFilterContractTest extends TestCase
         }
 
         $this->fail('The apply() body in newsFilter.js has unbalanced braces');
+    }
+
+    /**
+     * Split a run of JavaScript into its top-level statements.
+     *
+     * A statement ends at a `;` written at nesting depth zero, or at a `}` that
+     * closes back to depth zero (a block statement such as `if (…) { … }`,
+     * which carries no trailing semicolon). Braces, parentheses and brackets
+     * all count towards the depth, so the semicolons inside a `forEach`
+     * callback belong to that callback and not to the enclosing run.
+     *
+     * That is deliberately blunt about strings and template literals — the
+     * module has no braces inside string literals, and the caller pins each
+     * returned statement against an expected shape, so a mis-split surfaces as
+     * a failure rather than as a silent pass.
+     *
+     * @return list<string>
+     */
+    private function topLevelStatements(string $code): array
+    {
+        $statements = [];
+        $depth = 0;
+        $start = 0;
+        $length = strlen($code);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $code[$i];
+
+            if ($char === '{' || $char === '(' || $char === '[') {
+                $depth++;
+
+                continue;
+            }
+
+            if ($char === '}' || $char === ')' || $char === ']') {
+                $depth--;
+
+                if ($depth === 0 && $char === '}') {
+                    $statements[] = substr($code, $start, $i - $start + 1);
+                    $start = $i + 1;
+                }
+
+                continue;
+            }
+
+            if ($char === ';' && $depth === 0) {
+                $statements[] = substr($code, $start, $i - $start);
+                $start = $i + 1;
+            }
+        }
+
+        $statements[] = substr($code, $start);
+
+        return array_values(array_filter(
+            array_map(static fn (string $s): string => trim($s), $statements),
+            static fn (string $s): bool => $s !== '',
+        ));
+    }
+
+    /**
+     * The argument list of the module's single `addEventListener(…)` call.
+     *
+     * The caller asserts it calls apply() and branches on nothing, which is
+     * what stops a reduced-motion guard being moved out of apply() and into
+     * the chip's click handler.
+     */
+    private function clickHandler(string $module): string
+    {
+        $at = strpos($module, 'addEventListener(');
+
+        $this->assertNotFalse($at, 'newsFilter.js no longer binds a listener to the chips');
+        $this->assertSame(
+            1,
+            substr_count($module, 'addEventListener('),
+            'newsFilter.js binds more than one listener; this contract only inspects the first.',
+        );
+
+        $open = strpos($module, '(', $at);
+        $depth = 0;
+        $length = strlen($module);
+
+        for ($i = $open; $i < $length; $i++) {
+            if ($module[$i] === '(') {
+                $depth++;
+
+                continue;
+            }
+
+            if ($module[$i] === ')' && --$depth === 0) {
+                return substr($module, $open + 1, $i - $open - 1);
+            }
+        }
+
+        $this->fail('The addEventListener call in newsFilter.js has unbalanced parentheses');
     }
 
     private function withoutComments(string $source): string
