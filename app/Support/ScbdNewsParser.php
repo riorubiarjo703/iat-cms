@@ -6,6 +6,7 @@ use DOMDocument;
 use DOMElement;
 use DOMXPath;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -45,7 +46,14 @@ final class ScbdNewsParser
             $month = $xpath->query(".//p[contains(@class, 'bd-month')]", $box)->item(0)?->textContent;
 
             $posts[] = [
-                'title' => self::text($link->textContent),
+                // Bounded here, once, because blog_posts.title is a
+                // varchar(255) and this string later doubles as the
+                // importer's idempotency key (BlogPost::where('title', ...)).
+                // Truncating at the write site instead would leave the
+                // lookup keyed on the full scraped string while the stored
+                // row carries the short one — every later run would then
+                // fail to match and create a duplicate.
+                'title' => Str::limit(self::text($link->textContent), 255, ''),
                 'date' => self::date($day, $month),
                 'cover' => self::cover($xpath, $box),
                 'url' => self::absolute($link->getAttribute('href')),

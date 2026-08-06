@@ -231,6 +231,37 @@ class ImportScbdNewsTest extends TestCase
         $this->assertSame(4, BlogPost::whereNull('featured_image')->count());
     }
 
+    public function test_a_post_whose_persist_throws_does_not_abort_the_run(): void
+    {
+        // The invariant is general — "one bad post costs itself, never the
+        // run" — not specific to today's overlong-title defect, so this
+        // simulates "the write raised" via a model event rather than an
+        // actual column overflow. An overlong value cannot stand in here:
+        // SQLite (this suite's driver) does not enforce the varchar(255)
+        // bound that Postgres does, so a >255-character title inserts
+        // without complaint under the test suite even before ScbdNewsParser
+        // bounds it upstream. Confirmed by direct probe before writing this
+        // test.
+        $this->fakeSuccessfulSource();
+
+        $failingTitle = "Artha Graha Peduli Holds Community Service Program To Celebrate National Children's Day";
+
+        BlogPost::creating(function (BlogPost $post) use ($failingTitle) {
+            if ($post->title === $failingTitle) {
+                throw new \RuntimeException('Simulated persist failure');
+            }
+        });
+
+        $this->artisan('news:import-scbd')
+            ->assertSuccessful()
+            ->expectsOutputToContain('Simulated persist failure')
+            ->expectsOutputToContain('Created 3, updated 0, skipped 1.');
+
+        // The failing post cost only itself — the other three still landed.
+        $this->assertSame(3, BlogPost::count());
+        $this->assertNull(BlogPost::where('title', $failingTitle)->first());
+    }
+
     // ---------------------------------------------------------------------
     // What the downloader is allowed to write
     //
@@ -512,6 +543,45 @@ class ImportScbdNewsTest extends TestCase
 
         $this->assertSame(2, BlogPost::count());
         $this->assertSame($before, BlogPost::orderBy('id')->pluck('slug', 'title')->all());
+    }
+
+    public function test_a_title_longer_than_the_column_is_stored_bounded_and_a_rerun_matches_the_same_row(): void
+    {
+        // blog_posts.title is a varchar(255), written verbatim from the
+        // scraped title. The bound has to be applied upstream, in
+        // ScbdNewsParser::listing(), not at BlogPost::create()/update():
+        // the importer's idempotency key is
+        // BlogPost::where('title', $item['title']), so if the write site
+        // truncated while the lookup kept searching for the full ~300
+        // character string, a second run would never match the first
+        // run's (bounded) row and would create a duplicate instead. The
+        // second assertion below — the rerun leaving the count at 1 and
+        // matching the same id — is what catches that mistake; it would
+        // fail if the bound lived at the write site instead of upstream.
+        $rawTitle = trim(str_repeat('Long Headline Word ', 20));
+        $this->assertGreaterThan(255, strlen($rawTitle), 'Test setup: the raw title must overflow the column.');
+
+        $cover = 'https://scbd.com/assets/cover.jpg';
+
+        Http::fake([
+            'scbd.com/menu/page/news?page=1' => Http::response($this->listingWithCover($cover, $rawTitle)),
+            'scbd.com/menu/page/news*' => Http::response('<html><body></body></html>'),
+            'scbd.com/menu/detail/news/*' => Http::response('<html><body><div class="col-md-9"><p>Story.</p></div></body></html>'),
+            'scbd.com/assets/*' => Http::response($this->imageBytes(), 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
+        $this->artisan('news:import-scbd')->assertSuccessful();
+
+        $this->assertSame(1, BlogPost::count());
+
+        $post = BlogPost::firstOrFail();
+        $this->assertSame(substr($rawTitle, 0, 255), $post->title);
+        $this->assertLessThanOrEqual(255, strlen($post->title));
+
+        $this->artisan('news:import-scbd')->assertSuccessful();
+
+        $this->assertSame(1, BlogPost::count(), 'A re-run should match the bounded title, not create a duplicate.');
+        $this->assertSame($post->id, BlogPost::firstOrFail()->id);
     }
 
     public function test_it_does_not_overwrite_a_hand_authored_post_on_the_same_slug(): void

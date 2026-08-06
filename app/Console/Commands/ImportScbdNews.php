@@ -119,41 +119,56 @@ class ImportScbdNews extends Command
             // the importer overwrite a hand-authored post that happened to
             // occupy the slug. The title is the stable identity of a source
             // post; the slug is only its address, and is disambiguated below.
-            $existing = BlogPost::where('title', $item['title'])->first();
-            $categoryName = $this->categoryFor($item['title']);
+            //
+            // Everything from here down — the write, and the download/compose
+            // work feeding it — is wrapped: one bad post costs itself, never
+            // the run. Postgres rejects rather than truncates an overlong
+            // column, so a value that slips past every upstream bound still
+            // raises here, and today it's title; tomorrow it could be any
+            // other column someone adds. This is deliberately narrower than
+            // the whole loop body: it starts after the dry-run branch (which
+            // never writes) and does not re-wrap fetchDetail() above, which
+            // already has its own, more specific handling.
+            try {
+                $existing = BlogPost::where('title', $item['title'])->first();
+                $categoryName = $this->categoryFor($item['title']);
 
-            $body = $this->composeBody($detail['body'], $detail['images']);
+                $body = $this->composeBody($detail['body'], $detail['images']);
 
-            $attributes = [
-                'title' => $item['title'],
-                'content' => $body ?: '<p></p>',
-                // strip_tags first, then decode: the parser already escaped the
-                // body, so stripping alone leaves &#039; and &amp; in the
-                // excerpt, which Blade then escapes a second time and renders
-                // literally. Decoding after stripping cannot reintroduce a tag
-                // into anything, and the excerpt is always output escaped.
-                'excerpt' => Str::limit(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'), 180),
-                'status' => BlogPost::STATUS_PUBLISHED,
-                'published_at' => $item['date'],
-                'blog_category_id' => $categories[$categoryName] ?? null,
-                'featured_image' => $this->download($item['cover']),
-            ];
+                $attributes = [
+                    'title' => $item['title'],
+                    'content' => $body ?: '<p></p>',
+                    // strip_tags first, then decode: the parser already escaped the
+                    // body, so stripping alone leaves &#039; and &amp; in the
+                    // excerpt, which Blade then escapes a second time and renders
+                    // literally. Decoding after stripping cannot reintroduce a tag
+                    // into anything, and the excerpt is always output escaped.
+                    'excerpt' => Str::limit(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'), 180),
+                    'status' => BlogPost::STATUS_PUBLISHED,
+                    'published_at' => $item['date'],
+                    'blog_category_id' => $categories[$categoryName] ?? null,
+                    'featured_image' => $this->download($item['cover']),
+                ];
 
-            if ($existing) {
-                // A cover that failed to download this run must not wipe one
-                // that imported successfully last run.
-                if ($attributes['featured_image'] === null) {
-                    unset($attributes['featured_image']);
+                if ($existing) {
+                    // A cover that failed to download this run must not wipe one
+                    // that imported successfully last run.
+                    if ($attributes['featured_image'] === null) {
+                        unset($attributes['featured_image']);
+                    }
+
+                    $existing->update($attributes);
+                    $updated++;
+
+                    continue;
                 }
 
-                $existing->update($attributes);
-                $updated++;
-
-                continue;
+                BlogPost::create($attributes + ['slug' => $this->uniqueSlug($item['title'])]);
+                $created++;
+            } catch (Throwable $e) {
+                $this->warn("Skipped \u{201c}{$item['title']}\u{201d}: {$e->getMessage()}");
+                $skipped++;
             }
-
-            BlogPost::create($attributes + ['slug' => $this->uniqueSlug($item['title'])]);
-            $created++;
         }
 
         $this->info("Created {$created}, updated {$updated}, skipped {$skipped}.");
