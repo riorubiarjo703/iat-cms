@@ -12,8 +12,14 @@
     @endif
 
     @vite(['resources/css/scbd.css', 'resources/js/scbd/index.js'])
+
+    {{-- Last in <head> so an operator snippet can never displace the title,
+         meta description or the Vite tags above it. --}}
+    <x-code-snippets position="head" />
 </head>
 <body>
+    <x-code-snippets position="body_start" />
+
     {{-- Page-wide wrapper from the reference: sets the base background/text/font
          and — critically — `cursor:none`, which every element on the page relies
          on so the native pointer never shows through underneath the custom
@@ -27,5 +33,7 @@
 
     {{-- Translation payload consumed by resources/js/scbd/i18n.js --}}
     <script type="application/json" id="scbd-i18n">@json($data->i18n)</script>
+
+    <x-code-snippets position="body_end" />
 </body>
 </html>

@@ -40,8 +40,14 @@
     @else
         @vite(['resources/css/scbd.css'])
     @endif
+
+    {{-- Last in <head> so an operator snippet can never displace the title,
+         meta description or the Vite tags above it. --}}
+    <x-code-snippets position="head" />
 </head>
 <body>
+    <x-code-snippets position="body_start" />
+
     <div @style([
         'position:relative; width:100%; background:#f3f2f2; color:#201e1d;',
         "font-family:'Archivo',system-ui,sans-serif;",
@@ -67,5 +73,7 @@
              switcher works unchanged. --}}
         <script type="application/json" id="scbd-i18n">@json(\App\PageBuilder\SiteTranslations::forPage($page, app(\App\PageBuilder\BlockRegistry::class)))</script>
     @endif
+
+    <x-code-snippets position="body_end" />
 </body>
 </html>
