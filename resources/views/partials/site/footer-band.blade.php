@@ -8,7 +8,7 @@
 --}}
 @php
     $addressLines = $settings->contact_address ? e($settings->contact_address) : null;
-
+    $settings = \App\Models\SiteSetting::singleton();
     $footerMenu = \App\Support\MenuRenderer::byLocation(\App\Support\MenuLocations::FOOTER);
     $sitemapLinks = $footerMenu->flatMap(function ($item) {
         $children = $item->children->filter(fn ($child) => $child->isVisible());
@@ -57,6 +57,9 @@
             @endforeach
         </div>
     </div>
+</div>
+<div>
+    <h2 class="scbd-h1">{{ $settings->site_name }}</h2>
 </div>
 <div class="scbd-footer-meta" style="display:flex; justify-content:space-between; gap:24px; margin-top:32px; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; opacity:0.8;">
     <span>PT Danayasa Arthatama — developer &amp; operator of SCBD</span>

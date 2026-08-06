@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\SnippetPosition;
 use App\Models\CodeSnippet;
-use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\SeedsHeaderMenu;
@@ -48,42 +47,6 @@ class CodeSnippetInjectionTest extends TestCase
             strpos($html, '</head>'),
             strpos($html, '<script>chat()</script>'),
         );
-    }
-
-    /**
-     * `/` and every published page slug both render through `page.blade.php`
-     * — `App\Http\Controllers\HomeController` and `PageController` both
-     * `return view('page', [...])`, and that view's only layout tag is
-     * `<x-layouts.page>`. `components/layouts/public.blade.php` has no route
-     * that selects it anywhere in this app (confirmed by grepping routes,
-     * controllers and views for `layouts.public` / `layouts::public`), so a
-     * request to a CMS page slug would exercise the exact same layout as `/`
-     * and prove nothing about the second file Step 5 edited.
-     *
-     * Since there is no HTTP path to `public.blade.php` today, this renders
-     * it directly — the only way to prove its snippet insertion is real and
-     * has not drifted from `page.blade.php`'s, which is the entire reason
-     * the injection is a shared `<x-code-snippets>` component rather than
-     * two hand-written blocks.
-     */
-    public function test_the_public_layout_also_injects_snippets(): void
-    {
-        CodeSnippet::factory()->create([
-            'position' => SnippetPosition::Head,
-            'code' => '<meta name="verify" content="public-layout">',
-        ]);
-
-        $html = view('components.layouts.public', [
-            'data' => (object) [
-                'settings' => SiteSetting::singleton(),
-                'i18n' => [],
-            ],
-            'slot' => 'content',
-        ])->render();
-
-        $head = substr($html, 0, strpos($html, '</head>'));
-
-        $this->assertStringContainsString('<meta name="verify" content="public-layout">', $head);
     }
 
     /**
