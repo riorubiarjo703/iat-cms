@@ -8,6 +8,7 @@ use App\Filament\Pages\NavigationMenusPage;
 use App\Filament\Pages\Placeholders as P;
 use App\Filament\Pages\SiteSettingsPage;
 use App\Filament\Resources\BlogCategories\BlogCategoryResource;
+use App\Filament\Resources\CodeSnippets\CodeSnippetResource;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Resources\Pages\PageResource;
 use App\Filament\Resources\Users\UserResource;
@@ -25,7 +26,7 @@ use Slimani\MediaManager\Pages\MediaManager;
  * (NavigationManager::get() early-returns at line 49), which is how the three
  * plugins' hardcoded placement gets overridden without touching vendor code.
  *
- * Consequence: anything not listed here is reachable only by URL. Nineteen of
+ * Consequence: anything not listed here is reachable only by URL. Eighteen of
  * these destinations are deliberate placeholders — the sidebar shows the
  * product's full intended shape, and each unbuilt screen says so plainly.
  */
@@ -73,7 +74,7 @@ final class AdminNavigation
                     self::page(P\RedirectsPlaceholder::class, 'Redirects', 'heroicon-o-arrow-uturn-right', 1),
                 ]),
                 self::parent('System', 'heroicon-o-cog-8-tooth', 4, [
-                    self::page(P\CodeSnippetsPlaceholder::class, 'Code Snippets', 'heroicon-o-code-bracket', 1),
+                    self::resource(CodeSnippetResource::class, 'Code Snippets', 'heroicon-o-code-bracket', 1),
                     self::page(P\BackupsPlaceholder::class, 'Backups', 'heroicon-o-archive-box', 2),
                 ]),
             ]),
