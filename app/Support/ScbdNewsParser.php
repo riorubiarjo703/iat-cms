@@ -93,7 +93,10 @@ final class ScbdNewsParser
 
         $images = [];
 
-        foreach ($xpath->query("//img[contains(@src, '/news/images/')]") as $img) {
+        // Scoped to the story container, not the document: an unscoped //img
+        // collects every matching image on the page, including any a hostile
+        // or compromised source injected outside the article.
+        foreach ($xpath->query(".//img[contains(@src, '/news/images/')]", $content) as $img) {
             /** @var DOMElement $img */
             $images[] = self::absolute($img->getAttribute('src'));
         }

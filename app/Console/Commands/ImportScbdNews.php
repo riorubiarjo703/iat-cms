@@ -16,7 +16,7 @@ use Throwable;
  *
  * Kept in the repo rather than run once and deleted, because the source keeps
  * publishing: re-running picks up what is new and refreshes what changed.
- * Matching is by slug, so a second run updates rather than duplicates.
+ * Matching is by title, so a second run updates rather than duplicates.
  */
 class ImportScbdNews extends Command
 {
@@ -46,6 +46,35 @@ class ImportScbdNews extends Command
     ];
 
     private const FALLBACK_CATEGORY = 'Community';
+
+    /**
+     * Images are only ever fetched from the source site.
+     *
+     * The URLs come from somebody else's markup, so without this an injected
+     * <img src> would make the importer fetch an arbitrary host and persist the
+     * response under the public web root — an SSRF whose result is readable at
+     * a guessable URL.
+     */
+    private const IMAGE_HOST = 'scbd.com';
+
+    /**
+     * Only these may be written. Anything the deploy might execute or the
+     * browser might treat as active content (.php, .svg, .html) is refused,
+     * because everything under uploads/ is served from the site's own origin.
+     *
+     * @var array<int, string>
+     */
+    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    /**
+     * What the bytes are allowed to actually be, as sniffed from the payload
+     * rather than claimed by the URL or the Content-Type header.
+     *
+     * @var array<int, string>
+     */
+    private const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+    private const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
     public function handle(): int
     {
@@ -77,16 +106,20 @@ class ImportScbdNews extends Command
                 $detail = ['body' => '', 'images' => []];
             }
 
-            $slug = Str::limit(Str::slug($item['title']), 90, '');
-
             if ($dryRun) {
-                $this->line("would import: {$item['date']}  {$slug}");
+                $this->line("would import: {$item['date']}  ".$this->baseSlug($item['title']));
                 $skipped++;
 
                 continue;
             }
 
-            $existing = BlogPost::where('slug', $slug)->first();
+            // Idempotency keys on the title, not on the slug. Two different
+            // posts can slugify to the same 90-character slug, and keying on
+            // the slug made the second silently overwrite the first — and let
+            // the importer overwrite a hand-authored post that happened to
+            // occupy the slug. The title is the stable identity of a source
+            // post; the slug is only its address, and is disambiguated below.
+            $existing = BlogPost::where('title', $item['title'])->first();
             $categoryName = $this->categoryFor($item['title']);
 
             $body = $this->composeBody($detail['body'], $detail['images']);
@@ -94,7 +127,12 @@ class ImportScbdNews extends Command
             $attributes = [
                 'title' => $item['title'],
                 'content' => $body ?: '<p></p>',
-                'excerpt' => Str::limit(strip_tags($body), 180),
+                // strip_tags first, then decode: the parser already escaped the
+                // body, so stripping alone leaves &#039; and &amp; in the
+                // excerpt, which Blade then escapes a second time and renders
+                // literally. Decoding after stripping cannot reintroduce a tag
+                // into anything, and the excerpt is always output escaped.
+                'excerpt' => Str::limit(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'), 180),
                 'status' => BlogPost::STATUS_PUBLISHED,
                 'published_at' => $item['date'],
                 'blog_category_id' => $categories[$categoryName] ?? null,
@@ -114,13 +152,43 @@ class ImportScbdNews extends Command
                 continue;
             }
 
-            BlogPost::create($attributes + ['slug' => $slug]);
+            BlogPost::create($attributes + ['slug' => $this->uniqueSlug($item['title'])]);
             $created++;
         }
 
         $this->info("Created {$created}, updated {$updated}, skipped {$skipped}.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The slug a title wants, before anything else has claimed it.
+     */
+    private function baseSlug(string $title): string
+    {
+        return Str::limit(Str::slug($title), 90, '') ?: 'post';
+    }
+
+    /**
+     * The same shape as App\Models\Page::uniqueSlug(): the wanted slug, or the
+     * wanted slug with the first free numeric suffix.
+     *
+     * Only new posts go through here. A re-run matches its post by title and
+     * keeps the slug it was given, so the suffix cannot creep upwards run over
+     * run; it only ever separates two genuinely different posts.
+     */
+    private function uniqueSlug(string $title): string
+    {
+        $base = $this->baseSlug($title);
+        $slug = $base;
+        $suffix = 2;
+
+        while (BlogPost::where('slug', $slug)->exists()) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     /** @return array<int, array{title: string, date: string, cover: ?string, url: string}> */
@@ -249,6 +317,10 @@ class ImportScbdNews extends Command
      * Null rather than an empty string: MediaUrl guards on null, and a card
      * with no image renders its text-only variant rather than an <img src="">
      * that the browser resolves against the current page.
+     *
+     * Every rejection here is a warning and a null, never an exception: an
+     * image the importer refuses to store must cost that post its picture, not
+     * the whole run.
      */
     private function download(?string $url): ?string
     {
@@ -256,10 +328,19 @@ class ImportScbdNews extends Command
             return null;
         }
 
+        // Decided before a byte is fetched: the host and the extension are
+        // properties of the URL, and a URL that fails either must not even be
+        // requested.
+        $path = $this->storagePathFor($url);
+
+        if ($path === null) {
+            return null;
+        }
+
         try {
             $response = Http::timeout(30)->get($url);
 
-            if (! $response->successful() || $response->body() === '') {
+            if (! $response->successful()) {
                 return null;
             }
         } catch (Throwable $e) {
@@ -268,11 +349,85 @@ class ImportScbdNews extends Command
             return null;
         }
 
-        $extension = pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'jpg';
-        $path = 'uploads/news/'.Str::slug(pathinfo($url, PATHINFO_FILENAME)).'-'.substr(md5($url), 0, 8).'.'.$extension;
+        $body = $response->body();
 
-        Storage::disk('public')->put($path, $response->body());
+        if ($body === '') {
+            return null;
+        }
+
+        if (strlen($body) > self::MAX_IMAGE_BYTES) {
+            $this->warn("Image too large ({$url}): ".strlen($body).' bytes');
+
+            return null;
+        }
+
+        $contentType = strtolower(trim(explode(';', (string) $response->header('Content-Type'))[0]));
+
+        if (! str_starts_with($contentType, 'image/')) {
+            $this->warn("Image rejected — Content-Type {$contentType} ({$url})");
+
+            return null;
+        }
+
+        // The header is the source's claim; this is the payload's own answer.
+        // It is what stops a .jpg URL serving HTML, which would otherwise be
+        // stored and served back from this site's origin.
+        $sniffed = @getimagesizefromstring($body);
+
+        if ($sniffed === false || ! in_array($sniffed['mime'] ?? '', self::IMAGE_MIMES, true)) {
+            $this->warn("Image rejected — payload is not an image ({$url})");
+
+            return null;
+        }
+
+        Storage::disk('public')->put($path, $body);
 
         return $path;
+    }
+
+    /**
+     * Where an image URL is allowed to be written, or null if it is not
+     * allowed at all.
+     *
+     * The returned path cannot escape uploads/news/: the filename is the
+     * basename of the URL path, re-slugged, so no directory separator and no
+     * "../" survives, and the extension comes from a fixed allowlist.
+     */
+    private function storagePathFor(string $url): ?string
+    {
+        $parts = parse_url($url);
+
+        if ($parts === false || ! isset($parts['host'], $parts['scheme'])) {
+            $this->warn("Image rejected — unreadable URL ({$url})");
+
+            return null;
+        }
+
+        if (! in_array(strtolower($parts['scheme']), ['http', 'https'], true)) {
+            $this->warn("Image rejected — scheme {$parts['scheme']} ({$url})");
+
+            return null;
+        }
+
+        $host = strtolower($parts['host']);
+
+        if ($host !== self::IMAGE_HOST && ! str_ends_with($host, '.'.self::IMAGE_HOST)) {
+            $this->warn("Image rejected — off-site host {$host} ({$url})");
+
+            return null;
+        }
+
+        $urlPath = $parts['path'] ?? '';
+        $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+
+        if (! in_array($extension, self::IMAGE_EXTENSIONS, true)) {
+            $this->warn("Image rejected — extension \u{201c}{$extension}\u{201d} ({$url})");
+
+            return null;
+        }
+
+        $name = Str::slug(pathinfo(basename($urlPath), PATHINFO_FILENAME)) ?: 'image';
+
+        return 'uploads/news/'.$name.'-'.substr(md5($url), 0, 8).'.'.$extension;
     }
 }

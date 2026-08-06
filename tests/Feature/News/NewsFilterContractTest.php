@@ -60,8 +60,28 @@ class NewsFilterContractTest extends TestCase
     {
         // The chips are function, not decoration. Under reduced motion the
         // class toggle must still run — only the tween is skipped.
+        //
+        // There is no JS runner here, so this is a source contract. Asserting
+        // that "prefersReducedMotion" merely appears would be satisfied by the
+        // import line alone — wrapping the whole of apply() in
+        // `if (reduced) return;` would leave it green. What actually has to
+        // hold is an ordering: the class toggle that does the filtering comes
+        // BEFORE the `if (state)` guard that gates the tween, so the guard can
+        // only ever skip the animation, never the filtering.
         $module = file_get_contents(base_path('resources/js/scbd/newsFilter.js'));
 
         $this->assertStringContainsString('prefersReducedMotion', $module);
+
+        $toggle = strpos($module, "classList.toggle('is-hidden'");
+        $guard = strpos($module, 'if (state)');
+
+        $this->assertNotFalse($toggle, "newsFilter.js does not toggle 'is-hidden' on the cards");
+        $this->assertNotFalse($guard, 'newsFilter.js no longer gates the tween on `if (state)`');
+
+        $this->assertLessThan(
+            $guard,
+            $toggle,
+            'The is-hidden toggle must run before the motion guard, or reduced motion would skip the filtering itself.',
+        );
     }
 }

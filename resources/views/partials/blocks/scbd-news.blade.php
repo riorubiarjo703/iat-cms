@@ -8,8 +8,12 @@
     $ctaLabel = BlockData::t($data, 'cta_label', $locale);
     $emptyText = BlockData::t($data, 'empty_text', $locale);
 
+    // Published means published now. These rows link to route('news.show'),
+    // whose controller enforces the same guard, so a scheduled post included
+    // here would sort first and give the homepage a top row that 404s.
     $posts = \AjayDhakal\FilamentStory\Models\BlogPost::query()
         ->where('status', \AjayDhakal\FilamentStory\Models\BlogPost::STATUS_PUBLISHED)
+        ->where('published_at', '<=', now())
         ->orderByDesc('published_at')
         ->limit((int) BlockData::get($data, 'limit', 3) ?: 3)
         ->get();
