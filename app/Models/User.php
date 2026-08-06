@@ -34,16 +34,15 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Every authenticated user administers this single-tenant CMS.
+     * Panel access is a permission, not merely authentication.
      *
-     * Accounts are created by administrators through the Users resource
-     * rather than public sign-up, so authentication itself is the access
-     * boundary and there is no separate per-user role to check here. If
-     * self-registration is ever added, this must be tightened (e.g. an
-     * `is_admin` flag or an invitation/role check) before it ships.
+     * This returned `true` for every authenticated account until roles
+     * existed. The migration that shipped alongside this granted super_admin
+     * to everyone who already had a login, so nobody's access changed on
+     * deploy — demotion is a deliberate act on the Users screen.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $this->can('admin.access');
     }
 }
