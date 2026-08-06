@@ -12,20 +12,21 @@ use App\Filament\Resources\Stats\StatResource;
 use App\Models\DistrictPlace;
 use App\Models\Facility;
 use App\Models\Stat;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class OrderedResourcesTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
     }
 
     public static function resourceProvider(): array

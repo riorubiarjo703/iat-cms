@@ -3,15 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\SiteSetting;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\Support\SeedsHeaderMenu;
 use Tests\TestCase;
 
 class BrandingTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
     use SeedsHeaderMenu;
 
     protected function setUp(): void
@@ -130,7 +131,7 @@ class BrandingTest extends TestCase
         Storage::disk('public')->put('uploads/branding/logo.png', 'png-bytes');
         SiteSetting::singleton()->update(['site_name' => 'SCBD', 'logo' => 'uploads/branding/logo.png']);
 
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
 
         $this->get('/superduper')
             ->assertSuccessful()
@@ -141,7 +142,7 @@ class BrandingTest extends TestCase
     {
         SiteSetting::singleton()->update(['site_name' => 'Renamed Co', 'logo' => null]);
 
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
 
         $this->get('/superduper')->assertSuccessful()->assertSee('Renamed Co');
     }
@@ -149,7 +150,7 @@ class BrandingTest extends TestCase
     public function test_the_panel_does_not_break_on_a_fresh_database(): void
     {
         // SiteSetting::singleton() firstOrCreates, so site_name may be null.
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
 
         $this->get('/superduper')->assertSuccessful();
     }

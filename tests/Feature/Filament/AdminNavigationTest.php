@@ -5,21 +5,22 @@ namespace Tests\Feature\Filament;
 use AjayDhakal\FilamentStory\Models\BlogPost;
 use App\Filament\Resources\Pages\PageResource;
 use App\Filament\Pages\Placeholders\PlaceholderPage;
-use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Navigation\NavigationItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class AdminNavigationTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
         Filament::setCurrentPanel('admin');
     }
 

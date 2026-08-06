@@ -4,13 +4,14 @@ namespace Tests\Feature\Pages;
 
 use App\Filament\Resources\Pages\PageResource;
 use App\Models\Page;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class PublishStateTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private function page(array $attributes = []): Page
     {
@@ -64,7 +65,7 @@ class PublishStateTest extends TestCase
 
     public function test_the_pages_table_shows_scheduled_rather_than_published(): void
     {
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
         $this->page(['published_at' => now()->addDay()]);
 
         $this->get(PageResource::getUrl('index'))
@@ -74,7 +75,7 @@ class PublishStateTest extends TestCase
 
     public function test_a_live_page_still_reads_as_published(): void
     {
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
         $this->page(['published_at' => now()->subDay()]);
 
         $this->get(PageResource::getUrl('index'))

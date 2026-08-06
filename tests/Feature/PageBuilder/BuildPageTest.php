@@ -4,22 +4,23 @@ namespace Tests\Feature\PageBuilder;
 
 use App\Filament\Pages\BuildPage;
 use App\Models\Page;
-use App\Models\User;
 use App\PageBuilder\Blocks;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class BuildPageTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private Page $page;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
 
         $this->page = Page::create([
             'title' => ['en' => 'Built'],

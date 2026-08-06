@@ -5,15 +5,17 @@ namespace Tests\Feature\Filament;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class TopbarTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private function panel(): string
     {
-        return $this->actingAs(User::factory()->create())->get('/superduper')->getContent();
+        return $this->actingAsSuperAdmin()->get('/superduper')->getContent();
     }
 
     public function test_the_help_and_settings_buttons_render(): void
@@ -66,6 +68,12 @@ class TopbarTest extends TestCase
 
     public function test_a_user_is_findable_by_global_search(): void
     {
+        // getGlobalSearchResultUrl() resolves through the resource's own
+        // canView()/canEdit(), which the UserPolicy now denies to a guest —
+        // without an actor signed in, every result is filtered out for
+        // lacking a URL rather than for failing to match.
+        $this->actingAsSuperAdmin();
+
         User::factory()->create(['name' => 'Findable Person', 'email' => 'findable@example.com']);
 
         $results = \App\Filament\Resources\Users\UserResource::getGlobalSearchResults('Findable');
