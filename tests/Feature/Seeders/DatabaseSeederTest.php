@@ -54,6 +54,68 @@ class DatabaseSeederTest extends TestCase
     }
 
     /**
+     * The chain used to be one line — `$this->call(HomepageSeeder::class)` —
+     * while five page seeders sat in the directory, uncalled. A fresh seed
+     * produced a homepage and nothing behind the navigation.
+     */
+    public function test_it_seeds_the_pages_behind_the_navigation_not_only_the_homepage(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        foreach (['profile', 'milestone', 'organisation-structure', 'awards-certification', 'district-facilities'] as $slug) {
+            $page = \App\Models\Page::query()->where('slug', $slug)->first();
+
+            $this->assertNotNull($page, "db:seed should create the \"{$slug}\" page.");
+            $this->assertNotEmpty(
+                $page->builder_payload,
+                "The \"{$slug}\" page should have content, not just a draft shell."
+            );
+        }
+    }
+
+    /**
+     * NavigationTreeSeeder's entry for Contact Us is `['Contact Us', '#contact']`
+     * — a homepage anchor with no slug — so no shell is ever created for it.
+     * ContactPageSeeder warned and returned on that, which meant it could never
+     * apply its content once, however often it ran.
+     */
+    public function test_it_seeds_the_contact_page_which_has_no_navigation_shell(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $page = \App\Models\Page::query()->where('slug', 'contact-us')->first();
+
+        $this->assertNotNull($page, 'db:seed should create the contact-us page.');
+        $this->assertSame(\App\Models\Page::STATUS_PUBLISHED, $page->status);
+        $this->assertNotEmpty($page->builder_payload);
+    }
+
+    /**
+     * The test user's email is unique, so an unconditional create threw on the
+     * second run and aborted every seeder queued behind it. Re-seeding is
+     * routine while content is being iterated, so it has to survive it.
+     */
+    public function test_seeding_twice_in_the_local_environment_does_not_fail(): void
+    {
+        $originalEnv = app()['env'];
+        app()['env'] = 'local';
+
+        try {
+            $this->seed(DatabaseSeeder::class);
+            $this->seed(DatabaseSeeder::class);
+
+            $this->assertSame(
+                1,
+                User::query()->where('email', 'test@example.com')->count(),
+                'Re-seeding should not duplicate the local test user.'
+            );
+            $this->assertNotNull(\App\Models\Page::query()->where('slug', 'contact-us')->first());
+        } finally {
+            app()['env'] = $originalEnv;
+        }
+    }
+
+    /**
      * Proves the guard is an environment check, not a permanent removal of
      * the convenience login: local development still gets it.
      */

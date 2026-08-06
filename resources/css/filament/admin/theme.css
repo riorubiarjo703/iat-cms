@@ -13,10 +13,19 @@
 
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 
+/* Media manager. A custom theme replaces Filament's stock stylesheet, so the
+   plugin's own styles have to be pulled in here: the @import compiles its
+   fi-media-* component classes (which are @apply source, not plain CSS), and
+   the @source lets Tailwind generate the utility classes its Blade views use.
+   Without both, the grid collapses to one column and the click overlays lose
+   their positioning. Required by the plugin's install docs. */
+@import '../../../../vendor/slimani/filament-media-manager/resources/css/media-manager.css';
+
 @source '../../../../app/Filament';
 @source '../../../../app/Providers/Filament';
 @source '../../../../resources/views/filament';
 @source '../../../../resources/views/vendor/filament-panels';
+@source '../../../../vendor/slimani/filament-media-manager/resources/**/*';
 
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;

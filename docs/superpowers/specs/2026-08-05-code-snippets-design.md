@@ -90,8 +90,11 @@ Migration `create_code_snippets_table`:
 | `skip_for_admins` | boolean, default `true` | |
 | `created_at` / `updated_at` | timestamps | |
 
-Composite index on `(is_active, position, priority)` — the exact shape of the
-render query.
+Composite index on `(is_active, position, priority)`. The renderer's actual
+query is `where is_active = ? order by priority, id`; it fetches the whole
+active set once and groups by `position` in PHP rather than filtering by it,
+so `position` is not a predicate the index serves — it rides along rather than
+matching the query shape.
 
 `priority` is stored as `unsignedTinyInteger` and validated to 0–100. The column
 permits 255; the form is the constraint, matching the reference's stated range.

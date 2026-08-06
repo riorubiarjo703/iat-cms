@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Never run `php artisan migrate:fresh`** on this project. Use `php artisan migrate`. Dropping the database here has destroyed real content before.
-- **Never run `npm run dev`.** Use `npm run build` when assets need rebuilding. No task in this plan requires a rebuild — no new CSS classes are introduced outside compiled Filament components.
+- **Never run `npm run dev`.** Use `npm run build` when assets need rebuilding. Task 6 does require a rebuild: `resources/views/filament/modals/snippet-templates.blade.php` introduces Tailwind utilities (`grid-cols-1`, `sm:grid-cols-2`, `size-10`, …) that are not in any previously compiled build, and the admin theme only picks them up via its `@source '../../../../resources/views/filament'` scan on the next `npm run build`.
 - Tests are **PHPUnit classes**, not Pest. Namespace `Tests\Feature\…`, extend `Tests\TestCase`, `use RefreshDatabase`.
 - Run tests with `php artisan test`.
 - Follow `App\Enums\StatFormat` for enum shape: a `label()` method and a static `options()` returning a `value => label` map for Filament `Select::options()`.

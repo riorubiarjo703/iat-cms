@@ -34,14 +34,20 @@ class ContactPageSeeder extends Seeder
 
     public function run(): void
     {
+        // Unlike the Company and District pages, this one has no shell waiting
+        // for it: NavigationTreeSeeder's entry is `['Contact Us', '#contact']`,
+        // a homepage anchor with no slug, so it never creates a page here.
+        // Warning and returning — what this did before — meant the seeder could
+        // never once apply its content, however often it ran. It creates its
+        // own page instead; the update below fills in every column anyway.
         $page = Page::query()->where('slug', 'contact-us')->first()
-            ?? Page::query()->where('slug', 'contact')->first();
-
-        if ($page === null) {
-            $this->command?->warn('No page with slug "contact-us" — run NavigationTreeSeeder first.');
-
-            return;
-        }
+            ?? Page::query()->where('slug', 'contact')->first()
+            ?? Page::firstOrCreate(['slug' => 'contact-us'], [
+                'title' => ['en' => 'Contact Us'],
+                'type' => Page::TYPE_BUILDER,
+                'status' => Page::STATUS_DRAFT,
+                'builder_payload' => [],
+            ]);
 
         $page->update([
             'title' => ['en' => 'Contact Us'],
