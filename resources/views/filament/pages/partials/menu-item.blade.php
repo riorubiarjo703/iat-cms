@@ -3,7 +3,10 @@
      Reads $children, resolved once at the top, rather than $item->children in
      five places: getTree() eager-loads childrenRecursive, and touching the
      plain `children` relation instead issued a query per row. --}}
-@php($children = $item->relationLoaded('childrenRecursive') ? $item->childrenRecursive : $item->children)
+@php($children = $item->loadedChildren())
+{{-- Why the site leaves this item out, or null when it does not. Read once:
+     it walks the subtree, and the row needs it in three places. --}}
+@php($hiddenReason = $item->hiddenReason())
 <li class="scbd-tree-item" data-menu-item="{{ $item->id }}" wire:key="item-{{ $item->id }}">
     <div @class([
         'scbd-tree-row',
@@ -22,12 +25,37 @@
             <span class="scbd-tree-chevron-spacer"></span>
         @endif
 
-        {{-- Green when the item is live on the site, grey when hidden. --}}
-        <span @class(['scbd-tree-dot', 'scbd-tree-dot-off' => ! $item->is_active])></span>
+        {{-- Green when the item is live on the site, grey when someone switched
+             it off, amber when something else keeps it off — a draft page, say.
+             Driven by hiddenReason() rather than is_active, which described the
+             switch and not the outcome: an item pointing at a draft page showed
+             green while the site left it out entirely. --}}
+        <span @class([
+            'scbd-tree-dot',
+            'scbd-tree-dot-off' => ! $item->is_active,
+            'scbd-tree-dot-blocked' => $item->is_active && $hiddenReason !== null,
+        ]) title="{{ $hiddenReason ?? 'Live on the site' }}"></span>
 
         <span class="scbd-tree-label">{{ $item->t('label') ?: 'Untitled' }}</span>
 
         <span class="scbd-tree-badges">
+            {{-- Spelled out rather than left to the dot's tooltip: the whole
+                 point is that you can see why an item is missing from the site
+                 without hovering every row to find it.
+
+                 Every row that is not live gets one, switched-off rows
+                 included. Labelling only the blocked ones left a grey dot
+                 beside an empty badge column, which read as though the two were
+                 hidden for unrelated reasons. Grey for the switch, which you
+                 can undo here; amber for everything else, which you cannot. --}}
+            @if ($hiddenReason !== null)
+                <span @class([
+                    'scbd-type-badge',
+                    'scbd-type-off' => ! $item->is_active,
+                    'scbd-type-blocked' => $item->is_active,
+                ])>{{ $hiddenReason }}</span>
+            @endif
+
             @if ($item->is_cta)
                 <span class="scbd-type-badge scbd-type-cta">CTA</span>
             @endif
@@ -56,8 +84,11 @@
                 <x-filament::icon icon="heroicon-o-cursor-arrow-rays" />
             </button>
 
+            {{-- Describes the switch, not the outcome: switching on an item
+                 whose page is still a draft does not put it on the site, so
+                 "Show on the site" was a promise this button cannot keep. --}}
             <button type="button" class="scbd-tree-action" wire:click="toggleActive('{{ $item->id }}')"
-                    title="{{ $item->is_active ? 'Hide from the site' : 'Show on the site' }}">
+                    title="{{ $item->is_active ? 'Switch this item off' : 'Switch this item on' }}">
                 <x-filament::icon :icon="$item->is_active ? 'heroicon-o-eye' : 'heroicon-o-eye-slash'" />
             </button>
 

@@ -51,6 +51,17 @@ class BuildPageTest extends TestCase
         }
     }
 
+    public function test_palette_categories_render_as_expanded_collapsible_controls(): void
+    {
+        $html = $this->get(BuildPage::getUrl(['record' => $this->page->id]))->getContent();
+
+        $this->assertStringContainsString('x-data="{ open: true }"', $html);
+        $this->assertStringContainsString('x-on:click="open = !open"', $html);
+        $this->assertStringContainsString(':aria-expanded="open.toString()"', $html);
+        $this->assertStringContainsString('x-show="open"', $html);
+        $this->assertStringContainsString('x-collapse', $html);
+    }
+
     public function test_adding_a_block_persists_it_with_its_defaults(): void
     {
         Livewire::test(BuildPage::class, ['record' => $this->page->id])

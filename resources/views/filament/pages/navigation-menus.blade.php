@@ -3,6 +3,7 @@
         $locations = $this->getLocations();
         $menus = $this->getMenus();
         $assignable = $this->getAssignableMenus();
+        $hidden = $this->getHiddenCounts();
     @endphp
 
     {{-- ── Menu Locations ─────────────────────────────────────────────── --}}
@@ -31,6 +32,14 @@
                                  no menu to be empty. --}}
                             @if ($location['items'] !== null)
                                 <span class="scbd-count-pill">{{ $location['items'] }} {{ Str::plural('item', $location['items']) }}</span>
+                                {{-- Only when there is a gap. A location whose every item
+                                     renders should not carry a "0 hidden" pill saying so. --}}
+                                @if ($location['hidden'] > 0)
+                                    <span class="scbd-count-pill scbd-count-pill-hidden"
+                                          title="Switched off, or pointing at a page that is still a draft">
+                                        {{ $location['hidden'] }} hidden
+                                    </span>
+                                @endif
                             @endif
                         </p>
                         <p class="scbd-location-desc">{{ $location['description'] }}</p>
@@ -98,6 +107,12 @@
                             </p>
                             <p class="scbd-menu-meta">
                                 {{ $menu->items_count }} {{ Str::plural('item', $menu->items_count) }}
+                                @if (($hidden[$menu->id] ?? 0) > 0)
+                                    <span class="scbd-count-pill scbd-count-pill-hidden"
+                                          title="Switched off, or pointing at a page that is still a draft">
+                                        {{ $hidden[$menu->id] }} hidden
+                                    </span>
+                                @endif
                                 <span class="scbd-menu-dot">•</span>
                                 <code
                                     class="scbd-directive"

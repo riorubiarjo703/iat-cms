@@ -5,18 +5,34 @@
             <h3 class="scbd-card-title">Add a block</h3>
 
             @foreach ($this->getPalette() as $category => $items)
-                <p class="scbd-palette-category">{{ $category }}</p>
+                <div class="scbd-palette-group" x-data="{ open: true }">
+                    <button
+                        type="button"
+                        class="scbd-palette-category"
+                        x-on:click="open = !open"
+                        :aria-expanded="open.toString()"
+                    >
+                        <span>{{ $category }}</span>
+                        <x-filament::icon
+                            icon="heroicon-m-chevron-down"
+                            class="scbd-palette-category-chevron"
+                            ::class="open ? 'rotate-180' : ''"
+                        />
+                    </button>
 
-                <div class="scbd-palette-items">
-                    @foreach ($items as $item)
-                        <button type="button" class="scbd-palette-item" wire:click="addBlock('{{ $item['type'] }}')">
-                            <span class="scbd-palette-icon">
-                                <x-filament::icon :icon="$item['icon']" />
-                            </span>
-                            <span>{{ $item['name'] }}</span>
-                            <x-filament::icon icon="heroicon-o-plus" class="scbd-palette-plus" />
-                        </button>
-                    @endforeach
+                    <div x-show="open" x-collapse>
+                        <div class="scbd-palette-items">
+                            @foreach ($items as $item)
+                                <button type="button" class="scbd-palette-item" wire:click="addBlock('{{ $item['type'] }}')">
+                                    <span class="scbd-palette-icon">
+                                        <x-filament::icon :icon="$item['icon']" />
+                                    </span>
+                                    <span>{{ $item['name'] }}</span>
+                                    <x-filament::icon icon="heroicon-o-plus" class="scbd-palette-plus" />
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
             @endforeach
         </aside>
@@ -36,7 +52,7 @@
 
             <ul class="scbd-block-list" data-block-list>
                 @foreach ($blocks as $block)
-                    <li class="scbd-block" data-block="{{ $block['id'] }}" wire:key="block-{{ $block['id'] }}">
+                    <li class="scbd-block" data-block="{{ $block['id'] }}" wire:key="block-{{ $block['id'] }}" wire:click="editBlock('{{ $block['id'] }}')">
                         <div @class(['scbd-block-row', 'scbd-block-row-editing' => $editingId === $block['id']])>
                             <span class="scbd-block-handle" data-block-handle aria-hidden="true">
                                 <x-filament::icon icon="heroicon-o-ellipsis-vertical" />

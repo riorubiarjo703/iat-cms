@@ -25,8 +25,12 @@ class AppServiceProvider extends ServiceProvider
         // whichever menu is assigned to that location. Both exist because the
         // admin offers both — a menu has a directive of its own and can also
         // be assigned to a location.
-        Blade::directive('menu', fn (string $expression): string => "<?php echo \\App\\Support\\MenuRenderer::bySlug({$expression}); ?>");
-        Blade::directive('menuLocation', fn (string $expression): string => "<?php echo \\App\\Support\\MenuRenderer::byLocation({$expression}); ?>");
+        // render()/renderLocation() and not bySlug()/byLocation(): those return
+        // a collection, and echoing one stringifies it to JSON — the advertised
+        // directive used to dump the menu, and the builder payload of every
+        // page it linked to, into the page.
+        Blade::directive('menu', fn (string $expression): string => "<?php echo \\App\\Support\\MenuRenderer::render({$expression}); ?>");
+        Blade::directive('menuLocation', fn (string $expression): string => "<?php echo \\App\\Support\\MenuRenderer::renderLocation({$expression}); ?>");
 
         // Laravel discovers App\Policies\<Model>Policy beside App\Models\<Model>.
         // These two models live in the filament-story package, so nothing would be

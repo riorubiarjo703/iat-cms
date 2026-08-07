@@ -31,7 +31,6 @@
             <ol class="scbd-values-list">
                 @foreach ($values as $value)
                     <li data-fade class="scbd-values-item">
-                        <span class="scbd-values-index">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                         <div>
                             <div class="scbd-values-name">{{ $value['name'] }}</div>
                             @if (filled($value['description'] ?? null))

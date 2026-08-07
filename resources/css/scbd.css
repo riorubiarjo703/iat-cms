@@ -1060,10 +1060,6 @@ textarea.input { min-height: 90px; resize: vertical; }
     border-top: 1px solid rgba(243, 242, 242, 0.18);
 }
 .scbd-values-item:last-child { border-bottom: 1px solid rgba(243, 242, 242, 0.18); }
-.scbd-values-index {
-    font-weight: 800; font-size: 13px; letter-spacing: 0.1em; color: #ec3013;
-    padding-top: 6px;
-}
 .scbd-values-name {
     font-weight: 800; font-size: clamp(19px, 2vw, 27px); line-height: 1.15;
     letter-spacing: -0.02em; text-transform: uppercase;
