@@ -39,39 +39,46 @@ class RoleResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('name')
-                ->required()
-                ->maxLength(255)
-                ->unique(ignoreRecord: true)
-                // Renaming super_admin makes isLastSuperAdmin() and
-                // removeRole() (which resolve it by name) find nothing, and
-                // the next seeder run then creates a second all-permissions
-                // role via updateOrCreate(['name' => 'super_admin']).
-                ->disabled(fn (?Model $record): bool => (bool) $record?->is_system)
-                // A disabled field is still submittable by a crafted payload
-                // — dehydrated(false) is what actually stops a rename
-                // reaching the database, not the disabled attribute in the
-                // browser.
-                ->dehydrated(fn (?Model $record): bool => ! $record?->is_system),
+            Section::make('Role Details and permissions')
+                ->columnSpanFull()
+                ->extraAttributes([
+                    'class' => 'edit-role-details overflow-auto rounded-xl border border-gray-200',
+                ])
+                ->schema([
+                    TextInput::make('name')
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    // Renaming super_admin makes isLastSuperAdmin() and
+                    // removeRole() (which resolve it by name) find nothing, and
+                    // the next seeder run then creates a second all-permissions
+                    // role via updateOrCreate(['name' => 'super_admin']).
+                    ->disabled(fn (?Model $record): bool => (bool) $record?->is_system)
+                    // A disabled field is still submittable by a crafted payload
+                    // — dehydrated(false) is what actually stops a rename
+                    // reaching the database, not the disabled attribute in the
+                    // browser.
+                    ->dehydrated(fn (?Model $record): bool => ! $record?->is_system),
 
-            TextInput::make('description')
-                ->label('Description (Optional)')
-                ->maxLength(255),
+                    TextInput::make('description')
+                        ->label('Description (Optional)')
+                        ->maxLength(255),
 
-            Section::make('Permissions')
-                ->description('Select permissions to assign to this role')
-                // A flat list of fifty-seven checkboxes is unusable — the
-                // reason this section exists at all. One CheckboxList per
-                // group, not one CheckboxList with group descriptions
-                // beneath each option (the previous approach): a description
-                // line is a caption, not a grouping — every one of the
-                // forty-five-plus options still sat in a single undifferentiated
-                // list a screen reader or a "select all" had no way to
-                // partition. See self::permissionGroupFields() for how each
-                // group's field independently saves its own slice of the
-                // pivot without disturbing any other group's rows.
-                ->schema(fn (): array => [
-                    Grid::make(2)->schema(self::permissionGroupFields()),
+                    Section::make('Permissions')
+                        ->description('Select permissions to assign to this role')
+                        // A flat list of fifty-seven checkboxes is unusable — the
+                        // reason this section exists at all. One CheckboxList per
+                        // group, not one CheckboxList with group descriptions
+                        // beneath each option (the previous approach): a description
+                        // line is a caption, not a grouping — every one of the
+                        // forty-five-plus options still sat in a single undifferentiated
+                        // list a screen reader or a "select all" had no way to
+                        // partition. See self::permissionGroupFields() for how each
+                        // group's field independently saves its own slice of the
+                        // pivot without disturbing any other group's rows.
+                        ->schema(fn (): array => [
+                            Grid::make(2)->schema(self::permissionGroupFields()),
+                        ]),
                 ]),
         ]);
     }

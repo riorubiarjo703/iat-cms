@@ -23,6 +23,13 @@ class UserPolicy
 
     public function update(User $user, User $model): bool
     {
+        \Illuminate\Support\Facades\Log::info('UserPolicy::update debug', [
+            'user_id' => $user->id,
+            'user_roles' => $user->getRoleNames()->all(),
+            'user_perms' => $user->getAllPermissions()->pluck('name')->all(),
+            'can_users_update' => $user->can('users.update'),
+        ]);
+
         return $user->can('users.update');
     }
 
