@@ -49,9 +49,10 @@ class PagePolicy
 
     // restore(), forceDelete() and replicate() are absent on purpose: no
     // model in this catalogue uses SoftDeletes, and no resource registers a
-    // ReplicateAction, so Filament never asks for them. reorder() is also
-    // absent: the three resources with reorderable() tables (DistrictPlaces,
-    // Stats, Facilities) carry no policy at all and are out of this
-    // catalogue's scope. If any of that changes, add the method rather than
-    // assume the missing-method default is safe — it isn't.
+    // ReplicateAction, so Filament never asks for them. Pages are not
+    // reorderable, so reorder() is absent here too — DistrictPlace, Facility
+    // and Stat are the three reorderable resources, and each carries its own
+    // policy with a reorder() method (see App\Policies\DistrictPlacePolicy).
+    // If any of that changes, add the method rather than assume the
+    // missing-method default is safe — it isn't.
 }

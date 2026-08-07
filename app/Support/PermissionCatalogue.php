@@ -29,6 +29,17 @@ final class PermissionCatalogue
         // No create: messages arrive from the public contact form, never
         // from the panel.
         'contacts' => ['view', 'update', 'delete'],
+
+        // Homepage structure the administrator owns, not the editor: none
+        // of these three reach contentEditorPermissions() below. They carry
+        // no navigation entry of their own (reachable only by URL, and by
+        // the page builder), which is exactly why they had no policy and no
+        // catalogue entry at all until this was noticed — every ability on
+        // an unpolicied model falls through to Filament's allow-by-default,
+        // including bulk delete and reorder.
+        'district-places' => ['view', 'create', 'update', 'delete'],
+        'facilities' => ['view', 'create', 'update', 'delete'],
+        'stats' => ['view', 'create', 'update', 'delete'],
     ];
 
     /** Built single-screen destinations. */

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use App\Filament\Resources\Pages\PageResource;
 use App\Models\Page;
 use App\PageBuilder\BlockRegistry;
@@ -22,6 +23,8 @@ use Illuminate\Support\Str;
  */
 class BuildPage extends FilamentPage
 {
+    use ChecksPagePermission;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static ?string $slug = 'pages/{record}/build';
@@ -29,6 +32,16 @@ class BuildPage extends FilamentPage
     protected string $view = 'filament.pages.build-page';
 
     protected static bool $shouldRegisterNavigation = false;
+
+    /**
+     * Not gated by pages.view: this screen edits a page's content, and
+     * pages.view is the read-only ability PageResource's list/edit pages use.
+     * The matching ability there is update.
+     */
+    public static function permission(): string
+    {
+        return 'pages.update';
+    }
 
     /** The id, not the model — a public Eloquent property is serialised into
      *  the Livewire payload and handed back to mount() as JSON. */

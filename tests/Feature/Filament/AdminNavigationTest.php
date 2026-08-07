@@ -250,4 +250,29 @@ class AdminNavigationTest extends TestCase
         // Pages, Code Snippets, Roles and Permissions graduated from placeholder to a real resource.
         $this->assertCount(16, static::placeholderClasses());
     }
+
+    /**
+     * I3: there is deliberately no Gate::before wildcard, so a typo in one of
+     * AdminNavigation's permission strings means that permission exists
+     * nowhere — super_admin does not hold it either — and the entry it gates
+     * becomes unreachable for everyone, silently. The per-group assertions
+     * above check labels and order, which a typo does not disturb; only the
+     * total leaf count visible to super_admin moves, by exactly one. Proven
+     * by deliberately corrupting one permission string in AdminNavigation
+     * (temporarily, then reverted) and observing this fail by exactly one —
+     * see the final fix report.
+     */
+    public function test_the_rendered_leaf_count_matches_every_declared_entry(): void
+    {
+        $leaves = 0;
+
+        foreach (Filament::getNavigation() as $group) {
+            foreach ($group->getItems() as $item) {
+                $children = $item->getChildItems();
+                $leaves += $children === [] ? 1 : count($children);
+            }
+        }
+
+        $this->assertSame(27, $leaves);
+    }
 }

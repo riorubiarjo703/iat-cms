@@ -21,6 +21,7 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles {
         HasRoles::removeRole as protected removeRoleFromTrait;
+        HasRoles::syncRoles as protected syncRolesFromTrait;
     }
 
     /**
@@ -45,6 +46,13 @@ class User extends Authenticatable implements FilamentUser
      * deploy. The local test login and factory accounts were deliberately
      * left out — they keep their logins but lose panel access; demotion or
      * restoration from here is a deliberate act on the Users screen.
+     *
+     * Checks the literal string 'admin.access' rather than resolving it by
+     * is_system, unlike isLastSuperAdmin() and removeRole() above. That is
+     * safe only because PermissionResource's name field is disabled *and*
+     * un-dehydrated for is_system rows (admin.access is the only one) — the
+     * permission this method names cannot be renamed out from under it. If
+     * that guard is ever relaxed, this must resolve by is_system too.
      */
     public function canAccessPanel(Panel $panel): bool
     {
@@ -75,13 +83,31 @@ class User extends Authenticatable implements FilamentUser
         parent::boot();
     }
 
+    /**
+     * The role these lockout guards protect, resolved by is_system rather
+     * than the literal name "super_admin". Comparing by name would stop
+     * protecting the role the moment somebody renamed it — and renaming is
+     * allowed, guarded separately at the form by RoleResource's disabled
+     * name field (see PermissionCatalogue's and RoleResource's docblocks).
+     * Renaming super_admin here would otherwise make this method, and
+     * removeRole() below, resolve nothing — silently disabling the guard —
+     * and the next seeder run would then create a *second* all-permissions
+     * role via updateOrCreate(['name' => 'super_admin']).
+     */
+    private static function protectedRole(): ?Role
+    {
+        return Role::where('is_system', true)->first();
+    }
+
     public function isLastSuperAdmin(): bool
     {
-        if (! $this->hasRole('super_admin')) {
+        $protected = self::protectedRole();
+
+        if ($protected === null || ! $this->hasRole($protected)) {
             return false;
         }
 
-        return Role::findByName('super_admin')->users()->count() <= 1;
+        return $protected->users()->count() <= 1;
     }
 
     /**
@@ -96,13 +122,50 @@ class User extends Authenticatable implements FilamentUser
      */
     public function removeRole(...$role): static
     {
-        $superAdminId = Role::where('name', 'super_admin')->value('id');
+        $protected = self::protectedRole();
         $roleIds = $this->collectRoles($role);
 
-        if ($superAdminId !== null && in_array($superAdminId, $roleIds, true) && $this->isLastSuperAdmin()) {
+        if ($protected !== null && in_array($protected->getKey(), $roleIds, true) && $this->isLastSuperAdmin()) {
             throw LastSuperAdminException::make();
         }
 
         return $this->removeRoleFromTrait(...$role);
+    }
+
+    /**
+     * With `events_enabled => false` (this app's config/permission.php),
+     * HasRoles::syncRoles() calls detachRoles() directly and never reaches
+     * removeRole() — so a role-set replacement (a relationship-backed
+     * CheckboxList on the future Users screen produces exactly this call)
+     * could demote the last super_admin with no guard at all.
+     *
+     * Flipping events_enabled to true instead was rejected: Spatie's
+     * event-enabled path *removes* the current roles before *assigning* the
+     * new ones, so syncRoles(['super_admin', 'content_editor']) on the last
+     * super admin would throw a false positive — removeRole() sees the
+     * assignment has not happened yet and refuses a call that would not
+     * actually have left anyone unprotected.
+     *
+     * So the resulting set is computed first, and the exception is thrown
+     * only when the protected role is held now and would be absent after —
+     * the same isLastSuperAdmin() check removeRole() makes, on the same
+     * before/after shape syncRoles() itself has, just evaluated up front
+     * instead of via Spatie's own remove-then-assign sequence.
+     */
+    public function syncRoles(...$roles): static
+    {
+        $protected = self::protectedRole();
+
+        if ($protected !== null) {
+            $resulting = $this->collectRoles($roles);
+            $holdsNow = $this->hasRole($protected);
+            $holdsAfter = in_array($protected->getKey(), $resulting, true);
+
+            if ($holdsNow && ! $holdsAfter && $this->isLastSuperAdmin()) {
+                throw LastSuperAdminException::make();
+            }
+        }
+
+        return $this->syncRolesFromTrait(...$roles);
     }
 }

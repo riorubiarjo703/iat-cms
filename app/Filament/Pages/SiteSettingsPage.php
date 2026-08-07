@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Concerns\EditsSingletonRecord;
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use App\Filament\Support\LocaleTabs;
 use App\Filament\Support\MediaField;
 use App\Models\SiteSetting;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 class SiteSettingsPage extends Page
 {
     use EditsSingletonRecord;
+    use ChecksPagePermission;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
@@ -27,6 +29,11 @@ class SiteSettingsPage extends Page
     protected static ?string $slug = 'site-settings';
 
     protected string $view = 'filament.pages.site-settings-page';
+
+    public static function permission(): string
+    {
+        return 'settings.manage';
+    }
 
     /** @var array<string, mixed>|null */
     public ?array $data = [];

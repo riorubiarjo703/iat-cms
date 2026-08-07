@@ -137,4 +137,47 @@ class DatabaseSeederTest extends TestCase
             app()['env'] = $originalEnv;
         }
     }
+
+    /**
+     * I2: User::canAccessPanel() now checks a permission, so `migrate --seed`
+     * on a fresh clone used to seed a panel nobody could enter — the local
+     * convenience login had no role at all. RolesAndPermissionsSeeder runs
+     * earlier in the same chain (test_it_creates_the_test_user_in_the_local_environment
+     * proves the user exists at all), so by the time this assigns the role
+     * the role already exists to assign.
+     */
+    public function test_the_test_user_holds_super_admin_in_the_local_environment(): void
+    {
+        $originalEnv = app()['env'];
+        app()['env'] = 'local';
+
+        try {
+            $this->seed(DatabaseSeeder::class);
+
+            $testUser = User::query()->where('email', 'test@example.com')->first();
+
+            $this->assertNotNull($testUser);
+            $this->assertTrue($testUser->hasRole('super_admin'));
+        } finally {
+            app()['env'] = $originalEnv;
+        }
+    }
+
+    /** Re-seeding must not throw trying to assign a role the user already holds. */
+    public function test_seeding_twice_in_the_local_environment_keeps_the_test_user_a_super_admin(): void
+    {
+        $originalEnv = app()['env'];
+        app()['env'] = 'local';
+
+        try {
+            $this->seed(DatabaseSeeder::class);
+            $this->seed(DatabaseSeeder::class);
+
+            $testUser = User::query()->where('email', 'test@example.com')->first();
+
+            $this->assertTrue($testUser->hasRole('super_admin'));
+        } finally {
+            app()['env'] = $originalEnv;
+        }
+    }
 }

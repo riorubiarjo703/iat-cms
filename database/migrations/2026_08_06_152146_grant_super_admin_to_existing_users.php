@@ -2,6 +2,7 @@
 
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\Migrations\Migration;
 
 /**
@@ -18,7 +19,11 @@ use Illuminate\Database\Migrations\Migration;
  * Those three keep their logins and lose panel access, which is the correct
  * outcome for a throwaway.
  *
- * A fresh install matches none of these and correctly does nothing.
+ * A fresh install matches none of these and correctly does nothing. A
+ * restored pre-roles database dump is different from a fresh install even
+ * though both find the roles table empty: it has real user rows, so up()
+ * seeds the roles and permissions itself rather than assuming
+ * RolesAndPermissionsSeeder already ran — see the self-seeding branch below.
  */
 return new class extends Migration
 {
@@ -33,10 +38,24 @@ return new class extends Migration
     {
         $role = Role::query()->where('name', 'super_admin')->first();
 
-        // RolesAndPermissionsSeeder has not run yet — on a fresh install there
-        // is nobody to rescue either, so there is nothing to do.
         if ($role === null) {
-            return;
+            // Two situations produce an absent role, and only one of them is
+            // safe to no-op on. A genuinely fresh install has no users
+            // either — nobody to rescue, and DatabaseSeeder runs
+            // RolesAndPermissionsSeeder itself on that path. But a pre-roles
+            // database dump restored here has real user rows and an empty
+            // roles table: without self-seeding, this migration would no-op,
+            // `migrations` would still record it as run, and there would be
+            // no retry — every operator locked out permanently, with no way
+            // back short of a manual `db:seed`. Self-seeding makes this
+            // migration correct regardless of which situation it finds.
+            if (User::query()->doesntExist()) {
+                return;
+            }
+
+            (new RolesAndPermissionsSeeder)->run();
+
+            $role = Role::query()->where('name', 'super_admin')->first();
         }
 
         User::query()

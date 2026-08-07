@@ -7,12 +7,12 @@ use App\Filament\Resources\DistrictPlaces\Pages\EditDistrictPlace;
 use App\Models\DistrictPlace;
 use App\Models\Page;
 use App\Models\SiteSetting;
-use App\Models\User;
 use App\PageBuilder\Blocks;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Slimani\MediaManager\Models\File;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 /**
@@ -35,13 +35,17 @@ use Tests\TestCase;
 class MediaPickerPersistenceTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         Storage::fake('public');
-        $this->actingAs(User::factory()->create());
+        // BuildPage now gates on pages.update, and DistrictPlaceResource now
+        // carries a policy (C1 and C4 of the roles/permissions final review)
+        // — a roleless actor 403s before this test's own assertions ever run.
+        $this->actingAsSuperAdmin();
     }
 
     private function mediaFile(string $name): File

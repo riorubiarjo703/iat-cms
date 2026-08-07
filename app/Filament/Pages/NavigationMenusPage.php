@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use App\Models\Menu;
 use App\Support\MenuLocations;
 use BackedEnum;
@@ -20,6 +21,13 @@ use Illuminate\Support\Collection;
  */
 class NavigationMenusPage extends Page
 {
+    use ChecksPagePermission;
+
+    public static function permission(): string
+    {
+        return 'menus.manage';
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bars-3';
 
     protected static ?string $title = 'Navigation Menus';

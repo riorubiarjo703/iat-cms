@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use AjayDhakal\FilamentStory\Models\BlogCategory;
 use App\Models\Menu;
 use App\Models\MenuItem;
@@ -23,6 +24,13 @@ use Illuminate\Support\Str;
  */
 class EditMenuPage extends Page
 {
+    use ChecksPagePermission;
+
+    public static function permission(): string
+    {
+        return 'menus.manage';
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bars-3';
 
     protected static ?string $slug = 'navigation-menus/{record}';

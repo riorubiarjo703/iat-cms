@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Placeholders;
 
 use BackedEnum;
 use Filament\Pages\Page;
+use Illuminate\Support\Str;
 
 /**
  * A navigable destination for a feature that does not exist yet.
@@ -22,6 +23,29 @@ abstract class PlaceholderPage extends Page
 
     /** One line describing what the feature will do, shown under the title. */
     abstract public static function summary(): string;
+
+    /**
+     * Filament's Page::canAccess() defaults to true — see
+     * App\Filament\Pages\Concerns\ChecksPagePermission, whose approach this
+     * mirrors without requiring a `permission()` line in each of the sixteen
+     * subclasses below it. The permission is derived from the class name
+     * instead: stripping "Placeholder" and kebab-casing what remains
+     * reproduces exactly the string AdminNavigation passes for that entry —
+     * e.g. AdZonesPlaceholder -> "ad-zones.view", ContentBlocksPlaceholder ->
+     * "content-blocks.view". Verified against all sixteen current classes.
+     * A seventeenth placeholder is covered automatically as long as its name
+     * matches that pattern; if it cannot, give it its own canAccess() instead
+     * of forcing the pattern.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can(static::permission()) ?? false;
+    }
+
+    public static function permission(): string
+    {
+        return Str::kebab(Str::before(class_basename(static::class), 'Placeholder')).'.view';
+    }
 
     /** Which slice will build it, or null when unscheduled. */
     public static function plannedIn(): ?string

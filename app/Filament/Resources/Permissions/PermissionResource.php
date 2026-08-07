@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Permissions;
 
 use App\Models\Permission;
+use App\Models\Role;
 use BackedEnum;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -14,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class PermissionResource extends Resource
 {
@@ -22,6 +24,16 @@ class PermissionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-key';
 
+    /**
+     * The only role that guarantees a way back into the panel. This form
+     * cannot be used to give up super_admin's hold on a system permission —
+     * mirrors RoleResource's protection of admin.access, in the other
+     * direction: that form guards a system ROLE's hold on the gate
+     * permission, this one guards the gate PERMISSION's hold on the system
+     * role.
+     */
+    private const PROTECTED_ROLE = 'super_admin';
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -29,11 +41,53 @@ class PermissionResource extends Resource
                 ->required()
                 ->maxLength(255)
                 ->unique(ignoreRecord: true)
-                ->placeholder('e.g., manage.users'),
+                ->placeholder('e.g., manage.users')
+                ->disabled(fn (?Model $record): bool => (bool) $record?->is_system)
+                // A disabled field is still submittable by a crafted payload —
+                // dehydrated(false) is what actually stops a rename reaching
+                // the database, not the disabled attribute in the browser.
+                ->dehydrated(fn (?Model $record): bool => ! $record?->is_system),
 
             CheckboxList::make('roles')
                 ->relationship('roles', 'name')
-                ->bulkToggleable(),
+                ->bulkToggleable()
+                ->disableOptionWhen(fn (string $label, CheckboxList $component): bool => $label === self::PROTECTED_ROLE
+                    && (bool) ($component->getRecord()?->is_system))
+                // Same reason as RoleResource's matching ->in() override:
+                // disabling the option above narrows the automatic `in()`
+                // validation to the options left enabled, which would then
+                // reject the pre-filled super_admin value on an otherwise
+                // unchanged save.
+                ->in(fn (): array => Role::query()->pluck('id')->map(fn (int $id): string => (string) $id)->all())
+                ->saveRelationshipsUsing(function (CheckboxList $component): void {
+                    $record = $component->getRecord();
+                    $relationship = $component->getRelationship();
+
+                    $state = collect($component->getState() ?? [])
+                        ->map(fn (mixed $id): string => (string) $id);
+
+                    // The disabled checkbox stops a click in the browser, but
+                    // not a submitted payload that simply omits the value —
+                    // exactly what an unchecked box produces. This is the
+                    // actual guarantee; the disabled checkbox is only the
+                    // visible half.
+                    if ($record->is_system) {
+                        $protectedId = (string) Role::query()->where('name', self::PROTECTED_ROLE)->value('id');
+                        $state = $state->push($protectedId)->unique();
+                    }
+
+                    $recordsToDetach = $relationship->getResults()
+                        ->pluck($relationship->getRelatedKeyName())
+                        ->map(fn (mixed $id): string => (string) $id)
+                        ->diff($state);
+
+                    if ($recordsToDetach->isNotEmpty()) {
+                        $relationship->detach($recordsToDetach->all());
+                    }
+
+                    $relationship->sync($state->all(), detaching: false);
+                    $record->unsetRelation('roles');
+                }),
         ]);
     }
 
