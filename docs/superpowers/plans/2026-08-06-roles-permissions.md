@@ -764,28 +764,47 @@ use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 
 /**
- * Every account predating roles would otherwise be locked out the moment
- * canAccessPanel() started checking a permission. They get super_admin, which
- * is exactly the access they already had, and can be demoted from the Users
- * screen afterwards.
+ * The operator accounts predating roles would otherwise be locked out the
+ * moment canAccessPanel() started checking a permission. They get super_admin,
+ * which is exactly the access they already had, and can be demoted from the
+ * Users screen afterwards.
+ *
+ * Named accounts rather than "every user", deliberately. The installation also
+ * carries test@example.com — the local convenience login whose password is
+ * published in DatabaseSeeder — and two factory accounts. Granting super_admin
+ * to a known credential would hand full administrative access to anyone who
+ * has read the seeder, which is the opposite of what this feature is for.
+ * Those three keep their logins and lose panel access, which is the correct
+ * outcome for a throwaway.
+ *
+ * A fresh install matches none of these and correctly does nothing.
  */
 return new class extends Migration
 {
+    /** The real operator accounts on this installation. */
+    private const OPERATORS = [
+        'admin@iat-cms.test',
+        'rio.rubiarjo@iat.id',
+        'klein.burnice@example.org',
+    ];
+
     public function up(): void
     {
         $role = Role::query()->where('name', 'super_admin')->first();
 
-        // The seeder may not have run yet on a fresh install — there are no
-        // users to rescue in that case either, so there is nothing to do.
+        // RolesAndPermissionsSeeder has not run yet — on a fresh install there
+        // is nobody to rescue either, so there is nothing to do.
         if ($role === null) {
             return;
         }
 
-        User::query()->each(function (User $user) use ($role): void {
-            if ($user->roles()->count() === 0) {
-                $user->assignRole($role);
-            }
-        });
+        User::query()
+            ->whereIn('email', self::OPERATORS)
+            ->each(function (User $user) use ($role): void {
+                if ($user->roles()->count() === 0) {
+                    $user->assignRole($role);
+                }
+            });
     }
 
     public function down(): void
@@ -808,7 +827,19 @@ Then confirm by hand that your own account still works — this is the step that
 php artisan tinker --execute="\App\Models\User::query()->get()->each(fn(\$u) => print(\$u->email.' => '.\$u->getRoleNames()->implode(',').PHP_EOL));"
 ```
 
-Every existing account should print `super_admin`. If any prints empty, **stop and report** rather than continuing.
+The three accounts in `OPERATORS` must print `super_admin`. `test@example.com`,
+`ereichel@example.org` and `erempel@example.net` must print empty — they keep
+their logins and lose panel access, deliberately.
+
+If any of the three operator accounts prints empty, **stop and report BLOCKED**
+rather than continuing. The tests run against in-memory sqlite and can tell you
+nothing about the live database.
+
+**Prerequisite, already done by the controller:** `RolesAndPermissionsSeeder`
+has been run against the live database (2 roles, 45 permissions). Confirm with
+`php artisan tinker --execute="echo \App\Models\Role::count();"` before
+migrating — if it prints 0, the migration would burn its one shot as a silent
+no-op and the gate would lock everyone out.
 
 - [ ] **Step 6: Run test to verify it passes**
 
