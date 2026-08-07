@@ -50,6 +50,12 @@
     font-size: 0.6875rem; font-weight: 500; color: var(--scbd-text-muted);
 }
 
+/* Amber, matching the tree's blocked dot: both say "this exists but the site
+   is not showing it", and they should read as the same fact twice. */
+.scbd-count-pill-hidden {
+    border-color: rgb(217 119 6 / 0.35); background: rgb(217 119 6 / 0.1); color: #b45309;
+}
+
 .scbd-location-badge {
     display: inline-flex; align-items: center; gap: 0.3125rem;
     padding: 0.1875rem 0.5rem; border-radius: 0.375rem;
@@ -223,6 +229,9 @@
 
 .scbd-tree-dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--scbd-positive); flex-shrink: 0; }
 .scbd-tree-dot-off { background: var(--scbd-text-muted); }
+/* Amber, not grey: something is keeping this item off the site, and unlike the
+   switch it is not a decision you can reverse from this screen. */
+.scbd-tree-dot-blocked { background: #d97706; }
 
 .scbd-tree-label { flex: 1 1 auto; font-size: 0.9375rem; font-weight: 500; color: var(--scbd-text); }
 
@@ -232,6 +241,10 @@
 .scbd-type-page { background: rgb(16 185 129 / 0.12); color: var(--scbd-positive); }
 .scbd-type-category { background: rgb(139 92 246 / 0.12); color: #7c3aed; }
 .scbd-type-cta { background: rgb(245 158 11 / 0.15); color: #b45309; }
+.scbd-type-blocked { background: rgb(217 119 6 / 0.12); color: #b45309; font-weight: 500; }
+/* Grey, matching the switched-off dot: this one is a decision, and reversible
+   from the row it sits on. */
+.scbd-type-off { background: var(--scbd-surface); color: var(--scbd-text-muted); font-weight: 500; }
 
 /* Actions appear on hover, so a resting row stays legible. */
 .scbd-tree-actions { display: flex; align-items: center; gap: 0.125rem; flex-shrink: 0; opacity: 0; transition: opacity 120ms; }

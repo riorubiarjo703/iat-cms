@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use AjayDhakal\FilamentStory\FilamentStoryPlugin;
 use App\Filament\Navigation\AdminNavigation;
+use App\Filament\Pages\MediaManagerPage;
 use Slimani\MediaManager\MediaManagerPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -56,7 +57,11 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->plugin(FilamentStoryPlugin::make())
-            ->plugin(MediaManagerPlugin::make())
+            // Swaps in a thin subclass so the page carries a canAccess() —
+            // the vendor MediaManager page cannot be edited to add one, and
+            // its own default (Filament's CanAuthorizeAccess) is `true`.
+            // See App\Filament\Pages\MediaManagerPage.
+            ->plugin(MediaManagerPlugin::make()->mediaManagerPage(MediaManagerPage::class))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

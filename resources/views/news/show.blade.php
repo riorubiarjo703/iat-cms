@@ -20,11 +20,11 @@
     <main class="scbd-shade" style="min-height:50vh;">
         <article class="scbd-pad-top scbd-news-detail">
 
-            <nav class="scbd-news-breadcrumb" aria-label="Breadcrumb">
+            <!-- <nav class="scbd-news-breadcrumb" aria-label="Breadcrumb">
                 <a href="{{ route('page', 'news') }}">News</a>
                 <span aria-hidden="true">/</span>
                 <span>{{ $post->title }}</span>
-            </nav>
+            </nav> -->
 
             <h1 data-split class="scbd-h2 scbd-news-detail-title">{{ $post->title }}</h1>
 

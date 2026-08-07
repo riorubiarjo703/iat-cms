@@ -5,21 +5,25 @@ namespace Tests\Feature\Menus;
 use App\Filament\Pages\EditMenuPage;
 use App\Models\Menu;
 use App\Models\MenuItem;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class MenuItemEditorTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private Menu $menu;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        // EditMenuPage now gates on menus.manage (C1 of the roles/permissions
+        // final review) — a roleless actor 403s before this test's own
+        // assertions ever run.
+        $this->actingAsSuperAdmin();
         $this->menu = Menu::create(['name' => 'Main Navigation']);
     }
 

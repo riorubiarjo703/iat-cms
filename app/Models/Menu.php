@@ -39,6 +39,31 @@ class Menu extends Model
             ->get();
     }
 
+    /**
+     * How many of this menu's items a visitor actually sees.
+     *
+     * Not items_count: that counts rows, and a row whose page is still a draft
+     * is not a link on the site. The admin reports both, because the gap
+     * between them is the thing worth knowing.
+     */
+    public function liveItemCount(): int
+    {
+        return $this->countVisible($this->rootItems()->with(['childrenRecursive', 'linkable'])->get());
+    }
+
+    /**
+     * Recurses only into visible parents: the site never reaches the children
+     * of a hidden item, so counting them would overstate what is live.
+     *
+     * @param  \Illuminate\Support\Collection<int, MenuItem>  $items
+     */
+    private function countVisible(\Illuminate\Support\Collection $items): int
+    {
+        return $items
+            ->filter(fn (MenuItem $item): bool => $item->isVisible())
+            ->sum(fn (MenuItem $item): int => 1 + $this->countVisible($item->loadedChildren()));
+    }
+
     public function scopeForLocation(Builder $query, string $location): Builder
     {
         return $query->where('location', $location);

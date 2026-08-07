@@ -6,20 +6,24 @@ use App\Filament\Pages\EditMenuPage;
 use App\Filament\Pages\NavigationMenusPage;
 use App\Models\Menu;
 use App\Models\MenuItem;
-use App\Models\User;
 use App\Support\MenuLocations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class MenuAdminTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+
+        // Panel access is gated on the admin.access permission, so a bare
+        // factory user is bounced with a 403 before any of this renders.
+        $this->actingAsSuperAdmin();
     }
 
     private function menu(string $name = 'Main Navigation'): Menu

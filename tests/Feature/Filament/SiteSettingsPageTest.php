@@ -4,19 +4,20 @@ namespace Tests\Feature\Filament;
 
 use App\Filament\Pages\SiteSettingsPage;
 use App\Models\SiteSetting;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class SiteSettingsPageTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
     }
 
     public function test_the_page_renders(): void

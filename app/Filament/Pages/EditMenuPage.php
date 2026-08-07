@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use AjayDhakal\FilamentStory\Models\BlogCategory;
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use App\Models\SiteSetting;
@@ -23,6 +24,8 @@ use Illuminate\Support\Str;
  */
 class EditMenuPage extends Page
 {
+    use ChecksPagePermission;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bars-3';
 
     protected static ?string $slug = 'navigation-menus/{record}';
@@ -30,6 +33,11 @@ class EditMenuPage extends Page
     protected string $view = 'filament.pages.edit-menu';
 
     protected static bool $shouldRegisterNavigation = false;
+
+    public static function permission(): string
+    {
+        return 'menus.manage';
+    }
 
     /**
      * The id, not the model. A public Eloquent property is serialised into the
@@ -319,6 +327,19 @@ class EditMenuPage extends Page
             return;
         }
 
+        // The call-to-action is the header's button, which sits beside the
+        // navigation rather than inside it. Flagging a nested item used to give
+        // it a CTA badge that the site ignored.
+        if (! $item->is_cta && $item->parent_id !== null) {
+            Notification::make()
+                ->title('Only a top-level item can be the call-to-action')
+                ->body('Drag it out to the top level first.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         // At most one call-to-action per menu: two buttons competing for the
         // same slot is a template bug waiting to happen.
         if (! $item->is_cta) {
@@ -335,15 +356,13 @@ class EditMenuPage extends Page
      */
     public function saveTree(array $tree): void
     {
-        // The browser has already moved the node, so a re-render would replace
-        // the DOM with markup identical to what is on screen — at the cost of
-        // rebuilding every Sortable and restoring expansion. That round trip
-        // is the lag you feel when reordering.
-        $this->skipRender();
-
         // Loaded once, so the loop can skip rows that are already correct: a
         // reorder moves one item but previously wrote every row.
         $owned = $this->getRecord()->items()->get()->keyBy(fn (MenuItem $item): string => (string) $item->getKey());
+
+        // Set when a drag demotes the call-to-action, which is the one case
+        // where the server knows something the browser does not.
+        $demoted = false;
 
         // Built from the models rather than from $owned->keys(): PHP coerces
         // numeric string array keys back to integers, and the strict in_array
@@ -379,10 +398,26 @@ class EditMenuPage extends Page
                 continue;
             }
 
+            // The button lives beside the navigation, not inside it, so an item
+            // dragged into a dropdown stops being the call-to-action. Cleared
+            // here rather than left set, which would leave a CTA badge on a row
+            // the header renders as an ordinary link.
+            $losesCta = $parent !== null && $current->is_cta;
+            $demoted = $demoted || $losesCta;
+
             MenuItem::query()->whereKey($id)->update([
                 'parent_id' => $parent,
                 'sort' => $sort,
-            ]);
+            ] + ($losesCta ? ['is_cta' => false] : []));
+        }
+
+        // The browser has already moved the node, so re-rendering would replace
+        // the DOM with markup identical to what is on screen — at the cost of
+        // rebuilding every Sortable and restoring expansion. That round trip is
+        // the lag you feel when reordering. Skipped unless a demotion means the
+        // screen is now out of date.
+        if (! $demoted) {
+            $this->skipRender();
         }
     }
 

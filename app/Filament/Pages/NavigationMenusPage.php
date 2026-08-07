@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use App\Models\Menu;
 use App\Support\MenuLocations;
 use BackedEnum;
@@ -20,6 +21,8 @@ use Illuminate\Support\Collection;
  */
 class NavigationMenusPage extends Page
 {
+    use ChecksPagePermission;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bars-3';
 
     protected static ?string $title = 'Navigation Menus';
@@ -27,6 +30,11 @@ class NavigationMenusPage extends Page
     protected static ?string $slug = 'navigation-menus';
 
     protected string $view = 'filament.pages.navigation-menus';
+
+    public static function permission(): string
+    {
+        return 'menus.manage';
+    }
 
     public static function getNavigationLabel(): string
     {
@@ -52,7 +60,11 @@ class NavigationMenusPage extends Page
      * the assigned menu's, so an unassigned location reports nothing rather
      * than zero.
      *
-     * @return array<string, array{label: string, description: string, icon: string, menu: Menu|null, items: int|null}>
+     * `hidden` is how many of those rows the site leaves out. Reported next to
+     * the total rather than instead of it: "21 items" against a header showing
+     * ten links is true and useless.
+     *
+     * @return array<string, array{label: string, description: string, icon: string, menu: Menu|null, items: int|null, hidden: int}>
      */
     public function getLocations(): array
     {
@@ -66,10 +78,21 @@ class NavigationMenusPage extends Page
             $rows[$key] = $meta + [
                 'menu' => $menu,
                 'items' => $menu?->items_count,
+                'hidden' => $menu ? $menu->items_count - $menu->liveItemCount() : 0,
             ];
         }
 
         return $rows;
+    }
+
+    /** How many of each menu's rows never reach the site, keyed by menu id. */
+    public function getHiddenCounts(): array
+    {
+        return $this->getMenus()
+            ->mapWithKeys(fn (Menu $menu): array => [
+                $menu->getKey() => $menu->items_count - $menu->liveItemCount(),
+            ])
+            ->all();
     }
 
     /** @return array<int, array{value: string, label: string}> */

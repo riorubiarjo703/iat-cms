@@ -96,6 +96,31 @@ class NavigationTreeSeederTest extends TestCase
         $this->assertSame($before, MenuItem::query()->count());
     }
 
+    public function test_re_seeding_does_not_switch_an_item_back_on(): void
+    {
+        // Switching an item off is a decision someone made in the admin. The
+        // seeder defines the structure; it has no business overruling that,
+        // and doing so silently made "non-destructive" untrue.
+        $this->seed(NavigationTreeSeeder::class);
+        $facilities = MenuItem::query()->get()->first(fn ($i) => $i->t('label', 'en') === 'Facilities');
+        $facilities->update(['is_active' => false]);
+
+        $this->seed(NavigationTreeSeeder::class);
+
+        $this->assertFalse($facilities->refresh()->is_active);
+    }
+
+    public function test_an_item_it_creates_starts_switched_on(): void
+    {
+        // The other half of the same rule: leaving an existing row alone must
+        // not leave a brand-new one off the site.
+        $this->seed(NavigationTreeSeeder::class);
+
+        $facilities = MenuItem::query()->get()->first(fn ($i) => $i->t('label', 'en') === 'Facilities');
+
+        $this->assertTrue($facilities->is_active);
+    }
+
     public function test_it_leaves_the_call_to_action_alone(): void
     {
         $menu = Menu::create(['name' => 'Main', 'slug' => 'main', 'location' => MenuLocations::HEADER]);

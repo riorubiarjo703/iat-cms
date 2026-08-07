@@ -7,6 +7,7 @@ use App\Filament\Resources\BlogCategories\BlogCategoryResource;
 use App\Filament\Resources\BlogCategories\Pages\CreateBlogCategory;
 use App\Filament\Resources\BlogCategories\Pages\EditBlogCategory;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -18,7 +19,14 @@ class BlogCategoryResourceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        // A plain factory user now hits the policies added for this
+        // resource and is refused; the resource's own behaviour, not
+        // authorization, is what this suite covers.
+        $user = User::factory()->create();
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
     }
 
     public function test_the_index_page_renders(): void

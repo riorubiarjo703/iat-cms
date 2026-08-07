@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ChecksPagePermission;
 use App\Filament\Widgets\ContentStats;
 use App\Filament\Widgets\QuickActions;
 use App\Filament\Widgets\TranslationCoveragePanel;
@@ -14,6 +15,13 @@ use Filament\Pages\Dashboard as BaseDashboard;
  */
 class Dashboard extends BaseDashboard
 {
+    use ChecksPagePermission;
+
+    public static function permission(): string
+    {
+        return 'dashboard.view';
+    }
+
     /** The banner greets the user by name, so a second heading is redundant. */
     public function getHeading(): string
     {

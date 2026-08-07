@@ -12,11 +12,24 @@
 .scbd-palette .scbd-card-title { margin-bottom: 1rem; }
 
 .scbd-palette-category {
-    margin: 1.25rem 0 0.5rem;
-    font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--scbd-text-muted);
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    width: 100%;
+    font-size: .9375rem;
+    font-weight: 500; 
+    text-align: left; 
+    padding: .875rem 0; 
+    color: var(--scbd-text);
 }
-.scbd-palette-category:first-of-type { margin-top: 0; }
+.scbd-palette-group:first-of-type .scbd-palette-category { 
+    margin-top: 0;
+    border-bottom: 1px solid var(--scbd-border);
+}
+.scbd-palette-category-chevron {
+    width: 1rem; height: 1rem;
+    transition: transform 150ms;
+}
 
 .scbd-palette-items { display: flex; flex-direction: column; gap: 0.375rem; }
 

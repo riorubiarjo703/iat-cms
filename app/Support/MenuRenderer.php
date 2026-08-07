@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Menu;
 use App\Models\MenuItem;
 use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
 
 /**
  * Resolves a menu to its renderable tree. Kept out of the models so a template
@@ -63,7 +64,7 @@ final class MenuRenderer
         foreach ($items->values() as $index => $item) {
             $key = $prefix.($index + 1);
 
-            $children = $item->children
+            $children = $item->loadedChildren()
                 ->filter(fn (MenuItem $child): bool => $child->isVisible())
                 ->values();
 
@@ -77,11 +78,47 @@ final class MenuRenderer
         return $keyed;
     }
 
+    /**
+     * A menu as markup, for @menu('slug').
+     *
+     * The directives echo whatever this returns. They used to echo the
+     * collection itself, which stringifies to JSON: the advertised directive
+     * dumped the menu and the whole builder payload of every page it linked to
+     * straight into the page.
+     */
+    public static function render(string $slug): HtmlString
+    {
+        return self::markup(self::bySlug($slug));
+    }
+
+    /** A location's assigned menu as markup, for @menuLocation('header'). */
+    public static function renderLocation(string $location): HtmlString
+    {
+        return self::markup(self::byLocation($location));
+    }
+
+    /** @param Collection<int, MenuItem> $items */
+    private static function markup(Collection $items): HtmlString
+    {
+        return new HtmlString(
+            view('partials.site.menu', ['items' => $items, 'depth' => 0])->render(),
+        );
+    }
+
+    /**
+     * The header's button, which is a top-level slot.
+     *
+     * Root items only. Searching the whole menu meant a nested item flagged as
+     * the CTA was drawn twice — once inside its dropdown, because tree() only
+     * excludes the flag at the top level, and again as the button. A nested
+     * flag is ignored here and the item renders as the ordinary link it is.
+     */
     public static function cta(string $location): ?MenuItem
     {
         return RequestCache::remember(
             "menu.cta.{$location}",
-            fn (): ?\App\Models\MenuItem => Menu::assignedTo($location)?->items()->cta()->get()->first(fn ($item) => $item->isVisible()),
+            fn (): ?\App\Models\MenuItem => Menu::assignedTo($location)
+                ?->rootItems()->cta()->get()->first(fn ($item) => $item->isVisible()),
         );
     }
 }

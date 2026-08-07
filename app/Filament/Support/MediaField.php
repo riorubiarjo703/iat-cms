@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Support\MediaReference;
 use Slimani\MediaManager\Form\MediaPicker;
 
 /**
@@ -27,6 +28,14 @@ final class MediaField
         return MediaPicker::make($name)
             ->label($label)
             ->acceptedFileTypes(['image/*'])
-            ->directory($folder);
+            ->directory($folder)
+            // The picker hands its state to File::find(). A field still holding
+            // a legacy "uploads/..." path — anything media:migrate-uploads has
+            // not reached, and the page seeders write them back — made that a
+            // lookup by path, which Postgres rejects as a bigint and the edit
+            // screen died on. Resolved to the imported file's id where there is
+            // one, and dropped where there is not, so the picker only ever sees
+            // an id. Applied on format so it lands before any hydration runs.
+            ->formatStateUsing(static fn (mixed $state): ?string => MediaReference::toLibraryId($state));
     }
 }

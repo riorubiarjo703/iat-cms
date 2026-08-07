@@ -5,20 +5,21 @@ namespace Tests\Feature\Filament;
 use App\Enums\SnippetPosition;
 use App\Filament\Resources\CodeSnippets\Pages\ListCodeSnippets;
 use App\Models\CodeSnippet;
-use App\Models\User;
 use App\Support\SnippetTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class SnippetTemplatesTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
     }
 
     public function test_all_six_templates_are_defined(): void

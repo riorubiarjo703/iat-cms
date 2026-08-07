@@ -2,21 +2,22 @@
 
 namespace Tests\Feature\Filament;
 
-use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class SidebarUserCardTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private function panel(): \Illuminate\Testing\TestResponse
     {
-        return $this->actingAs(User::factory()->create([
+        return $this->actingAsSuperAdmin([
             'name' => 'Rio Rubiarjo',
             'email' => 'rio@example.com',
-        ]))->get('/superduper');
+        ])->get('/superduper');
     }
 
     public function test_the_sidebar_shows_the_signed_in_user(): void
@@ -54,7 +55,7 @@ class SidebarUserCardTest extends TestCase
     {
         Filament::setCurrentPanel('admin');
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAsSuperAdmin()
             ->get(Filament::getProfileUrl())
             ->assertSuccessful()
             ->assertSee('Password');

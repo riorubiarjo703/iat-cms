@@ -3,17 +3,18 @@
 namespace Tests\Feature\Filament;
 
 use AjayDhakal\FilamentStory\Models\BlogPost;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class AdminShellStructureTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private function panel(): string
     {
-        return $this->actingAs(User::factory()->create())->get('/superduper')->getContent();
+        return $this->actingAsSuperAdmin()->get('/superduper')->getContent();
     }
 
     /**

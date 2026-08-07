@@ -24,7 +24,7 @@
 {{-- The blur lives in the stylesheet, not here: it is only applied at the
      desktop breakpoint, because backdrop-filter makes the header a containing
      block for its position:fixed drawer. --}}
-<header data-header class="scbd-header" style="position:fixed; top:0; left:0; right:0; z-index:900; background:rgba(243,242,242,0.92); border-bottom:2px solid rgba(32,30,29,0.4);">
+<header data-header class="scbd-header" style="position:fixed; top:0; left:0; right:0; z-index:900;">
     <div class="scbd-header-bar">
         {{-- The site root, on every page, so the logo is always the way back to
              the homepage. Not "#top": that only scrolls the page you are

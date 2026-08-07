@@ -17,14 +17,37 @@ export function createSmoothScroll(ScrollTrigger, reduced) {
   };
   requestAnimationFrame(raf);
 
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener('click', (event) => {
-      const target = document.querySelector(anchor.getAttribute('href'));
-      if (!target) return;
-      event.preventDefault();
-      lenis.scrollTo(target, { offset: -70 });
-    });
-  });
+  bindAnchors((target) => lenis.scrollTo(target, { offset: -70 }));
 
   return lenis;
+}
+
+/**
+ * Smooth-scrolls the links that point at a section of the page you are on.
+ *
+ * Matched on the anchor's resolved hash and path rather than on `href^="#"`:
+ * navigation entries carry an absolute URL now, so that "#about" reaches the
+ * homepage section from an interior page too. Under the old selector those
+ * stopped matching here, which turned every homepage nav click into a full
+ * page load. Reading `.hash` and `.pathname` off the element covers both
+ * spellings, because the browser resolves them the same way.
+ */
+export function bindAnchors(scrollTo, root = document) {
+  root.querySelectorAll('a[href*="#"]').forEach((anchor) => {
+    anchor.addEventListener('click', (event) => {
+      // A bare "#" has an empty hash — that is the heading marker, which
+      // exists to group children and goes nowhere.
+      if (!anchor.hash) return;
+
+      // Another page's section: let the browser navigate there and land on it.
+      if (anchor.pathname !== window.location.pathname) return;
+      if (anchor.origin !== window.location.origin) return;
+
+      const target = root.querySelector(anchor.hash);
+      if (!target) return;
+
+      event.preventDefault();
+      scrollTo(target);
+    });
+  });
 }

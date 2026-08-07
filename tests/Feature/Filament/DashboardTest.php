@@ -5,16 +5,18 @@ namespace Tests\Feature\Filament;
 use App\Filament\Widgets\QuickActions;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create(['name' => 'Rio Rubiarjo']));
+        $this->actingAsSuperAdmin(['name' => 'Rio Rubiarjo']);
     }
 
     /**

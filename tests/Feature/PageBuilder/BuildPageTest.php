@@ -4,22 +4,23 @@ namespace Tests\Feature\PageBuilder;
 
 use App\Filament\Pages\BuildPage;
 use App\Models\Page;
-use App\Models\User;
 use App\PageBuilder\Blocks;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\TestCase;
 
 class BuildPageTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
 
     private Page $page;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(User::factory()->create());
+        $this->actingAsSuperAdmin();
 
         $this->page = Page::create([
             'title' => ['en' => 'Built'],
@@ -48,6 +49,17 @@ class BuildPageTest extends TestCase
         foreach ([Blocks\HeroBlock::name(), Blocks\MarqueeBlock::name(), Blocks\NewsBlock::name()] as $name) {
             $this->assertStringContainsString($name, $html);
         }
+    }
+
+    public function test_palette_categories_render_as_expanded_collapsible_controls(): void
+    {
+        $html = $this->get(BuildPage::getUrl(['record' => $this->page->id]))->getContent();
+
+        $this->assertStringContainsString('x-data="{ open: true }"', $html);
+        $this->assertStringContainsString('x-on:click="open = !open"', $html);
+        $this->assertStringContainsString(':aria-expanded="open.toString()"', $html);
+        $this->assertStringContainsString('x-show="open"', $html);
+        $this->assertStringContainsString('x-collapse', $html);
     }
 
     public function test_adding_a_block_persists_it_with_its_defaults(): void

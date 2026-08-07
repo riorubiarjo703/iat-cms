@@ -6,12 +6,14 @@ use App\Enums\SnippetPosition;
 use App\Models\CodeSnippet;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActsAsSuperAdmin;
 use Tests\Support\SeedsHeaderMenu;
 use Tests\TestCase;
 
 class CodeSnippetInjectionTest extends TestCase
 {
     use RefreshDatabase;
+    use ActsAsSuperAdmin;
     use SeedsHeaderMenu;
 
     protected function setUp(): void
@@ -108,7 +110,7 @@ class CodeSnippetInjectionTest extends TestCase
             'skip_for_admins' => false,
         ]);
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAsSuperAdmin()
             ->get('/superduper')
             ->assertSuccessful()
             ->assertDontSee('track()', false);

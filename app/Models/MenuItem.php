@@ -77,6 +77,23 @@ class MenuItem extends Model
         return $this->children()->with(['childrenRecursive', 'linkable']);
     }
 
+    /**
+     * The children to read when walking a tree.
+     *
+     * A tree is eager-loaded through `childrenRecursive`, which is a different
+     * relation from `children` as far as Eloquent is concerned: reading
+     * `children` on a loaded tree issues a query per row and turns rendering
+     * the header into an N+1. Every walk goes through here instead.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, self>
+     */
+    public function loadedChildren(): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->relationLoaded('childrenRecursive')
+            ? $this->childrenRecursive
+            : $this->children;
+    }
+
     public function linkable(): MorphTo
     {
         return $this->morphTo();
@@ -96,31 +113,45 @@ class MenuItem extends Model
      */
     public function isVisible(int $depth = 0): bool
     {
+        return $this->hiddenReason($depth) === null;
+    }
+
+    /**
+     * Why this item does not appear on the site, or null when it does.
+     *
+     * isVisible() is derived from this rather than the two being written out
+     * separately: an item the admin calls live while the site omits it — or
+     * the reverse — is the bug this method exists to make impossible.
+     */
+    public function hiddenReason(int $depth = 0): ?string
+    {
         if (! $this->is_active) {
-            return false;
+            return 'Switched off';
         }
 
         $linked = $this->linkable;
 
         if ($linked instanceof Page) {
-            return $linked->isPublished();
+            return $linked->isPublished() ? null : 'Its page is a draft';
         }
 
         // A linked record that has been deleted leaves nothing to point at.
         if ($this->type !== self::TYPE_CUSTOM && $this->linkable_type !== null && $linked === null) {
-            return false;
+            return 'The record it linked to no longer exists';
         }
 
         // A heading exists to group its children. With every child hidden it
         // is a dead entry pointing at "#", so it hides with them. The depth
         // guard stops a malformed tree from recursing forever.
-        $children = $this->children;
+        $children = $this->loadedChildren();
 
         if ($children->isNotEmpty() && blank($this->url) === false && $this->url === '#' && $depth < 10) {
-            return $children->contains(fn (self $child): bool => $child->isVisible($depth + 1));
+            return $children->contains(fn (self $child): bool => $child->isVisible($depth + 1))
+                ? null
+                : 'All of its links are hidden';
         }
 
-        return true;
+        return null;
     }
 
     /** Ordinary navigation links — everything the CTA is not. */
@@ -154,7 +185,18 @@ class MenuItem extends Model
     public function resolveUrl(): string
     {
         if ($this->type === self::TYPE_CUSTOM) {
-            return (string) $this->url;
+            $url = (string) $this->url;
+
+            // A bare fragment names a section of the homepage, which is the
+            // only page that has one. Left as "#about" the browser looked for
+            // that id in whatever page you were on, so every one of these was
+            // dead outside the homepage. "#" alone is excluded: that is the
+            // heading marker, not a section.
+            if (strlen($url) > 1 && str_starts_with($url, '#')) {
+                return rtrim(route('home'), '/').'/'.$url;
+            }
+
+            return $url;
         }
 
         $linked = $this->linkable;

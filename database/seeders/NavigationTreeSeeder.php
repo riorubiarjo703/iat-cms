@@ -19,6 +19,12 @@ use Illuminate\Database\Seeder;
  * Idempotent and non-destructive. Items are matched by their English label, so
  * running it again updates what is there rather than duplicating it, and any
  * item not named here — the call-to-action, for instance — is left alone.
+ *
+ * "Non-destructive" covers whether an item is switched on: that is set when a
+ * row is created and never touched afterwards, so an item switched off in the
+ * admin stays off across a re-seed. Structure — position, nesting and link
+ * target — is still rewritten from the tree below, which is the point of
+ * running it again.
  */
 class NavigationTreeSeeder extends Seeder
 {
@@ -118,7 +124,6 @@ class NavigationTreeSeeder extends Seeder
             'linkable_type' => $page ? Page::class : null,
             'linkable_id' => $page?->getKey(),
             'url' => $page ? null : ($isUrl ? $destination : '#'),
-            'is_active' => true,
         ];
 
         $existing = MenuItem::query()
@@ -127,9 +132,13 @@ class NavigationTreeSeeder extends Seeder
             ->get()
             ->first(fn (MenuItem $item): bool => $item->t('label', 'en') === $label);
 
+        // is_active is set on create and never on update. This seeder owns the
+        // structure — what exists, where it sits, what it points at — but
+        // whether an item is switched on is a decision someone made in the
+        // admin, and re-seeding used to silently undo it.
         $item = $existing
             ? tap($existing)->update($attributes)
-            : MenuItem::create($attributes);
+            : MenuItem::create($attributes + ['is_active' => true]);
 
         $this->placed[] = $item->getKey();
 

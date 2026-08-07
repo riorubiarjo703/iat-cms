@@ -11,7 +11,7 @@
     $settings = \App\Models\SiteSetting::singleton();
     $footerMenu = \App\Support\MenuRenderer::byLocation(\App\Support\MenuLocations::FOOTER);
     $sitemapLinks = $footerMenu->flatMap(function ($item) {
-        $children = $item->children->filter(fn ($child) => $child->isVisible());
+        $children = $item->loadedChildren()->filter(fn ($child) => $child->isVisible());
 
         // A parent that only groups children is a heading, not a link.
         return $children->isNotEmpty() ? $children : collect([$item]);
