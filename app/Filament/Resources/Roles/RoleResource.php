@@ -142,7 +142,7 @@ class RoleResource extends Resource
                 ->in($ids);
         }
 
-        return $field->saveRelationshipsUsing(function (CheckboxList $component) use ($ids, $isGateGroup): void {
+        return $field->saveRelationshipsUsing(function (CheckboxList $component) use ($ids): void {
             $record = $component->getRecord();
 
             $selected = collect($component->getState() ?? [])
@@ -152,9 +152,22 @@ class RoleResource extends Resource
             // submitted payload that simply omits the value — which is
             // exactly what an unchecked box produces. This is the actual
             // guarantee; the disabled checkbox is only the visible half.
-            if ($isGateGroup && $record->is_system) {
-                $gateId = (string) Permission::query()->where('name', self::GATE_PERMISSION)->value('id');
-                $selected = $selected->push($gateId)->unique();
+            // Keyed on is_system rather than on which group this field renders.
+            // The group was identified by the gate permission's *name*, so an
+            // out-of-band rename would have moved it to a group this closure no
+            // longer recognised — and the field owning it would then detach it,
+            // which is the lockout this guard exists to prevent. Intersecting
+            // with $ids keeps each field responsible for its own rows.
+            if ($record->is_system) {
+                $selected = $selected
+                    ->concat(
+                        Permission::query()
+                            ->where('is_system', true)
+                            ->pluck('id')
+                            ->map(fn (mixed $id): string => (string) $id)
+                            ->intersect(collect($ids)->map(fn (mixed $id): string => (string) $id))
+                    )
+                    ->unique();
             }
 
             // Scoped to this group's own ids on both sides — detach() and

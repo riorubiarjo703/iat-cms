@@ -71,9 +71,15 @@ class PermissionResource extends Resource
                     // exactly what an unchecked box produces. This is the
                     // actual guarantee; the disabled checkbox is only the
                     // visible half.
+                    // Resolved by is_system, not by name. Looking the role up by
+                    // literal would return nothing once it had been renamed —
+                    // renaming is allowed, and is why the column exists — which
+                    // would both drop this protection silently and push an empty
+                    // id into sync(), failing the foreign key.
                     if ($record->is_system) {
-                        $protectedId = (string) Role::query()->where('name', self::PROTECTED_ROLE)->value('id');
-                        $state = $state->push($protectedId)->unique();
+                        $state = $state
+                            ->concat(Role::query()->where('is_system', true)->pluck('id')->map(strval(...)))
+                            ->unique();
                     }
 
                     $recordsToDetach = $relationship->getResults()
